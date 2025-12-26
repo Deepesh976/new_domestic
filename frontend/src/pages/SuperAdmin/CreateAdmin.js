@@ -1,0 +1,241 @@
+import React, { useEffect, useState } from 'react';
+import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom';
+import {
+  getOrganizations,
+  createAdmin,
+} from '../../services/superAdminService';
+import SuperAdminNavbar from '../../components/Navbar/SuperAdminNavbar';
+
+/* =========================
+   STYLES
+========================= */
+const Page = styled.div`
+  max-width: 900px;
+  margin: auto;
+`;
+
+const Card = styled.div`
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+`;
+
+const Title = styled.h2`
+  margin-bottom: 20px;
+`;
+
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const Field = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const Label = styled.label`
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+`;
+
+const Input = styled.input`
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+`;
+
+const Select = styled.select`
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+`;
+
+const ButtonBar = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+`;
+
+const Button = styled.button`
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  color: white;
+  background: ${(p) => (p.cancel ? '#64748b' : '#059669')};
+`;
+
+/* =========================
+   COMPONENT
+========================= */
+const CreateAdmin = () => {
+  const navigate = useNavigate();
+
+  const [organizations, setOrganizations] = useState([]);
+  const [form, setForm] = useState({
+    organization: '', // ✅ WILL STORE _id
+    username: '',
+    email: '',
+    password: '',
+    phoneNo: '',
+    location: '',
+    role: 'admin',
+  });
+
+  useEffect(() => {
+    loadOrganizations();
+  }, []);
+
+  const loadOrganizations = async () => {
+    try {
+      const res = await getOrganizations();
+      setOrganizations(res.data || []);
+    } catch {
+      alert('Failed to load organizations');
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!form.organization || !form.email || !form.password) {
+      alert('Please fill required fields');
+      return;
+    }
+
+    try {
+      await createAdmin(form);
+      alert('Admin created successfully');
+      navigate('/super-admin/adminInfo');
+    } catch (err) {
+      alert(
+        err?.response?.data?.message || 'Failed to create admin'
+      );
+    }
+  };
+
+  return (
+    <SuperAdminNavbar>
+      <Page>
+        <Card>
+          <Title>Create Admin / Head Admin</Title>
+
+          <form onSubmit={handleSubmit}>
+            <Grid>
+              {/* ORGANIZATION */}
+              <Field>
+                <Label>Organization</Label>
+                <Select
+                  name="organization"
+                  value={form.organization}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select Organization</option>
+                  {organizations.map((org) => (
+                    <option key={org._id} value={org._id}>
+                      {org.organizationName}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+
+              {/* ROLE */}
+              <Field>
+                <Label>Role</Label>
+                <Select
+                  name="role"
+                  value={form.role}
+                  onChange={handleChange}
+                >
+                  <option value="admin">Admin</option>
+                  <option value="headadmin">Head Admin</option>
+                </Select>
+              </Field>
+
+              {/* USERNAME */}
+              <Field>
+                <Label>Username</Label>
+                <Input
+                  name="username"
+                  value={form.username}
+                  onChange={handleChange}
+                  required
+                />
+              </Field>
+
+              {/* EMAIL */}
+              <Field>
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                />
+              </Field>
+
+              {/* PASSWORD */}
+              <Field>
+                <Label>Password</Label>
+                <Input
+                  type="password"
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  required
+                />
+              </Field>
+
+              {/* PHONE */}
+              <Field>
+                <Label>Phone Number</Label>
+                <Input
+                  name="phoneNo"
+                  value={form.phoneNo}
+                  onChange={handleChange}
+                />
+              </Field>
+
+              {/* LOCATION */}
+              <Field>
+                <Label>Location</Label>
+                <Input
+                  name="location"
+                  value={form.location}
+                  onChange={handleChange}
+                />
+              </Field>
+            </Grid>
+
+            <ButtonBar>
+              <Button type="button" cancel onClick={() => navigate(-1)}>
+                Cancel
+              </Button>
+              <Button type="submit">Create</Button>
+            </ButtonBar>
+          </form>
+        </Card>
+      </Page>
+    </SuperAdminNavbar>
+  );
+};
+
+export default CreateAdmin;
