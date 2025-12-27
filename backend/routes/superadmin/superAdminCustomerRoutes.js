@@ -1,16 +1,17 @@
-const express = require('express');
+import express from 'express';
+import auth from '../../middleware/auth.js';
+import roleMiddleware from '../../middleware/roleMiddleware.js';
+import { getCustomers } from '../../controllers/superadmin/superAdminCustomerController.js';
+
 const router = express.Router();
 
-const {
-  getCustomers,
-} = require('../../controllers/superadmin/superAdminCustomerController');
-
-const auth = require('../../middleware/auth');
-const roleMiddleware = require('../../middleware/roleMiddleware');
-
-router.use(auth, roleMiddleware('SUPERADMIN'));
+// 🔐 SuperAdmin only
+router.use(
+  auth,
+  roleMiddleware('superadmin') // ✅ lowercase
+);
 
 // VIEW ONLY
 router.get('/', getCustomers);
 
-module.exports = router;
+export default router;

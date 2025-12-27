@@ -1,6 +1,6 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const SuperAdmin = require('../../models/SuperAdmin');
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import SuperAdmin from '../../models/SuperAdmin.js';
 
 /* =========================
    REGISTER SUPERADMIN
@@ -58,14 +58,14 @@ const superAdminLogin = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: admin._id, role: 'SUPERADMIN' },
+      { id: admin._id, role: 'superadmin' }, // ✅ lowercase
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
     res.status(200).json({
       token,
-      role: 'SUPERADMIN',
+      role: 'superadmin', // ✅ lowercase
       user: {
         id: admin._id,
         username: admin.username,
@@ -78,7 +78,7 @@ const superAdminLogin = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   superAdminRegister,
   superAdminLogin,
 };

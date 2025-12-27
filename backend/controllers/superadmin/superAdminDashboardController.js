@@ -5,73 +5,88 @@ import OrgHeadAdmin from '../../models/OrgHeadAdmin.js';
 import RechargeTransaction from '../../models/RechargeTransaction.js';
 
 /* =====================================================
-   SUPER ADMIN DASHBOARD SUMMARY
+   SUPER ADMIN DASHBOARD (ORG-AWARE)
 ===================================================== */
-export const getDashboardSummary = async (req, res) => {
+const getDashboardSummary = async (req, res) => {
   try {
+    const { organizationId, year } = req.query;
+
+    if (!organizationId || !year) {
+      return res.status(400).json({ message: 'Missing parameters' });
+    }
+
     /* -------------------------
-       ORGANIZATION COUNT
+       FETCH ORGANIZATION
     ------------------------- */
-    const totalOrganizations = await Organization.countDocuments();
+    const org = await Organization.findById(organizationId);
+    if (!org) {
+      return res.status(404).json({ message: 'Organization not found' });
+    }
+
+    const orgIdString = org.org_id || org.organizationCode || org._id.toString();
+
+    const start = new Date(`${year}-01-01`);
+    const end = new Date(`${year}-12-31`);
 
     /* -------------------------
-       USER / ADMIN COUNTS
+       COUNTS
     ------------------------- */
-    const totalCustomers = await OrgUser.countDocuments();
-    const totalAdmins = await OrgAdmin.countDocuments();
-    const totalHeadAdmins = await OrgHeadAdmin.countDocuments();
+    const totalCustomers = await OrgUser.countDocuments({
+      org_id: orgIdString,
+    });
+
+    const totalAdmins = await OrgAdmin.countDocuments({
+      organization: organizationId,
+    });
+
+    const totalHeadAdmins = await OrgHeadAdmin.countDocuments({
+      organization: organizationId,
+    });
 
     /* -------------------------
-       TOTAL REVENUE
-    ------------------------- */
-    const revenueAgg = await RechargeTransaction.aggregate([
-      {
-        $match: { status: 'SUCCESS' },
-      },
-      {
-        $group: {
-          _id: null,
-          totalRevenue: { $sum: '$amount' },
-        },
-      },
-    ]);
-
-    const totalRevenue =
-      revenueAgg.length > 0 ? revenueAgg[0].totalRevenue : 0;
-
-    /* -------------------------
-       CUSTOMER GROWTH (MONTHLY)
+       CUSTOMER GROWTH
     ------------------------- */
     const customerGrowth = await OrgUser.aggregate([
       {
+        $match: {
+          org_id: orgIdString,
+          createdAt: { $gte: start, $lte: end },
+        },
+      },
+      {
         $group: {
-          _id: {
-            year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' },
-          },
+          _id: { month: { $month: '$createdAt' } },
           count: { $sum: 1 },
         },
       },
-      { $sort: { '_id.year': 1, '_id.month': 1 } },
+      { $sort: { '_id.month': 1 } },
     ]);
 
     /* -------------------------
-       REVENUE GROWTH (MONTHLY)
+       REVENUE GROWTH
     ------------------------- */
     const revenueGrowth = await RechargeTransaction.aggregate([
       {
-        $match: { status: 'SUCCESS' },
+        $match: {
+          org_id: orgIdString,
+          status: 'success',
+          date: {
+            $gte: start.getTime(),
+            $lte: end.getTime(),
+          },
+        },
       },
       {
         $group: {
           _id: {
-            year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' },
+            month: {
+              $month: { $toDate: '$date' },
+            },
           },
-          total: { $sum: '$amount' },
+          total: { $sum: '$price' },
         },
       },
-      { $sort: { '_id.year': 1, '_id.month': 1 } },
+      { $sort: { '_id.month': 1 } },
     ]);
 
     /* -------------------------
@@ -79,17 +94,17 @@ export const getDashboardSummary = async (req, res) => {
     ------------------------- */
     res.status(200).json({
       stats: {
-        totalOrganizations,
-        totalCustomers,
         totalAdmins,
         totalHeadAdmins,
-        totalRevenue,
+        totalCustomers,
       },
       customerGrowth,
       revenueGrowth,
     });
   } catch (error) {
-    console.error('SuperAdmin Dashboard Error:', error);
+    console.error('Dashboard error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export { getDashboardSummary };

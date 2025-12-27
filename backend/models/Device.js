@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const deviceSchema = new mongoose.Schema(
   {
@@ -23,11 +23,13 @@ const deviceSchema = new mongoose.Schema(
     },
 
     qrCode: {
-      type: String, // we store QR text, frontend will generate image
+      type: String, // QR payload text
       required: true,
     },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Device', deviceSchema);
+const Device = mongoose.model('Device', deviceSchema);
+
+export default Device;

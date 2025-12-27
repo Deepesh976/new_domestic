@@ -1,11 +1,11 @@
-const bcrypt = require('bcryptjs');
-const OrgAdmin = require('../../models/OrgAdmin');
-const OrgHeadAdmin = require('../../models/OrgHeadAdmin');
+import bcrypt from 'bcryptjs';
+import OrgAdmin from '../../models/OrgAdmin.js';
+import OrgHeadAdmin from '../../models/OrgHeadAdmin.js';
 
 /* =====================================================
    CREATE ADMIN / HEAD ADMIN
 ===================================================== */
-exports.createAdmin = async (req, res) => {
+const createAdmin = async (req, res) => {
   try {
     const {
       organization, // ObjectId
@@ -60,7 +60,7 @@ exports.createAdmin = async (req, res) => {
 /* =====================================================
    GET ALL ADMINS + HEAD ADMINS
 ===================================================== */
-exports.getAdmins = async (req, res) => {
+const getAdmins = async (req, res) => {
   try {
     const admins = await OrgAdmin.find()
       .populate('organization', 'organizationName');
@@ -78,7 +78,7 @@ exports.getAdmins = async (req, res) => {
 /* =====================================================
    GET ADMIN BY ID
 ===================================================== */
-exports.getAdminById = async (req, res) => {
+const getAdminById = async (req, res) => {
   try {
     let admin =
       (await OrgAdmin.findById(req.params.id)
@@ -100,7 +100,7 @@ exports.getAdminById = async (req, res) => {
 /* =====================================================
    UPDATE ADMIN
 ===================================================== */
-exports.updateAdmin = async (req, res) => {
+const updateAdmin = async (req, res) => {
   try {
     const { role } = req.body;
     const Model = role === 'headadmin' ? OrgHeadAdmin : OrgAdmin;
@@ -128,7 +128,7 @@ exports.updateAdmin = async (req, res) => {
 /* =====================================================
    DELETE ADMIN / HEAD ADMIN
 ===================================================== */
-exports.deleteAdmin = async (req, res) => {
+const deleteAdmin = async (req, res) => {
   try {
     await OrgAdmin.findByIdAndDelete(req.params.id);
     await OrgHeadAdmin.findByIdAndDelete(req.params.id);
@@ -138,4 +138,12 @@ exports.deleteAdmin = async (req, res) => {
     console.error('Delete admin error:', error);
     res.status(500).json({ message: 'Server error' });
   }
+};
+
+export {
+  createAdmin,
+  getAdmins,
+  getAdminById,
+  updateAdmin,
+  deleteAdmin,
 };

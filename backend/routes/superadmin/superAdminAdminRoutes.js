@@ -1,23 +1,28 @@
-const express = require('express');
-const router = express.Router();
+import express from 'express';
+import auth from '../../middleware/auth.js';
+import roleMiddleware from '../../middleware/roleMiddleware.js';
 
-const {
+import {
   createAdmin,
   getAdmins,
   getAdminById,
   updateAdmin,
   deleteAdmin,
-} = require('../../controllers/superadmin/superAdminAdminController');
+} from '../../controllers/superadmin/superAdminAdminController.js';
 
-const auth = require('../../middleware/auth');
-const roleMiddleware = require('../../middleware/roleMiddleware');
+const router = express.Router();
 
-router.use(auth, roleMiddleware('SUPERADMIN'));
+// 🔐 Protect all routes (SuperAdmin only)
+router.use(
+  auth,
+  roleMiddleware('superadmin') // ✅ lowercase
+);
 
+// CRUD routes
 router.post('/', createAdmin);
 router.get('/', getAdmins);
 router.get('/:id', getAdminById);
 router.put('/:id', updateAdmin);
 router.delete('/:id', deleteAdmin);
 
-module.exports = router;
+export default router;

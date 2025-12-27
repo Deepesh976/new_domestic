@@ -29,11 +29,6 @@ import AddDevice from './pages/SuperAdmin/AddDevice';
 
 import SuperAdminCustomerInfo from './pages/SuperAdmin/SuperAdminCustomerInfo';
 
-/* =========================
-   HEAD ADMIN PAGES
-========================= */
-import HeadAdminDashboard from './components/Dashboard/HeadAdminDashboard';
-import Admins from './pages/Headadmin/Admins';
 
 function App() {
   return (
@@ -51,7 +46,7 @@ function App() {
         <Route
           path="/super-admin"
           element={
-            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+            <ProtectedRoute allowedRoles={['superadmin']}>
               <SuperAdminDashboard />
             </ProtectedRoute>
           }
@@ -60,7 +55,7 @@ function App() {
         <Route
           path="/super-admin/profile"
           element={
-            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+            <ProtectedRoute allowedRoles={['superadmin']}>
               <Profile />
             </ProtectedRoute>
           }
@@ -70,7 +65,7 @@ function App() {
         <Route
           path="/super-admin/org"
           element={
-            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+            <ProtectedRoute allowedRoles={['superadmin']}>
               <SuperAdminOrg />
             </ProtectedRoute>
           }
@@ -79,7 +74,7 @@ function App() {
         <Route
           path="/super-admin/create-organization"
           element={
-            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+            <ProtectedRoute allowedRoles={['superadmin']}>
               <CreateOrganization />
             </ProtectedRoute>
           }
@@ -88,7 +83,7 @@ function App() {
         <Route
           path="/super-admin/edit-organization/:organizationId"
           element={
-            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+            <ProtectedRoute allowedRoles={['superadmin']}>
               <EditOrganization />
             </ProtectedRoute>
           }
@@ -98,7 +93,7 @@ function App() {
         <Route
           path="/super-admin/adminInfo"
           element={
-            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+            <ProtectedRoute allowedRoles={['superadmin']}>
               <AdminInfo />
             </ProtectedRoute>
           }
@@ -107,7 +102,7 @@ function App() {
         <Route
           path="/super-admin/createAdmin"
           element={
-            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+            <ProtectedRoute allowedRoles={['superadmin']}>
               <CreateAdmin />
             </ProtectedRoute>
           }
@@ -116,7 +111,7 @@ function App() {
         <Route
           path="/super-admin/edit-admin/:adminId"
           element={
-            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+            <ProtectedRoute allowedRoles={['superadmin']}>
               <EditAdmin />
             </ProtectedRoute>
           }
@@ -126,7 +121,7 @@ function App() {
         <Route
           path="/super-admin/device"
           element={
-            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+            <ProtectedRoute allowedRoles={['superadmin']}>
               <Device />
             </ProtectedRoute>
           }
@@ -135,7 +130,7 @@ function App() {
         <Route
           path="/super-admin/addDevice"
           element={
-            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+            <ProtectedRoute allowedRoles={['superadmin']}>
               <AddDevice />
             </ProtectedRoute>
           }
@@ -145,7 +140,7 @@ function App() {
         <Route
           path="/super-admin/customer"
           element={
-            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+            <ProtectedRoute allowedRoles={['superadmin']}>
               <Customer />
             </ProtectedRoute>
           }
@@ -154,7 +149,7 @@ function App() {
         <Route
           path="/super-admin/customerInfo"
           element={
-            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+            <ProtectedRoute allowedRoles={['superadmin']}>
               <SuperAdminCustomerInfo />
             </ProtectedRoute>
           }
@@ -164,38 +159,8 @@ function App() {
         <Route
           path="/super-admin/transaction"
           element={
-            <ProtectedRoute allowedRoles={['SUPERADMIN']}>
+            <ProtectedRoute allowedRoles={['superadmin']}>
               <Transaction />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* =========================
-           HEAD ADMIN ROUTES
-        ========================= */}
-        <Route
-          path="/head-admin"
-          element={
-            <ProtectedRoute allowedRoles={['HEADADMIN']}>
-              <HeadAdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/head-admin/admins"
-          element={
-            <ProtectedRoute allowedRoles={['HEADADMIN']}>
-              <Admins />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/head-admin/profile"
-          element={
-            <ProtectedRoute allowedRoles={['HEADADMIN']}>
-              <Profile />
             </ProtectedRoute>
           }
         />

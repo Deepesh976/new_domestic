@@ -1,10 +1,10 @@
-const Device = require('../../models/Device');
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
+import Device from '../../models/Device.js';
 
 /* =========================
    CREATE DEVICE
 ========================= */
-exports.createDevice = async (req, res) => {
+const createDevice = async (req, res) => {
   try {
     const { organization, macId, serialNumber } = req.body;
 
@@ -41,7 +41,11 @@ exports.createDevice = async (req, res) => {
     }
 
     // ✅ QR payload (stable & readable)
-    const qrCode = `MAC:${normalizedMacId}|SN:${normalizedSerial}`;
+    const qrCode = JSON.stringify({
+  mac_id: normalizedMacId,
+  serial_no: normalizedSerial,
+});
+
 
     const device = await Device.create({
       organization: organization || null,
@@ -50,7 +54,7 @@ exports.createDevice = async (req, res) => {
       qrCode,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       message: 'Device created successfully',
       device,
     });
@@ -64,7 +68,7 @@ exports.createDevice = async (req, res) => {
       });
     }
 
-    res.status(500).json({
+    return res.status(500).json({
       message: 'Failed to create device',
     });
   }
@@ -73,17 +77,22 @@ exports.createDevice = async (req, res) => {
 /* =========================
    GET ALL DEVICES
 ========================= */
-exports.getDevices = async (req, res) => {
+const getDevices = async (req, res) => {
   try {
     const devices = await Device.find()
       .populate('organization', 'organizationName')
       .sort({ createdAt: -1 });
 
-    res.json(devices);
+    return res.status(200).json(devices);
   } catch (error) {
     console.error('❌ Get devices error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       message: 'Failed to fetch devices',
     });
   }
+};
+
+export {
+  createDevice,
+  getDevices,
 };

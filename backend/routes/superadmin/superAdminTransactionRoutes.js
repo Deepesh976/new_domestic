@@ -1,17 +1,19 @@
-const express = require('express');
+import express from 'express';
+import auth from '../../middleware/auth.js';
+import roleMiddleware from '../../middleware/roleMiddleware.js';
+import { getTransactions } from '../../controllers/superadmin/superAdminTransactionController.js';
+
 const router = express.Router();
 
-const {
-  getTransactions,
-} = require('../../controllers/superadmin/superAdminTransactionController');
+// 🔐 SuperAdmin only
+router.use(
+  auth,
+  roleMiddleware('superadmin') // ✅ lowercase
+);
 
-const auth = require('../../middleware/auth');
-const roleMiddleware = require('../../middleware/roleMiddleware');
-
-// Protect all routes
-router.use(auth, roleMiddleware('SUPERADMIN'));
-
-// GET transactions (VIEW ONLY)
+/* =========================
+   TRANSACTIONS (READ ONLY)
+========================= */
 router.get('/', getTransactions);
 
-module.exports = router;
+export default router;

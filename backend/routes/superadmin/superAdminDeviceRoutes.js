@@ -1,17 +1,23 @@
-const express = require('express');
-const router = express.Router();
-
-const {
+import express from 'express';
+import auth from '../../middleware/auth.js';
+import roleMiddleware from '../../middleware/roleMiddleware.js';
+import {
   createDevice,
   getDevices,
-} = require('../../controllers/superadmin/superAdminDeviceController');
+} from '../../controllers/superadmin/superAdminDeviceController.js';
 
-const auth = require('../../middleware/auth');
-const roleMiddleware = require('../../middleware/roleMiddleware');
+const router = express.Router();
 
-router.use(auth, roleMiddleware('SUPERADMIN'));
+// 🔐 SuperAdmin only
+router.use(
+  auth,
+  roleMiddleware('superadmin') // ✅ lowercase
+);
 
+// CREATE DEVICE
 router.post('/', createDevice);
+
+// GET ALL DEVICES
 router.get('/', getDevices);
 
-module.exports = router;
+export default router;

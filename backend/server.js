@@ -22,11 +22,6 @@ import superAdminTransactionRoutes from './routes/superadmin/superAdminTransacti
 import superAdminDashboardRoutes from './routes/superadmin/superAdminDashboardRoutes.js';
 
 
-import headAdminAuthRoutes from './routes/headadmin/headAdminAuthRoutes.js';
-import headAdminRoutes from './routes/headadmin/headAdminRoutes.js';
-
-
-
 const app = express();
 
 /* =========================
@@ -64,12 +59,6 @@ app.use('/api/superadmin/devices', superAdminDeviceRoutes);
 app.use('/api/superadmin/customers', superAdminCustomerRoutes);
 app.use('/api/superadmin/transactions', superAdminTransactionRoutes);
 app.use('/api/superadmin/dashboard', superAdminDashboardRoutes);
-
-
-app.use('/api/headadmin/auth', headAdminAuthRoutes);
-app.use('/api/headadmin/', headAdminAuthRoutes);
-
-
 
 
 /* =========================

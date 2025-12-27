@@ -1,13 +1,15 @@
-const express = require('express');
-const router = express.Router();
-
-const {
+import express from 'express';
+import {
   superAdminRegister,
   superAdminLogin,
-} = require('../../controllers/superadmin/superAdminAuthController');
+} from '../../controllers/superadmin/superAdminAuthController.js';
 
-/* PUBLIC ROUTES */
+const router = express.Router();
+
+/* =========================
+   SUPER ADMIN AUTH (PUBLIC)
+========================= */
 router.post('/register', superAdminRegister);
 router.post('/login', superAdminLogin);
 
-module.exports = router;
+export default router;

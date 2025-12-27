@@ -2,35 +2,59 @@ import mongoose from 'mongoose';
 
 const rechargeTransactionSchema = new mongoose.Schema(
   {
-    organization: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Organization',
-      required: true,
-    },
-    customer: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'OrgUser',
-    },
-    amount: {
-      type: Number,
-      required: true,
-    },
-    paymentMode: {
+    user_id: {
       type: String,
-      enum: ['ONLINE', 'CASH', 'UPI'],
-      default: 'ONLINE',
+      index: true,
     },
+
+    org_id: {
+      type: String, // e.g. "org_001"
+      index: true,
+    },
+
+    device_id: {
+      type: String,
+    },
+
+    txn_id: {
+      type: String,
+      index: true,
+    },
+
+    plan_id: {
+      type: String,
+    },
+
+    price: {
+      type: Number,
+    },
+
+    currency: {
+      type: String,
+      default: 'INR',
+    },
+
+    payment_gateway: {
+      type: String,
+    },
+
+    date: {
+      type: Number, // epoch millis
+    },
+
     status: {
       type: String,
-      enum: ['SUCCESS', 'FAILED', 'PENDING'],
-      default: 'SUCCESS',
+      enum: ['success', 'failed', 'pending'],
     },
-    transactionDate: {
-      type: Date,
-      default: Date.now,
+
+    type: {
+      type: String, // recharge
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    collection: 'recharge_transactions', // 🔥 MUST MATCH MONGODB
+  }
 );
 
 const RechargeTransaction = mongoose.model(

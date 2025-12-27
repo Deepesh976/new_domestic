@@ -1,30 +1,34 @@
-const express = require('express');
-const router = express.Router();
+import express from 'express';
 
 /* ==============================
    CONTROLLERS
 ============================== */
-const {
+import {
   createOrganization,
   getOrganizations,
   getOrganizationById,
   updateOrganization,
   deleteOrganization,
-} = require('../../controllers/superadmin/superAdminOrganizationController');
+} from '../../controllers/superadmin/superAdminOrganizationController.js';
 
 /* ==============================
    MIDDLEWARE
 ============================== */
-const auth = require('../../middleware/auth');
-const roleMiddleware = require('../../middleware/roleMiddleware');
+import auth from '../../middleware/auth.js';
+import roleMiddleware from '../../middleware/roleMiddleware.js';
+
+const router = express.Router();
 
 /* ==============================
    PROTECT ALL ROUTES
 ============================== */
-router.use(auth, roleMiddleware('SUPERADMIN'));
+router.use(
+  auth,
+  roleMiddleware('superadmin') // ✅ lowercase
+);
 
 /* ==============================
-   ROUTES (NO LOGO)
+   ROUTES
 ============================== */
 
 // CREATE organization
@@ -42,4 +46,4 @@ router.put('/:id', updateOrganization);
 // DELETE organization
 router.delete('/:id', deleteOrganization);
 
-module.exports = router;
+export default router;

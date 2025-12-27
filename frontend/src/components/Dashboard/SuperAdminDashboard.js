@@ -21,6 +21,7 @@ const Page = styled.div`
   display: flex;
   flex-direction: column;
   gap: 24px;
+  padding: 24px;
 `;
 
 const TopRow = styled.div`
@@ -76,12 +77,16 @@ const MONTHS = [
   'Dec',
 ];
 
+/* =========================
+   COMPONENT
+========================= */
 const SuperAdminDashboard = () => {
   const currentYear = new Date().getFullYear();
 
   const [organizations, setOrganizations] = useState([]);
   const [selectedOrg, setSelectedOrg] = useState('');
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [loading, setLoading] = useState(false);
 
   const [stats, setStats] = useState({
     totalAdmins: 0,
@@ -94,9 +99,10 @@ const SuperAdminDashboard = () => {
      LOAD ORGANIZATIONS
   ========================= */
   useEffect(() => {
-    axios.get('/api/superadmin/organizations').then((res) => {
-      setOrganizations(res.data || []);
-    });
+    axios
+      .get('/api/superadmin/organizations')
+      .then((res) => setOrganizations(res.data || []))
+      .catch((err) => console.error('Organization load error:', err));
   }, []);
 
   /* =========================
@@ -105,14 +111,29 @@ const SuperAdminDashboard = () => {
   useEffect(() => {
     if (!selectedOrg) return;
 
+    setLoading(true);
+
     axios
-      .get('/api/superadmin/dashboard/stats', {
+      .get('/api/superadmin/dashboard/summary', {
         params: {
           organizationId: selectedOrg,
           year: selectedYear,
         },
       })
-      .then((res) => setStats(res.data));
+      .then((res) => {
+        setStats({
+          totalAdmins:
+            (res.data.stats?.totalAdmins || 0) +
+            (res.data.stats?.totalHeadAdmins || 0),
+          totalCustomers: res.data.stats?.totalCustomers || 0,
+          customerGrowth: res.data.customerGrowth || [],
+          revenue: res.data.revenueGrowth || [],
+        });
+      })
+      .catch((err) => {
+        console.error('Dashboard API error:', err);
+      })
+      .finally(() => setLoading(false));
   }, [selectedOrg, selectedYear]);
 
   /* =========================
@@ -120,8 +141,8 @@ const SuperAdminDashboard = () => {
   ========================= */
   const customerChartData = useMemo(() => {
     const map = {};
-    stats.customerGrowth.forEach((i) => {
-      map[i._id] = i.count;
+    stats.customerGrowth.forEach((item) => {
+      map[item._id.month] = item.count;
     });
 
     return Array.from({ length: 12 }, (_, i) => ({
@@ -135,8 +156,8 @@ const SuperAdminDashboard = () => {
   ========================= */
   const revenueChartData = useMemo(() => {
     const map = {};
-    stats.revenue.forEach((i) => {
-      map[i._id] = i.total;
+    stats.revenue.forEach((item) => {
+      map[item._id.month] = item.total;
     });
 
     return Array.from({ length: 12 }, (_, i) => ({
@@ -157,9 +178,9 @@ const SuperAdminDashboard = () => {
               onChange={(e) => setSelectedOrg(e.target.value)}
             >
               <option value="">Select Organization</option>
-              {organizations.map((o) => (
-                <option key={o._id} value={o._id}>
-                  {o.organizationName}
+              {organizations.map((org) => (
+                <option key={org._id} value={org._id}>
+                  {org.organizationName}
                 </option>
               ))}
             </Select>
@@ -168,59 +189,65 @@ const SuperAdminDashboard = () => {
               value={selectedYear}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
             >
-              {[currentYear, currentYear - 1, currentYear - 2].map((y) => (
-                <option key={y} value={y}>
-                  {y}
+              {[currentYear, currentYear - 1, currentYear - 2].map((year) => (
+                <option key={year} value={year}>
+                  {year}
                 </option>
               ))}
             </Select>
           </Filters>
         </TopRow>
 
-        <StatsRow>
-          <Card>
-            <h1>{stats.totalAdmins}</h1>
-            <p>Total Admins & Head Admins</p>
-          </Card>
+        {loading ? (
+          <p>Loading dashboard...</p>
+        ) : (
+          <>
+            <StatsRow>
+              <Card>
+                <h1>{stats.totalAdmins}</h1>
+                <p>Total Admins & Head Admins</p>
+              </Card>
 
-          <Card>
-            <h1>{stats.totalCustomers}</h1>
-            <p>Total Customers</p>
-          </Card>
-        </StatsRow>
+              <Card>
+                <h1>{stats.totalCustomers}</h1>
+                <p>Total Customers</p>
+              </Card>
+            </StatsRow>
 
-        <ChartGrid>
-          <Card>
-            <h3>Customer Growth ({selectedYear})</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={customerChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="customers" fill="#2563eb" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
+            <ChartGrid>
+              <Card>
+                <h3>Customer Growth ({selectedYear})</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={customerChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Bar dataKey="customers" fill="#2563eb" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card>
 
-          <Card>
-            <h3>Revenue ({selectedYear})</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={revenueChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#16a34a"
-                  strokeWidth={3}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
-        </ChartGrid>
+              <Card>
+                <h3>Revenue ({selectedYear})</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={revenueChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#16a34a"
+                      strokeWidth={3}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Card>
+            </ChartGrid>
+          </>
+        )}
       </Page>
     </SuperAdminNavbar>
   );

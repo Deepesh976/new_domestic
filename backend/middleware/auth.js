@@ -1,27 +1,34 @@
-const jwt = require('jsonwebtoken');
-const SuperAdmin = require('../models/SuperAdmin');
+import jwt from 'jsonwebtoken';
+import SuperAdmin from '../models/SuperAdmin.js';
 
 const protect = async (req, res, next) => {
   let token;
 
-  // Expect: Authorization: Bearer <token>
+  /* =========================
+     READ TOKEN
+  ========================= */
   if (
     req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
+    req.headers.authorization.startsWith('Bearer ')
   ) {
     token = req.headers.authorization.split(' ')[1];
   }
 
   if (!token) {
     return res.status(401).json({
-      message: 'Not authorized, no token',
+      message: 'Not authorized, token missing',
     });
   }
 
   try {
+    /* =========================
+       VERIFY TOKEN
+    ========================= */
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // SUPERADMIN ONLY (for now)
+    /* =========================
+       LOAD USER
+    ========================= */
     const admin = await SuperAdmin.findById(decoded.id).select('-password');
 
     if (!admin) {
@@ -30,19 +37,23 @@ const protect = async (req, res, next) => {
       });
     }
 
-    // Attach user to request
+    /* =========================
+       ATTACH USER (NORMALIZED)
+    ========================= */
     req.user = {
-      id: admin._id,
-      role: 'SUPERADMIN',
+      id: admin._id.toString(),
       email: admin.email,
+      role: (admin.role || 'superadmin').toLowerCase(), // 🔥 normalize
     };
 
     next();
   } catch (error) {
+    console.error('Auth error:', error.message);
+
     return res.status(401).json({
-      message: 'Not authorized, token failed',
+      message: 'Not authorized, token invalid or expired',
     });
   }
 };
 
-module.exports = protect;
+export default protect;
