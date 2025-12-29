@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import OrgAdmin from '../../models/OrgAdmin.js';
 import OrgHeadAdmin from '../../models/OrgHeadAdmin.js';
+import Organization from '../../models/Organization.js';
 
 /* =====================================================
    CREATE ADMIN / HEAD ADMIN
@@ -8,7 +9,7 @@ import OrgHeadAdmin from '../../models/OrgHeadAdmin.js';
 const createAdmin = async (req, res) => {
   try {
     const {
-      organization, // ObjectId
+      organization, // Organization ObjectId
       username,
       email,
       password,
@@ -17,28 +18,51 @@ const createAdmin = async (req, res) => {
       role, // "admin" | "headadmin"
     } = req.body;
 
-    if (!organization || !email || !password || !role) {
+    /* -------------------------
+       BASIC VALIDATION
+    ------------------------- */
+    if (!organization || !username || !email || !password || !role) {
       return res.status(400).json({
         message: 'Required fields missing',
       });
     }
 
-    // ✅ choose correct model
+    /* -------------------------
+       FETCH ORGANIZATION
+    ------------------------- */
+    const org = await Organization.findById(organization);
+    if (!org) {
+      return res.status(404).json({
+        message: 'Organization not found',
+      });
+    }
+
+    /* -------------------------
+       SELECT MODEL BY ROLE
+    ------------------------- */
     const Model = role === 'headadmin' ? OrgHeadAdmin : OrgAdmin;
 
-    // ✅ check duplicate email
+    /* -------------------------
+       DUPLICATE EMAIL CHECK
+    ------------------------- */
     const existing = await Model.findOne({ email });
     if (existing) {
-      return res.status(400).json({
+      return res.status(409).json({
         message: 'Admin already exists with this email',
       });
     }
 
-    // ✅ hash password
+    /* -------------------------
+       HASH PASSWORD
+    ------------------------- */
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    /* -------------------------
+       CREATE ADMIN
+    ------------------------- */
     const admin = await Model.create({
-      organization,
+      organization: org._id,
+      org_id: org.org_id, // ✅ AUTO-FILLED
       username,
       email,
       password: hashedPassword,
@@ -47,13 +71,13 @@ const createAdmin = async (req, res) => {
       role,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       message: 'Admin created successfully',
       admin,
     });
   } catch (error) {
     console.error('Create admin error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -63,15 +87,17 @@ const createAdmin = async (req, res) => {
 const getAdmins = async (req, res) => {
   try {
     const admins = await OrgAdmin.find()
-      .populate('organization', 'organizationName');
+      .populate('organization', 'org_id org_name')
+      .sort({ createdAt: -1 });
 
     const headAdmins = await OrgHeadAdmin.find()
-      .populate('organization', 'organizationName');
+      .populate('organization', 'org_id org_name')
+      .sort({ createdAt: -1 });
 
-    res.status(200).json([...admins, ...headAdmins]);
+    return res.status(200).json([...admins, ...headAdmins]);
   } catch (error) {
     console.error('Get admins error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -80,48 +106,73 @@ const getAdmins = async (req, res) => {
 ===================================================== */
 const getAdminById = async (req, res) => {
   try {
-    let admin =
-      (await OrgAdmin.findById(req.params.id)
-        .populate('organization', 'organizationName')) ||
-      (await OrgHeadAdmin.findById(req.params.id)
-        .populate('organization', 'organizationName'));
+    let admin = await OrgAdmin.findById(req.params.id)
+      .populate('organization', 'org_id org_name');
+
+    if (!admin) {
+      admin = await OrgHeadAdmin.findById(req.params.id)
+        .populate('organization', 'org_id org_name');
+    }
 
     if (!admin) {
       return res.status(404).json({ message: 'Admin not found' });
     }
 
-    res.status(200).json(admin);
+    return res.status(200).json(admin);
   } catch (error) {
     console.error('Get admin error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
 /* =====================================================
-   UPDATE ADMIN
+   UPDATE ADMIN / HEAD ADMIN
 ===================================================== */
 const updateAdmin = async (req, res) => {
   try {
-    const { role } = req.body;
+    const { role, password, organization, ...rest } = req.body;
+
     const Model = role === 'headadmin' ? OrgHeadAdmin : OrgAdmin;
+
+    /* -------------------------
+       HANDLE ORG CHANGE
+    ------------------------- */
+    if (organization) {
+      const org = await Organization.findById(organization);
+      if (!org) {
+        return res.status(404).json({
+          message: 'Organization not found',
+        });
+      }
+
+      rest.organization = org._id;
+      rest.org_id = org.org_id; // ✅ SYNC org_id
+    }
+
+    /* -------------------------
+       HASH PASSWORD (IF UPDATED)
+    ------------------------- */
+    if (password) {
+      rest.password = await bcrypt.hash(password, 10);
+    }
 
     const admin = await Model.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      rest,
       { new: true }
-    );
+    ).populate('organization', 'org_id org_name');
 
     if (!admin) {
       return res.status(404).json({ message: 'Admin not found' });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       message: 'Admin updated successfully',
       admin,
     });
   } catch (error) {
     console.error('Update admin error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -130,16 +181,25 @@ const updateAdmin = async (req, res) => {
 ===================================================== */
 const deleteAdmin = async (req, res) => {
   try {
-    await OrgAdmin.findByIdAndDelete(req.params.id);
-    await OrgHeadAdmin.findByIdAndDelete(req.params.id);
+    const adminDeleted = await OrgAdmin.findByIdAndDelete(req.params.id);
+    const headAdminDeleted = await OrgHeadAdmin.findByIdAndDelete(req.params.id);
 
-    res.status(200).json({ message: 'Admin deleted successfully' });
+    if (!adminDeleted && !headAdminDeleted) {
+      return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    return res.status(200).json({
+      message: 'Admin deleted successfully',
+    });
   } catch (error) {
     console.error('Delete admin error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 
+/* =====================================================
+   EXPORTS
+===================================================== */
 export {
   createAdmin,
   getAdmins,

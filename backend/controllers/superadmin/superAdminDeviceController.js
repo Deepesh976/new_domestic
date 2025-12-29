@@ -1,4 +1,3 @@
-import mongoose from 'mongoose';
 import Device from '../../models/Device.js';
 
 /* =========================
@@ -6,31 +5,21 @@ import Device from '../../models/Device.js';
 ========================= */
 const createDevice = async (req, res) => {
   try {
-    const { organization, macId, serialNumber } = req.body;
+    const { org_id, mac_id, serial_number } = req.body;
 
-    // ✅ basic validation
-    if (!macId || !serialNumber) {
+    if (!org_id || !mac_id || !serial_number) {
       return res.status(400).json({
-        message: 'MAC ID and Serial Number are required',
+        message: 'Org ID, MAC ID and Serial Number are required',
       });
     }
 
-    // ✅ normalize values
-    const normalizedMacId = macId.trim().toUpperCase();
-    const normalizedSerial = serialNumber.trim().toUpperCase();
+    const normalized_mac_id = mac_id.trim().toUpperCase();
+    const normalized_serial = serial_number.trim().toUpperCase();
 
-    // ✅ optional org validation
-    if (organization && !mongoose.Types.ObjectId.isValid(organization)) {
-      return res.status(400).json({
-        message: 'Invalid organization ID',
-      });
-    }
-
-    // ✅ duplicate protection (user-friendly)
     const exists = await Device.findOne({
       $or: [
-        { macId: normalizedMacId },
-        { serialNumber: normalizedSerial },
+        { mac_id: normalized_mac_id },
+        { serial_number: normalized_serial },
       ],
     });
 
@@ -40,18 +29,16 @@ const createDevice = async (req, res) => {
       });
     }
 
-    // ✅ QR payload (stable & readable)
-    const qrCode = JSON.stringify({
-  mac_id: normalizedMacId,
-  serial_no: normalizedSerial,
-});
-
+    const qr_code = JSON.stringify({
+      mac_id: normalized_mac_id,
+      serial_no: normalized_serial,
+    });
 
     const device = await Device.create({
-      organization: organization || null,
-      macId: normalizedMacId,
-      serialNumber: normalizedSerial,
-      qrCode,
+      org_id,
+      mac_id: normalized_mac_id,
+      serial_number: normalized_serial,
+      qr_code,
     });
 
     return res.status(201).json({
@@ -60,14 +47,6 @@ const createDevice = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Create device error:', error);
-
-    // ✅ Mongo duplicate safety net
-    if (error.code === 11000) {
-      return res.status(409).json({
-        message: 'Duplicate MAC ID or Serial Number',
-      });
-    }
-
     return res.status(500).json({
       message: 'Failed to create device',
     });
@@ -79,9 +58,15 @@ const createDevice = async (req, res) => {
 ========================= */
 const getDevices = async (req, res) => {
   try {
-    const devices = await Device.find()
-      .populate('organization', 'organizationName')
-      .sort({ createdAt: -1 });
+    const devices = await Device.find(
+      {},
+      {
+        org_id: 1,
+        mac_id: 1,
+        serial_number: 1,
+        qr_code: 1,
+      }
+    ).sort({ createdAt: -1 });
 
     return res.status(200).json(devices);
   } catch (error) {
@@ -92,7 +77,4 @@ const getDevices = async (req, res) => {
   }
 };
 
-export {
-  createDevice,
-  getDevices,
-};
+export { createDevice, getDevices };

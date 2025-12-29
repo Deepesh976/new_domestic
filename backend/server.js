@@ -1,6 +1,6 @@
 /*************************************************
  *  SERVER ENTRY POINT
- *  Project: Domestic (Superadmin Mode)
+ *  Project: Domestic
  *************************************************/
 
 import dotenv from 'dotenv';
@@ -12,7 +12,9 @@ import morgan from 'morgan';
 
 import connectDB from './config/db.js';
 
-// ✅ ROUTES (ES MODULE IMPORTS)
+/* =========================
+   ROUTES – SUPER ADMIN
+========================= */
 import superAdminAuthRoutes from './routes/superadmin/superAdminAuthRoutes.js';
 import superAdminOrganizationRoutes from './routes/superadmin/superAdminOrganizationRoutes.js';
 import superAdminAdminRoutes from './routes/superadmin/superAdminAdminRoutes.js';
@@ -21,6 +23,18 @@ import superAdminCustomerRoutes from './routes/superadmin/superAdminCustomerRout
 import superAdminTransactionRoutes from './routes/superadmin/superAdminTransactionRoutes.js';
 import superAdminDashboardRoutes from './routes/superadmin/superAdminDashboardRoutes.js';
 
+/* =========================
+   ROUTES – HEAD ADMIN
+========================= */
+import headAdminAuthRoutes from './routes/headadmin/headAdminAuthRoutes.js';
+import headAdminCustomerRoutes from './routes/headadmin/headAdminCustomerRoutes.js';
+import headAdminPurifierRoutes from './routes/headadmin/headAdminPurifierRoutes.js';
+import headAdminTransactionRoutes from './routes/headadmin/headAdminTransactionRoutes.js';
+import headAdminDashboardRoutes from './routes/headadmin/headAdminDashboardRoutes.js';
+import headAdminAdminRoutes from './routes/headadmin/headAdminAdminRoutes.js';
+import headAdminPurifierHistoryRoutes from './routes/headadmin/headAdminPurifierHistoryRoutes.js';
+import headAdminPlanRoutes from './routes/headadmin/headAdminPlanRoutes.js';
+import rechargedPlanRoutes from './routes/headadmin/rechargedPlanRoutes.js';
 
 const app = express();
 
@@ -50,7 +64,7 @@ if (process.env.NODE_ENV !== 'production') {
 connectDB();
 
 /* =========================
-   API ROUTES (SUPERADMIN)
+   API ROUTES – SUPER ADMIN
 ========================= */
 app.use('/api/superadmin/auth', superAdminAuthRoutes);
 app.use('/api/superadmin/organizations', superAdminOrganizationRoutes);
@@ -60,6 +74,18 @@ app.use('/api/superadmin/customers', superAdminCustomerRoutes);
 app.use('/api/superadmin/transactions', superAdminTransactionRoutes);
 app.use('/api/superadmin/dashboard', superAdminDashboardRoutes);
 
+/* =========================
+   API ROUTES – HEAD ADMIN
+========================= */
+app.use('/api/headadmin/auth', headAdminAuthRoutes);
+app.use('/api/headadmin/customers', headAdminCustomerRoutes);
+app.use('/api/headadmin/admins', headAdminAdminRoutes);
+app.use('/api/headadmin/purifiers', headAdminPurifierRoutes);
+app.use('/api/headadmin/purifiers', headAdminPurifierHistoryRoutes);
+app.use('/api/headadmin/transactions', headAdminTransactionRoutes);
+app.use('/api/headadmin/dashboard', headAdminDashboardRoutes);
+app.use('/api/headadmin/plans', headAdminPlanRoutes);
+app.use('/api/headadmin/recharged-plans', rechargedPlanRoutes);
 
 /* =========================
    HEALTH CHECK
@@ -67,7 +93,7 @@ app.use('/api/superadmin/dashboard', superAdminDashboardRoutes);
 app.get('/', (req, res) => {
   res.status(200).json({
     status: 'OK',
-    message: 'Domestic API running (Superadmin mode)',
+    message: 'Domestic API running',
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
   });

@@ -1,5 +1,5 @@
 import { jwtDecode } from 'jwt-decode';
-import { store } from '../redux/store';
+import store from '../redux/store';
 import { logout } from '../redux/authSlice';
 
 export const checkTokenExpiration = () => {

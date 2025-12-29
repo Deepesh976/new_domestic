@@ -9,15 +9,9 @@ import {
 const router = express.Router();
 
 // 🔐 SuperAdmin only
-router.use(
-  auth,
-  roleMiddleware('superadmin') // ✅ lowercase
-);
+router.use(auth, roleMiddleware('superadmin'));
 
-// CREATE DEVICE
 router.post('/', createDevice);
-
-// GET ALL DEVICES
 router.get('/', getDevices);
 
 export default router;

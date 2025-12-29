@@ -13,6 +13,7 @@ import SuperAdminNavbar from '../../components/Navbar/SuperAdminNavbar';
 const Page = styled.div`
   max-width: 900px;
   margin: auto;
+  padding: 24px;
 `;
 
 const Card = styled.div`
@@ -24,6 +25,7 @@ const Card = styled.div`
 
 const Title = styled.h2`
   margin-bottom: 20px;
+  font-weight: 700;
 `;
 
 const Grid = styled.div`
@@ -51,6 +53,7 @@ const Input = styled.input`
   padding: 10px;
   border-radius: 6px;
   border: 1px solid #cbd5e1;
+  background: ${(p) => (p.disabled ? '#f8fafc' : 'white')};
 `;
 
 const Select = styled.select`
@@ -73,7 +76,7 @@ const Button = styled.button`
   font-weight: 600;
   cursor: pointer;
   color: white;
-  background: ${(p) => (p.cancel ? '#64748b' : '#059669')};
+  background: ${(p) => (p.$cancel ? '#64748b' : '#059669')};
 `;
 
 /* =========================
@@ -83,8 +86,10 @@ const CreateAdmin = () => {
   const navigate = useNavigate();
 
   const [organizations, setOrganizations] = useState([]);
+
   const [form, setForm] = useState({
-    organization: '', // ✅ WILL STORE _id
+    organization: '', // ObjectId
+    org_id: '',       // ✅ AUTO-FILLED
     username: '',
     email: '',
     password: '',
@@ -93,6 +98,9 @@ const CreateAdmin = () => {
     role: 'admin',
   });
 
+  /* =========================
+     LOAD ORGANIZATIONS
+  ========================= */
   useEffect(() => {
     loadOrganizations();
   }, []);
@@ -106,9 +114,29 @@ const CreateAdmin = () => {
     }
   };
 
+  /* =========================
+     HANDLERS
+  ========================= */
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+
+    // 🔥 Auto-fill org_id when organization changes
+    if (name === 'organization') {
+      const selectedOrg = organizations.find(
+        (org) => org._id === value
+      );
+
+      setForm((prev) => ({
+        ...prev,
+        organization: value,
+        org_id: selectedOrg?.org_id || '',
+      }));
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -120,7 +148,7 @@ const CreateAdmin = () => {
     }
 
     try {
-      await createAdmin(form);
+      await createAdmin(form); // org_id ignored by backend (safe)
       alert('Admin created successfully');
       navigate('/super-admin/adminInfo');
     } catch (err) {
@@ -150,10 +178,20 @@ const CreateAdmin = () => {
                   <option value="">Select Organization</option>
                   {organizations.map((org) => (
                     <option key={org._id} value={org._id}>
-                      {org.organizationName}
+                      {org.org_name}
                     </option>
                   ))}
                 </Select>
+              </Field>
+
+              {/* ORG ID (AUTO) */}
+              <Field>
+                <Label>Organization ID</Label>
+                <Input
+                  value={form.org_id}
+                  disabled
+                  placeholder="Auto-filled"
+                />
               </Field>
 
               {/* ROLE */}
@@ -226,7 +264,11 @@ const CreateAdmin = () => {
             </Grid>
 
             <ButtonBar>
-              <Button type="button" cancel onClick={() => navigate(-1)}>
+              <Button
+                type="button"
+                $cancel
+                onClick={() => navigate(-1)}
+              >
                 Cancel
               </Button>
               <Button type="submit">Create</Button>

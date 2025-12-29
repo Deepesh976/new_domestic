@@ -1,8 +1,15 @@
 import mongoose from 'mongoose';
 
-const OrganizationSchema = new mongoose.Schema(
+const organizationSchema = new mongoose.Schema(
   {
-    organizationName: {
+    org_id: {
+      type: String,
+      unique: true,
+      index: true, // e.g. "org_001"
+      required: true,
+    },
+
+    org_name: {
       type: String,
       required: true,
       trim: true,
@@ -13,45 +20,29 @@ const OrganizationSchema = new mongoose.Schema(
       trim: true,
     },
 
-    gstNumber: {
+    gst_number: {
       type: String,
       trim: true,
     },
 
-    emailId: {
+    email_id: {
       type: String,
-      required: true,
       lowercase: true,
       trim: true,
-      unique: true,
+      required: true,
     },
 
-    phoneNumber: {
-      type: String,
-      trim: true,
-    },
-
-    pincode: {
-      type: String,
-      trim: true,
-    },
-
-    building: {
-      type: String,
-      trim: true,
-    },
-
-    area: {
-      type: String,
-      trim: true,
-    },
-
-    district: {
+    phone_number: {
       type: String,
       trim: true,
     },
 
     state: {
+      type: String,
+      trim: true,
+    },
+
+    pincode: {
       type: String,
       trim: true,
     },
@@ -64,9 +55,10 @@ const OrganizationSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    collection: 'organizations', // ✅ EXACT Mongo collection
   }
 );
 
-const Organization = mongoose.model('Organization', OrganizationSchema);
+const Organization = mongoose.model('Organization', organizationSchema);
 
 export default Organization;

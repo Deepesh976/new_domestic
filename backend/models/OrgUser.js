@@ -8,7 +8,7 @@ const orgUserSchema = new mongoose.Schema(
     },
 
     org_id: {
-      type: String, // e.g. "org_001"
+      type: String,
       index: true,
     },
 
@@ -29,8 +29,7 @@ const orgUserSchema = new mongoose.Schema(
     },
 
     address: {
-      line: String,
-      street: String,
+      flat_no: { type: String, default: '' },
       area: String,
       city: String,
       state: String,
@@ -44,26 +43,23 @@ const orgUserSchema = new mongoose.Schema(
     },
 
     kyc_details: {
-      type: Object,
-      default: null,
-    },
-
-    kyc_approval_status: {
-      type: String,
-      enum: ['success', 'failed', 'pending'],
+      kyc_approval_status: {
+        type: String,
+        enum: ['approved', 'rejected', 'pending'],
+        default: 'pending',
+      },
     },
 
     user_device_status: {
       type: String,
-      enum: ['linked', 'unlinked', 'delinked'],
+      enum: ['linked', 'unlinked', 'declined'],
+      default: 'unlinked',
     },
   },
   {
     timestamps: true,
-    collection: 'org_users', // 🔥🔥🔥 THIS IS THE KEY FIX
+    collection: 'org_users',
   }
 );
 
-const OrgUser = mongoose.model('OrgUser', orgUserSchema);
-
-export default OrgUser;
+export default mongoose.model('OrgUser', orgUserSchema);

@@ -2,11 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../redux/authSlice';
-import styled from 'styled-components';
+import './UnifiedLoginPage.css';
 
-/* =========================
-   COMPONENT
-========================= */
 const UnifiedLoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,9 +13,7 @@ const UnifiedLoginPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  /* =========================
-     AUTO REDIRECT IF LOGGED IN
-  ========================= */
+  /* Auto redirect if already logged in */
   useEffect(() => {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
@@ -26,18 +21,21 @@ const UnifiedLoginPage = () => {
     if (token && role === 'superadmin') {
       navigate('/super-admin', { replace: true });
     }
+
+    if (token && role === 'headadmin') {
+      navigate('/head-admin', { replace: true });
+    }
   }, [navigate]);
 
-  /* =========================
-     LOGIN HANDLER (SUPERADMIN ONLY)
-  ========================= */
+  /* Login handler - tries SuperAdmin first, then HeadAdmin */
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const response = await fetch(
+      /* Try SuperAdmin login */
+      let response = await fetch(
         'http://localhost:5000/api/superadmin/auth/login',
         {
           method: 'POST',
@@ -46,33 +44,56 @@ const UnifiedLoginPage = () => {
         }
       );
 
-      const data = await response.json();
+      let data = await response.json();
 
-      if (!response.ok) {
-        setError(data.message || 'Invalid credentials');
+      if (response.ok && data.role === 'superadmin') {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('role', data.role);
+
+        dispatch(
+          loginSuccess({
+            token: data.token,
+            role: data.role,
+          })
+        );
+
+        navigate('/super-admin', { replace: true });
         return;
       }
 
-      const { token, role } = data;
+      /* Try HeadAdmin login */
+      response = await fetch(
+        'http://localhost:5000/api/headadmin/auth/login',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        }
+      );
 
-      if (!token || role !== 'superadmin') {
-        setError('Unauthorized access');
+      data = await response.json();
+
+      if (response.ok && data.role === 'headadmin') {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('role', data.role);
+        localStorage.setItem('organization', data.organization);
+
+        dispatch(
+          loginSuccess({
+            token: data.token,
+            role: data.role,
+            organization: data.organization,
+          })
+        );
+
+        navigate('/head-admin', { replace: true });
         return;
       }
 
-      /* =========================
-         SAVE AUTH
-      ========================= */
-      localStorage.setItem('token', token);
-      localStorage.setItem('role', role);
-
-      dispatch(loginSuccess({ token, role }));
-
-      /* =========================
-         REDIRECT
-      ========================= */
-      navigate('/super-admin', { replace: true });
+      /* Invalid credentials */
+      setError('Invalid email or password');
     } catch (err) {
+      console.error(err);
       setError('Server error. Please try again.');
     } finally {
       setLoading(false);
@@ -80,34 +101,65 @@ const UnifiedLoginPage = () => {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
-      <form onSubmit={handleLogin} style={{ width: 350 }}>
-        <h2>SuperAdmin Login</h2>
+    <div className="login-container">
+      <div className="login-wrapper">
+        <div className="login-card">
+          {/* Header */}
+          <div className="login-header">
+            <div className="login-logo">D</div>
+            <h1 className="login-title">Domesticro</h1>
+            <p className="login-subtitle">Sign in to your account</p>
+          </div>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+          {/* Error Message */}
+          {error && <div className="error-message">{error}</div>}
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={{ width: '100%', marginBottom: 10 }}
-        />
+          {/* Form */}
+          <form className="login-form" onSubmit={handleLogin}>
+            <div className="form-group">
+              <label className="form-label">Email Address</label>
+              <input
+                className="form-input"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={{ width: '100%', marginBottom: 10 }}
-        />
+            <div className="form-group">
+              <label className="form-label">Password</label>
+              <input
+                className="form-input"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
 
-        <button type="submit" disabled={loading} style={{ width: '100%' }}>
-          {loading ? 'Signing in...' : 'Login'}
-        </button>
-      </form>
+            <button
+              className="login-button"
+              type="submit"
+              disabled={loading}
+            >
+              <span className="button-text">
+                {loading && <span className="spinner"></span>}
+                {loading ? 'Signing in...' : 'Sign In'}
+              </span>
+            </button>
+          </form>
+
+          {/* Footer */}
+          <div className="login-footer">
+            © 2025 Domesticro. All rights reserved.
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

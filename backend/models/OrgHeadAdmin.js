@@ -3,6 +3,23 @@ import mongoose from 'mongoose';
 const orgHeadAdminSchema = new mongoose.Schema(
   {
     /* =========================
+       ORGANIZATION LINK
+    ========================= */
+    organization: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization', // ✅ must match Organization model
+      required: true,
+      index: true,
+    },
+
+    org_id: {
+      type: String,
+      required: true,
+      index: true, 
+    },
+
+
+    /* =========================
        BASIC INFO
     ========================= */
     username: {
@@ -16,8 +33,8 @@ const orgHeadAdminSchema = new mongoose.Schema(
       required: true,
       lowercase: true,
       trim: true,
-      unique: true,
-      match: [/^\S+@\S+\.\S+$/, 'Please use a valid email address'],
+      index: true,
+      match: [/^\S+@\S+\.\S+$/, 'Invalid email address'],
     },
 
     password: {
@@ -36,25 +53,17 @@ const orgHeadAdminSchema = new mongoose.Schema(
     },
 
     /* =========================
-       ORGANIZATION LINK
-    ========================= */
-    organization: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Organization',
-      required: true,
-    },
-
-    /* =========================
        ROLE (RBAC SAFE)
     ========================= */
     role: {
       type: String,
-      default: 'headadmin', // 🔥 lowercase only
-      enum: ['headadmin'],
+      enum: ['headadmin'], // ✅ ONLY headadmin
+      default: 'headadmin',
     },
   },
   {
     timestamps: true,
+    collection: 'org_head_admins', // 🔥 explicit collection name
   }
 );
 
@@ -63,9 +72,9 @@ const orgHeadAdminSchema = new mongoose.Schema(
 ========================= */
 orgHeadAdminSchema.index({ email: 1 }, { unique: true });
 
-/* =========================
-   MODEL EXPORT (ESM)
-========================= */
-const OrgHeadAdmin = mongoose.model('org_head_admins', orgHeadAdminSchema);
+const OrgHeadAdmin = mongoose.model(
+  'OrgHeadAdmin',
+  orgHeadAdminSchema
+);
 
 export default OrgHeadAdmin;

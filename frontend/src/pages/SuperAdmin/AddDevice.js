@@ -7,82 +7,220 @@ import {
 } from '../../services/superAdminService';
 import SuperAdminNavbar from '../../components/Navbar/SuperAdminNavbar';
 
-const Page = styled.div`max-width:700px;margin:auto;`;
-const Card = styled.div`background:white;padding:24px;border-radius:12px;`;
-const Field = styled.div`display:flex;flex-direction:column;margin-bottom:16px;`;
-const Input = styled.input`padding:10px;border:1px solid #cbd5e1;border-radius:6px;`;
-const Select = styled.select`padding:10px;border:1px solid #cbd5e1;border-radius:6px;`;
-const Button = styled.button`
-  padding:10px 18px;border:none;border-radius:6px;
-  background:#2563eb;color:white;font-weight:600;
+/* =========================
+   STYLES
+========================= */
+const Page = styled.div`
+  max-width: 700px;
+  margin: auto;
+  padding: 24px;
 `;
 
+const Card = styled.div`
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+`;
+
+const Title = styled.h2`
+  margin-bottom: 20px;
+  font-weight: 700;
+`;
+
+const Field = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+`;
+
+const Label = styled.label`
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+`;
+
+const Input = styled.input`
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+`;
+
+const Select = styled.select`
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+`;
+
+const ButtonBar = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+`;
+
+const Button = styled.button`
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  color: white;
+  background: ${(p) => (p.$cancel ? '#64748b' : '#2563eb')};
+`;
+
+/* =========================
+   COMPONENT
+========================= */
 const AddDevice = () => {
   const navigate = useNavigate();
-  const [orgs, setOrgs] = useState([]);
+
+  const [organizations, setOrganizations] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   const [form, setForm] = useState({
-    organization: '',
-    macId: '',
-    serialNumber: '',
+    organization: '', // org _id (for UI selection)
+    org_id: '',       // auto-filled
+    mac_id: '',
+    serial_number: '',
   });
 
+  /* =========================
+     LOAD ORGANIZATIONS
+  ========================= */
   useEffect(() => {
-    getOrganizations().then(res => setOrgs(res.data || []));
+    loadOrganizations();
   }, []);
 
-  const handleSubmit = async e => {
+  const loadOrganizations = async () => {
+    try {
+      const res = await getOrganizations();
+      setOrganizations(res.data || []);
+    } catch {
+      alert('Failed to load organizations');
+    }
+  };
+
+  /* =========================
+     HANDLERS
+  ========================= */
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === 'organization') {
+      const selectedOrg = organizations.find(
+        (o) => o._id === value
+      );
+
+      setForm((prev) => ({
+        ...prev,
+        organization: value,
+        org_id: selectedOrg?.org_id || '',
+      }));
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    await createDevice(form);
-    alert('Device added');
-    navigate('/super-admin/device');
+
+    if (!form.org_id || !form.mac_id || !form.serial_number) {
+      alert('Organization, MAC ID and Serial Number are required');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await createDevice({
+        org_id: form.org_id, // ✅ only org_id sent
+        mac_id: form.mac_id,
+        serial_number: form.serial_number,
+      });
+
+      alert('Device added successfully');
+      navigate('/super-admin/device');
+    } catch (err) {
+      alert(
+        err?.response?.data?.message || 'Failed to add device'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <SuperAdminNavbar>
       <Page>
         <Card>
-          <h2>Add Device</h2>
+          <Title>Add Device</Title>
 
           <form onSubmit={handleSubmit}>
+            {/* ORGANIZATION */}
             <Field>
-              <label>Organization</label>
+              <Label>Organization</Label>
               <Select
-                required
+                name="organization"
                 value={form.organization}
-                onChange={e =>
-                  setForm({ ...form, organization: e.target.value })
-                }
+                onChange={handleChange}
+                required
               >
-                <option value="">Select</option>
-                {orgs.map(o => (
-                  <option key={o._id} value={o._id}>
-                    {o.organizationName}
+                <option value="">Select Organization</option>
+                {organizations.map((org) => (
+                  <option key={org._id} value={org._id}>
+                    {org.org_name}
                   </option>
                 ))}
               </Select>
             </Field>
 
+            {/* ORG ID (AUTO) */}
             <Field>
-              <label>MAC ID</label>
+              <Label>Organization ID</Label>
+              <Input value={form.org_id} disabled />
+            </Field>
+
+            {/* MAC ID */}
+            <Field>
+              <Label>MAC ID</Label>
               <Input
+                name="mac_id"
+                value={form.mac_id}
+                onChange={handleChange}
+                placeholder="AA:BB:CC:DD:EE:FF"
                 required
-                value={form.macId}
-                onChange={e => setForm({ ...form, macId: e.target.value })}
               />
             </Field>
 
+            {/* SERIAL NUMBER */}
             <Field>
-              <label>Serial Number</label>
+              <Label>Serial Number</Label>
               <Input
+                name="serial_number"
+                value={form.serial_number}
+                onChange={handleChange}
+                placeholder="SN-000123"
                 required
-                value={form.serialNumber}
-                onChange={e =>
-                  setForm({ ...form, serialNumber: e.target.value })
-                }
               />
             </Field>
 
-            <Button type="submit">Save</Button>
+            <ButtonBar>
+              <Button
+                type="button"
+                $cancel
+                onClick={() => navigate(-1)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Saving...' : 'Save'}
+              </Button>
+            </ButtonBar>
           </form>
         </Card>
       </Page>

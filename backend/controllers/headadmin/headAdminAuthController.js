@@ -1,75 +1,50 @@
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import OrgHeadAdmin from '../../models/OrgHeadAdmin.js';
 
-/* =========================
+/* =====================================================
    HEAD ADMIN LOGIN
-========================= */
-export const loginHeadAdmin = async (req, res) => {
+   - embeds org_id (string) into JWT
+===================================================== */
+export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    /* -------------------------
-       VALIDATION
-    ------------------------- */
-    if (!email || !password) {
-      return res.status(400).json({
-        message: 'Email and password are required',
-      });
-    }
-
-    /* -------------------------
-       FIND HEAD ADMIN
-    ------------------------- */
-    const headAdmin = await OrgHeadAdmin.findOne({ email })
-      .populate('organization', 'organizationName');
+    const headAdmin = await OrgHeadAdmin.findOne({ email }).populate(
+      'organization'
+    );
 
     if (!headAdmin) {
-      return res.status(401).json({
-        message: 'Invalid credentials',
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // 🔐 TODO: bcrypt.compare(password, headAdmin.password)
+
+    if (!headAdmin.organization?.org_id) {
+      return res.status(400).json({
+        message: 'Organization not linked properly',
       });
     }
 
-    /* -------------------------
-       PASSWORD CHECK
-    ------------------------- */
-    const isMatch = await bcrypt.compare(password, headAdmin.password);
-    if (!isMatch) {
-      return res.status(401).json({
-        message: 'Invalid credentials',
-      });
-    }
-
-    /* -------------------------
-       JWT GENERATION
-    ------------------------- */
+    /* =========================
+       SIGN JWT (org_id STRING)
+    ========================= */
     const token = jwt.sign(
       {
-        userId: headAdmin._id,
-        role: 'HEADADMIN',
-        organization: headAdmin.organization?._id,
+        id: headAdmin._id,
+        role: 'headadmin',
+        organization: headAdmin.organization.org_id, // 🔥 org_001
       },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
 
-    /* -------------------------
-       RESPONSE
-    ------------------------- */
-    res.status(200).json({
+    res.json({
       token,
-      role: 'HEADADMIN',
-      user: {
-        id: headAdmin._id,
-        name: headAdmin.name,
-        email: headAdmin.email,
-        organization: headAdmin.organization,
-      },
+      role: 'headadmin',
+      organization: headAdmin.organization.org_id,
     });
   } catch (error) {
-    console.error('❌ HeadAdmin login error:', error);
-    res.status(500).json({
-      message: 'Server error',
-    });
+    console.error('HeadAdmin Login Error:', error);
+    res.status(500).json({ message: 'Login failed' });
   }
 };

@@ -10,157 +10,87 @@ import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Profile from './pages/Profile';
 
 /* =========================
-   SUPER ADMIN PAGES
+   SUPER ADMIN
 ========================= */
 import SuperAdminDashboard from './components/Dashboard/SuperAdminDashboard';
 import SuperAdminOrg from './pages/SuperAdmin/SuperAdminOrg';
 import CreateOrganization from './pages/SuperAdmin/CreateOrganization';
 import EditOrganization from './pages/SuperAdmin/EditOrganization';
-
 import AdminInfo from './pages/SuperAdmin/AdminInfo';
 import CreateAdmin from './pages/SuperAdmin/CreateAdmin';
 import EditAdmin from './pages/SuperAdmin/EditAdmin';
-
 import Customer from './pages/SuperAdmin/Customer';
 import Transaction from './pages/SuperAdmin/Transaction';
-
 import Device from './pages/SuperAdmin/Device';
 import AddDevice from './pages/SuperAdmin/AddDevice';
-
 import SuperAdminCustomerInfo from './pages/SuperAdmin/SuperAdminCustomerInfo';
 
+/* =========================
+   HEAD ADMIN
+========================= */
+import HeadAdminDashboard from './components/Dashboard/HeadAdminDashboard';
+import HeadAdminCustomers from './pages/HeadAdmin/Customers';
+import HeadAdminAdmins from './pages/HeadAdmin/Admins';
+import HeadAdminCreateAdmin from './pages/HeadAdmin/CreateAdmin';
+import HeadAdminEditAdmin from './pages/HeadAdmin/EditAdmin';
+import HeadAdminPurifiers from './pages/HeadAdmin/Purifiers';
+import HeadAdminAnalysis from './pages/HeadAdmin/Analysis';
+import HeadAdminRechargedPlan from './pages/HeadAdmin/RechargedPlan';
+import HeadAdminTransactions from './pages/HeadAdmin/Transactions';
+import HeadAdminPurifierHistory from './pages/HeadAdmin/PurifierHistory';
+import HeadAdminPlans from './pages/HeadAdmin/Plan';
+import HeadAdminCreatePlan from './pages/HeadAdmin/CreatePlan';
+import HeadAdminEditPlan from './pages/HeadAdmin/EditPlan';
 
 function App() {
   return (
     <Router>
       <Routes>
+
+        <Route
+          path="/head-admin/purifiers/:deviceId/history"
+          element={
+            <ProtectedRoute allowedRoles={['headadmin']}>
+              <HeadAdminPurifierHistory />
+            </ProtectedRoute>
+          }
+        />
+
         {/* =========================
-           PUBLIC ROUTES
-        ========================= */}
-        <Route path="/" element={<UnifiedLoginPage />} />
-        <Route path="/login" element={<UnifiedLoginPage />} />
-
-        {/* =========================
-           SUPER ADMIN ROUTES
+           HEAD ADMIN – PLANS (FINAL)
         ========================= */}
         <Route
-          path="/super-admin"
+          path="/head-admin/plans"
           element={
-            <ProtectedRoute allowedRoles={['superadmin']}>
-              <SuperAdminDashboard />
+            <ProtectedRoute allowedRoles={['headadmin']}>
+              <HeadAdminPlans />
             </ProtectedRoute>
           }
         />
 
         <Route
-          path="/super-admin/profile"
+          path="/head-admin/plans/create"
           element={
-            <ProtectedRoute allowedRoles={['superadmin']}>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* ORGANIZATIONS */}
-        <Route
-          path="/super-admin/org"
-          element={
-            <ProtectedRoute allowedRoles={['superadmin']}>
-              <SuperAdminOrg />
+            <ProtectedRoute allowedRoles={['headadmin']}>
+              <HeadAdminCreatePlan />
             </ProtectedRoute>
           }
         />
 
         <Route
-          path="/super-admin/create-organization"
+          path="/head-admin/plans/:planId/edit"
           element={
-            <ProtectedRoute allowedRoles={['superadmin']}>
-              <CreateOrganization />
+            <ProtectedRoute allowedRoles={['headadmin']}>
+              <HeadAdminEditPlan />
             </ProtectedRoute>
           }
         />
 
         <Route
-          path="/super-admin/edit-organization/:organizationId"
+          path="/head-admin/transactions"
           element={
-            <ProtectedRoute allowedRoles={['superadmin']}>
-              <EditOrganization />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* ADMINS */}
-        <Route
-          path="/super-admin/adminInfo"
-          element={
-            <ProtectedRoute allowedRoles={['superadmin']}>
-              <AdminInfo />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/super-admin/createAdmin"
-          element={
-            <ProtectedRoute allowedRoles={['superadmin']}>
-              <CreateAdmin />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/super-admin/edit-admin/:adminId"
-          element={
-            <ProtectedRoute allowedRoles={['superadmin']}>
-              <EditAdmin />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* DEVICES */}
-        <Route
-          path="/super-admin/device"
-          element={
-            <ProtectedRoute allowedRoles={['superadmin']}>
-              <Device />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/super-admin/addDevice"
-          element={
-            <ProtectedRoute allowedRoles={['superadmin']}>
-              <AddDevice />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* CUSTOMERS */}
-        <Route
-          path="/super-admin/customer"
-          element={
-            <ProtectedRoute allowedRoles={['superadmin']}>
-              <Customer />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/super-admin/customerInfo"
-          element={
-            <ProtectedRoute allowedRoles={['superadmin']}>
-              <SuperAdminCustomerInfo />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* TRANSACTIONS */}
-        <Route
-          path="/super-admin/transaction"
-          element={
-            <ProtectedRoute allowedRoles={['superadmin']}>
-              <Transaction />
+            <ProtectedRoute allowedRoles={['headadmin']}>
+              <HeadAdminTransactions />
             </ProtectedRoute>
           }
         />

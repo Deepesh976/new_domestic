@@ -13,6 +13,7 @@ import SuperAdminNavbar from '../../components/Navbar/SuperAdminNavbar';
 const Page = styled.div`
   max-width: 900px;
   margin: auto;
+  padding: 24px;
 `;
 
 const Card = styled.div`
@@ -24,6 +25,7 @@ const Card = styled.div`
 
 const Title = styled.h2`
   margin-bottom: 20px;
+  font-weight: 700;
 `;
 
 const Grid = styled.div`
@@ -67,7 +69,7 @@ const Button = styled.button`
   font-weight: 600;
   cursor: pointer;
   color: white;
-  background: ${(p) => (p.cancel ? '#64748b' : '#2563eb')};
+  background: ${(p) => (p.$cancel ? '#64748b' : '#2563eb')};
 `;
 
 /* =========================
@@ -80,19 +82,20 @@ const EditOrganization = () => {
   const [loading, setLoading] = useState(true);
 
   const [form, setForm] = useState({
-    organizationName: '',
+    org_id: '',
+    org_name: '',
     type: '',
-    gstNumber: '',
-    emailId: '',
-    phoneNumber: '',
-    building: '',
-    area: '',
-    district: '',
+    gst_number: '',
+    email_id: '',
+    phone_number: '',
     state: '',
     pincode: '',
     country: '',
   });
 
+  /* =========================
+     LOAD ORGANIZATION
+  ========================= */
   useEffect(() => {
     loadOrganization();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,17 +107,15 @@ const EditOrganization = () => {
       const org = res.data;
 
       setForm({
-        organizationName: org.organizationName || '',
+        org_id: org.org_id || '',
+        org_name: org.org_name || '',
         type: org.type || '',
-        gstNumber: org.gstNumber || '',
-        emailId: org.emailId || '',
-        phoneNumber: org.phoneNumber || '',
-        building: org.building || '',
-        area: org.area || '',
-        district: org.district || '',
+        gst_number: org.gst_number || '',
+        email_id: org.email_id || '',
+        phone_number: org.phone_number || '',
         state: org.state || '',
         pincode: org.pincode || '',
-        country: org.country || '',
+        country: org.country || 'India',
       });
 
       setLoading(false);
@@ -124,6 +125,9 @@ const EditOrganization = () => {
     }
   };
 
+  /* =========================
+     HANDLERS
+  ========================= */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -132,8 +136,11 @@ const EditOrganization = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // 🔥 IMPORTANT: remove org_id from update payload
+    const { org_id, ...updatePayload } = form;
+
     try {
-      await updateOrganization(organizationId, form);
+      await updateOrganization(organizationId, updatePayload);
       alert('Organization updated successfully');
       navigate('/super-admin/org');
     } catch (error) {
@@ -141,7 +148,15 @@ const EditOrganization = () => {
     }
   };
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <SuperAdminNavbar>
+        <Page>
+          <Card>Loading organization...</Card>
+        </Page>
+      </SuperAdminNavbar>
+    );
+  }
 
   return (
     <SuperAdminNavbar>
@@ -151,11 +166,17 @@ const EditOrganization = () => {
 
           <form onSubmit={handleSubmit}>
             <Grid>
+              {/* READ ONLY */}
               <Field>
-                <Label>Organization Name</Label>
+                <Label>Organization ID</Label>
+                <Input value={form.org_id} disabled />
+              </Field>
+
+              <Field>
+                <Label>Organization Name *</Label>
                 <Input
-                  name="organizationName"
-                  value={form.organizationName}
+                  name="org_name"
+                  value={form.org_name}
                   onChange={handleChange}
                   required
                 />
@@ -173,18 +194,18 @@ const EditOrganization = () => {
               <Field>
                 <Label>GST Number</Label>
                 <Input
-                  name="gstNumber"
-                  value={form.gstNumber}
+                  name="gst_number"
+                  value={form.gst_number}
                   onChange={handleChange}
                 />
               </Field>
 
               <Field>
-                <Label>Email</Label>
+                <Label>Email *</Label>
                 <Input
                   type="email"
-                  name="emailId"
-                  value={form.emailId}
+                  name="email_id"
+                  value={form.email_id}
                   onChange={handleChange}
                   required
                 />
@@ -193,35 +214,8 @@ const EditOrganization = () => {
               <Field>
                 <Label>Phone Number</Label>
                 <Input
-                  name="phoneNumber"
-                  value={form.phoneNumber}
-                  onChange={handleChange}
-                />
-              </Field>
-
-              <Field>
-                <Label>Building</Label>
-                <Input
-                  name="building"
-                  value={form.building}
-                  onChange={handleChange}
-                />
-              </Field>
-
-              <Field>
-                <Label>Area</Label>
-                <Input
-                  name="area"
-                  value={form.area}
-                  onChange={handleChange}
-                />
-              </Field>
-
-              <Field>
-                <Label>District</Label>
-                <Input
-                  name="district"
-                  value={form.district}
+                  name="phone_number"
+                  value={form.phone_number}
                   onChange={handleChange}
                 />
               </Field>
@@ -255,7 +249,7 @@ const EditOrganization = () => {
             </Grid>
 
             <ButtonBar>
-              <Button type="button" cancel onClick={() => navigate(-1)}>
+              <Button type="button" $cancel onClick={() => navigate(-1)}>
                 Cancel
               </Button>
               <Button type="submit">Update</Button>

@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import styled from 'styled-components';
 import {
   BarChart,
   Bar,
@@ -13,73 +12,14 @@ import {
 } from 'recharts';
 import axios from '../../utils/axiosConfig';
 import SuperAdminNavbar from '../../components/Navbar/SuperAdminNavbar';
-
-/* =========================
-   STYLES
-========================= */
-const Page = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  padding: 24px;
-`;
-
-const TopRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const Filters = styled.div`
-  display: flex;
-  gap: 12px;
-`;
-
-const Select = styled.select`
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #cbd5e1;
-  width: 180px;
-`;
-
-const StatsRow = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-`;
-
-const Card = styled.div`
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-`;
-
-const ChartGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-`;
+import './SuperAdminDashboard.css';
 
 const MONTHS = [
   '',
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
-/* =========================
-   COMPONENT
-========================= */
 const SuperAdminDashboard = () => {
   const currentYear = new Date().getFullYear();
 
@@ -87,6 +27,8 @@ const SuperAdminDashboard = () => {
   const [selectedOrg, setSelectedOrg] = useState('');
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [loading, setLoading] = useState(false);
+  const [orgLoading, setOrgLoading] = useState(true);
+  const [orgError, setOrgError] = useState('');
 
   const [stats, setStats] = useState({
     totalAdmins: 0,
@@ -99,10 +41,25 @@ const SuperAdminDashboard = () => {
      LOAD ORGANIZATIONS
   ========================= */
   useEffect(() => {
+    setOrgLoading(true);
+    setOrgError('');
+
     axios
       .get('/api/superadmin/organizations')
-      .then((res) => setOrganizations(res.data || []))
-      .catch((err) => console.error('Organization load error:', err));
+      .then((res) => {
+        const orgs = Array.isArray(res.data) ? res.data : [];
+        setOrganizations(orgs);
+
+        if (orgs.length > 0) {
+          setSelectedOrg(orgs[0]._id);
+        }
+      })
+      .catch((err) => {
+        setOrgError(
+          err.response?.data?.message || 'Failed to load organizations'
+        );
+      })
+      .finally(() => setOrgLoading(false));
   }, []);
 
   /* =========================
@@ -130,19 +87,24 @@ const SuperAdminDashboard = () => {
           revenue: res.data.revenueGrowth || [],
         });
       })
-      .catch((err) => {
-        console.error('Dashboard API error:', err);
-      })
       .finally(() => setLoading(false));
   }, [selectedOrg, selectedYear]);
+
+  /* =========================
+     SELECTED ORG NAME (FIXED)
+  ========================= */
+  const selectedOrgName = useMemo(() => {
+    const org = organizations.find((o) => o._id === selectedOrg);
+    return org?.org_name || '';
+  }, [selectedOrg, organizations]);
 
   /* =========================
      CUSTOMER CHART DATA
   ========================= */
   const customerChartData = useMemo(() => {
     const map = {};
-    stats.customerGrowth.forEach((item) => {
-      map[item._id.month] = item.count;
+    stats.customerGrowth.forEach((i) => {
+      map[i._id.month] = i.count;
     });
 
     return Array.from({ length: 12 }, (_, i) => ({
@@ -156,8 +118,8 @@ const SuperAdminDashboard = () => {
   ========================= */
   const revenueChartData = useMemo(() => {
     const map = {};
-    stats.revenue.forEach((item) => {
-      map[item._id.month] = item.total;
+    stats.revenue.forEach((i) => {
+      map[i._id.month] = i.total;
     });
 
     return Array.from({ length: 12 }, (_, i) => ({
@@ -168,68 +130,91 @@ const SuperAdminDashboard = () => {
 
   return (
     <SuperAdminNavbar>
-      <Page>
-        <TopRow>
-          <h2>Super Admin Dashboard</h2>
+      <div className="dashboard-page">
+        {/* HEADER */}
+        <div className="dashboard-header">
+          <div>
+            <h1 className="dashboard-title">Dashboard</h1>
+            {selectedOrgName && (
+              <p className="dashboard-subtitle">
+                📊 {selectedOrgName}
+              </p>
+            )}
+          </div>
 
-          <Filters>
-            <Select
-              value={selectedOrg}
-              onChange={(e) => setSelectedOrg(e.target.value)}
-            >
-              <option value="">Select Organization</option>
-              {organizations.map((org) => (
-                <option key={org._id} value={org._id}>
-                  {org.organizationName}
-                </option>
-              ))}
-            </Select>
+          {/* FILTERS */}
+          <div className="dashboard-filters">
+            {orgLoading ? (
+              <select className="dashboard-select" disabled>
+                <option>Loading organizations...</option>
+              </select>
+            ) : (
+              <>
+                <select
+                  className="dashboard-select"
+                  value={selectedOrg}
+                  onChange={(e) => setSelectedOrg(e.target.value)}
+                >
+                  <option value="">Select Organization</option>
+                  {organizations.map((org) => (
+                    <option key={org._id} value={org._id}>
+                      {org.org_name} ({org.org_id})
+                    </option>
+                  ))}
+                </select>
 
-            <Select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-            >
-              {[currentYear, currentYear - 1, currentYear - 2].map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </Select>
-          </Filters>
-        </TopRow>
+                <select
+                  className="dashboard-select"
+                  value={selectedYear}
+                  onChange={(e) =>
+                    setSelectedYear(Number(e.target.value))
+                  }
+                >
+                  {[currentYear, currentYear - 1, currentYear - 2].map(
+                    (y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    )
+                  )}
+                </select>
+              </>
+            )}
+          </div>
+        </div>
 
+        {/* CONTENT */}
         {loading ? (
-          <p>Loading dashboard...</p>
+          <div className="dashboard-loading">Loading...</div>
         ) : (
           <>
-            <StatsRow>
-              <Card>
-                <h1>{stats.totalAdmins}</h1>
+            <div className="dashboard-stats">
+              <div className="stat-card">
+                <div className="stat-value">{stats.totalAdmins}</div>
                 <p>Total Admins & Head Admins</p>
-              </Card>
-
-              <Card>
-                <h1>{stats.totalCustomers}</h1>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">{stats.totalCustomers}</div>
                 <p>Total Customers</p>
-              </Card>
-            </StatsRow>
+              </div>
+            </div>
 
-            <ChartGrid>
-              <Card>
-                <h3>Customer Growth ({selectedYear})</h3>
+            <div className="dashboard-charts">
+              <div className="chart-card">
+                <h3>Customer Growth</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={customerChartData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
-                    <YAxis allowDecimals={false} />
+                    <YAxis />
                     <Tooltip />
-                    <Bar dataKey="customers" fill="#2563eb" />
+                    <Bar dataKey="customers" fill="#3b82f6" />
                   </BarChart>
                 </ResponsiveContainer>
-              </Card>
+              </div>
 
-              <Card>
-                <h3>Revenue ({selectedYear})</h3>
+              <div className="chart-card">
+                <h3>Revenue</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={revenueChartData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -237,18 +222,17 @@ const SuperAdminDashboard = () => {
                     <YAxis />
                     <Tooltip />
                     <Line
-                      type="monotone"
                       dataKey="revenue"
                       stroke="#16a34a"
                       strokeWidth={3}
                     />
                   </LineChart>
                 </ResponsiveContainer>
-              </Card>
-            </ChartGrid>
+              </div>
+            </div>
           </>
         )}
-      </Page>
+      </div>
     </SuperAdminNavbar>
   );
 };

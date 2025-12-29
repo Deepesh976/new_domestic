@@ -1,17 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import styled from 'styled-components';
 import axios from '../../utils/axiosConfig';
+import { useNavigate } from 'react-router-dom';
 import HeadAdminNavbar from '../../components/Navbar/HeadAdminNavbar';
+import styled from 'styled-components';
 
 /* =========================
    STYLES
 ========================= */
 const Page = styled.div`
-  background: #f8fafc;
-  min-height: 100vh;
-`;
-
-const Container = styled.div`
   padding: 24px;
 `;
 
@@ -22,31 +18,30 @@ const Header = styled.div`
   margin-bottom: 20px;
 `;
 
-const Title = styled.h1`
-  font-size: 1.6rem;
-  color: #0f172a;
+const Title = styled.h2`
+  font-weight: 700;
+  font-size: 1.4rem;
 `;
 
-const Actions = styled.div`
-  display: flex;
-  gap: 10px;
-`;
-
-const Button = styled.button`
-  padding: 8px 14px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
+const AddButton = styled.button`
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
   color: white;
-  background: ${(p) => p.variant || '#0f766e'};
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.9;
+  }
 `;
 
-const TableWrapper = styled.div`
+const Card = styled.div`
   background: white;
-  border-radius: 12px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
   overflow: hidden;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
 `;
 
 const Table = styled.table`
@@ -56,89 +51,184 @@ const Table = styled.table`
 
 const Th = styled.th`
   padding: 14px;
-  background: #f1f5f9;
+  background: #f8fafc;
+  font-size: 0.75rem;
   text-align: left;
-  font-weight: 600;
-  color: #334155;
+  color: #475569;
 `;
 
 const Td = styled.td`
   padding: 14px;
-  border-bottom: 1px solid #e2e8f0;
-  color: #0f172a;
+  font-size: 0.85rem;
+  border-top: 1px solid #e5e7eb;
 `;
 
-const Checkbox = styled.input``;
+const Row = styled.tr`
+  &:hover {
+    background: #f9fafb;
+  }
+`;
+
+const Badge = styled.span`
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  background: ${(p) =>
+    p.role === 'headadmin' ? '#7c3aed' : '#2563eb'};
+`;
+
+const ActionGroup = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
+const ActionBtn = styled.button`
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  color: white;
+
+  &.edit {
+    background: #16a34a;
+  }
+
+  &.delete {
+    background: #dc2626;
+  }
+
+  &:hover {
+    opacity: 0.9;
+  }
+`;
+
+const Empty = styled.div`
+  padding: 40px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.9rem;
+`;
 
 /* =========================
    COMPONENT
 ========================= */
-const Admins = () => {
-  const [admins, setAdmins] = useState([]);
+export default function Admins() {
+  const navigate = useNavigate();
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchAdmins = async () => {
-      try {
-        const res = await axios.get('/api/head-admin/admins');
-        setAdmins(res.data);
-      } catch (err) {
-        console.error('Failed to fetch admins', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  /* =========================
+     FETCH USERS (ORG ONLY)
+  ========================= */
+  const fetchAdmins = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get('/api/headadmin/admins');
+      setUsers(res.data.admins || []);
+    } catch {
+      alert('Failed to load users');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchAdmins();
   }, []);
 
-  return (
-    <Page>
-      <HeadAdminNavbar />
+  /* =========================
+     DELETE USER
+  ========================= */
+  const deleteUser = async (u) => {
+    if (u.role === 'headadmin') {
+      alert('Head Admin cannot be deleted');
+      return;
+    }
 
-      <Container>
+    if (!window.confirm('Delete this admin?')) return;
+
+    try {
+      await axios.delete(`/api/headadmin/admins/${u._id}`);
+      fetchAdmins();
+    } catch {
+      alert('Failed to delete admin');
+    }
+  };
+
+  return (
+    <HeadAdminNavbar>
+      <Page>
         <Header>
-          <Title>ADMINS</Title>
-          <Actions>
-            <Button>CREATE</Button>
-            <Button variant="#2563eb">EDIT</Button>
-            <Button variant="#dc2626">DELETE</Button>
-          </Actions>
+          <Title>Organization Users</Title>
+          <AddButton
+            onClick={() => navigate('/head-admin/create-admin')}
+          >
+            + Create Admin
+          </AddButton>
         </Header>
 
         {loading ? (
-          <p>Loading...</p>
+          <Empty>Loading users...</Empty>
+        ) : users.length === 0 ? (
+          <Empty>No users found for this organization</Empty>
         ) : (
-          <TableWrapper>
+          <Card>
             <Table>
               <thead>
                 <tr>
-                  <Th><Checkbox type="checkbox" /></Th>
-                  <Th>Name</Th>
+                  <Th>Username</Th>
                   <Th>Email</Th>
+                  <Th>Role</Th>
                   <Th>Phone</Th>
                   <Th>Location</Th>
-                  <Th>Role</Th>
+                  <Th>Actions</Th>
                 </tr>
               </thead>
               <tbody>
-                {admins.map((admin) => (
-                  <tr key={admin._id}>
-                    <Td><Checkbox type="checkbox" /></Td>
-                    <Td>{admin.name}</Td>
-                    <Td>{admin.email}</Td>
-                    <Td>{admin.phone}</Td>
-                    <Td>{admin.location}</Td>
-                    <Td>{admin.role}</Td>
-                  </tr>
+                {users.map((u) => (
+                  <Row key={u._id}>
+                    <Td>{u.username}</Td>
+                    <Td>{u.email}</Td>
+                    <Td>
+                      <Badge role={u.role}>{u.role}</Badge>
+                    </Td>
+                    <Td>{u.phoneNo || '—'}</Td>
+                    <Td>{u.location || '—'}</Td>
+                    <Td>
+                      {u.role === 'admin' ? (
+                        <ActionGroup>
+                          <ActionBtn
+                            className="edit"
+                            onClick={() =>
+                              navigate(
+                                `/head-admin/edit-admin/${u._id}`
+                              )
+                            }
+                          >
+                            Edit
+                          </ActionBtn>
+
+                          <ActionBtn
+                            className="delete"
+                            onClick={() => deleteUser(u)}
+                          >
+                            Delete
+                          </ActionBtn>
+                        </ActionGroup>
+                      ) : (
+                        '—'
+                      )}
+                    </Td>
+                  </Row>
                 ))}
               </tbody>
             </Table>
-          </TableWrapper>
+          </Card>
         )}
-      </Container>
-    </Page>
+      </Page>
+    </HeadAdminNavbar>
   );
-};
-
-export default Admins;
+}

@@ -1,5 +1,4 @@
 const roleMiddleware = (...allowedRoles) => {
-  // Normalize allowed roles once
   const normalizedRoles = allowedRoles.map((role) =>
     role.toLowerCase()
   );

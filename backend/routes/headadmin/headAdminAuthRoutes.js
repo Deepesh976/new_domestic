@@ -1,8 +1,8 @@
 import express from 'express';
-import { headAdminLogin } from '../../controllers/headadmin/headAdminAuthController.js';
+import { login } from '../../controllers/headadmin/headAdminAuthController.js';
 
 const router = express.Router();
 
-router.post('/login', headAdminLogin);
+router.post('/login', login);
 
 export default router;

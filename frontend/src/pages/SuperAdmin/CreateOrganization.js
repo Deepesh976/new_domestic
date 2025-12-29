@@ -10,6 +10,7 @@ import SuperAdminNavbar from '../../components/Navbar/SuperAdminNavbar';
 const Page = styled.div`
   max-width: 900px;
   margin: auto;
+  padding: 24px;
 `;
 
 const Card = styled.div`
@@ -74,15 +75,14 @@ const Button = styled.button`
 const CreateOrganization = () => {
   const navigate = useNavigate();
 
+  /* 🔥 EXACT MATCH WITH MONGOOSE SCHEMA */
   const [form, setForm] = useState({
-    organizationName: '',
+    org_id: '',
+    org_name: '',
     type: '',
-    gstNumber: '',
-    emailId: '',
-    phoneNumber: '',
-    building: '',
-    area: '',
-    district: '',
+    gst_number: '',
+    email_id: '',
+    phone_number: '',
     state: '',
     pincode: '',
     country: 'India',
@@ -100,12 +100,12 @@ const CreateOrganization = () => {
     e.preventDefault();
 
     try {
-      await createOrganization(form); // ✅ JSON only
+      await createOrganization(form);
       alert('Organization created successfully');
       navigate('/super-admin/org');
     } catch (err) {
       if (err.response?.status === 409) {
-        alert('Organization already registered');
+        alert('Organization already exists');
       } else {
         alert('Failed to create organization');
       }
@@ -120,11 +120,24 @@ const CreateOrganization = () => {
 
           <form onSubmit={handleSubmit}>
             <Grid>
+              {/* REQUIRED */}
               <Field>
-                <Label>Organization Name</Label>
+                <Label>Organization ID *</Label>
                 <Input
-                  name="organizationName"
-                  value={form.organizationName}
+                  name="org_id"
+                  value={form.org_id}
+                  onChange={handleChange}
+                  placeholder="org_001"
+                  required
+                />
+              </Field>
+
+              {/* REQUIRED */}
+              <Field>
+                <Label>Organization Name *</Label>
+                <Input
+                  name="org_name"
+                  value={form.org_name}
                   onChange={handleChange}
                   required
                 />
@@ -142,18 +155,19 @@ const CreateOrganization = () => {
               <Field>
                 <Label>GST Number</Label>
                 <Input
-                  name="gstNumber"
-                  value={form.gstNumber}
+                  name="gst_number"
+                  value={form.gst_number}
                   onChange={handleChange}
                 />
               </Field>
 
+              {/* REQUIRED */}
               <Field>
-                <Label>Email</Label>
+                <Label>Email *</Label>
                 <Input
                   type="email"
-                  name="emailId"
-                  value={form.emailId}
+                  name="email_id"
+                  value={form.email_id}
                   onChange={handleChange}
                   required
                 />
@@ -162,36 +176,8 @@ const CreateOrganization = () => {
               <Field>
                 <Label>Phone Number</Label>
                 <Input
-                  name="phoneNumber"
-                  value={form.phoneNumber}
-                  onChange={handleChange}
-                  required
-                />
-              </Field>
-
-              <Field>
-                <Label>Building</Label>
-                <Input
-                  name="building"
-                  value={form.building}
-                  onChange={handleChange}
-                />
-              </Field>
-
-              <Field>
-                <Label>Area</Label>
-                <Input
-                  name="area"
-                  value={form.area}
-                  onChange={handleChange}
-                />
-              </Field>
-
-              <Field>
-                <Label>District</Label>
-                <Input
-                  name="district"
-                  value={form.district}
+                  name="phone_number"
+                  value={form.phone_number}
                   onChange={handleChange}
                 />
               </Field>
@@ -225,11 +211,7 @@ const CreateOrganization = () => {
             </Grid>
 
             <ButtonBar>
-              <Button
-                type="button"
-                $cancel
-                onClick={() => navigate(-1)}
-              >
+              <Button type="button" $cancel onClick={() => navigate(-1)}>
                 Cancel
               </Button>
               <Button type="submit">Create</Button>

@@ -14,6 +14,7 @@ const Page = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding: 24px;
 `;
 
 const TopBar = styled.div`
@@ -104,6 +105,9 @@ const AdminInfo = () => {
   const [orgSearch, setOrgSearch] = useState('');
   const [adminSearch, setAdminSearch] = useState('');
 
+  /* =========================
+     LOAD ADMINS
+  ========================= */
   useEffect(() => {
     fetchAdmins();
   }, []);
@@ -118,17 +122,22 @@ const AdminInfo = () => {
   };
 
   /* =========================
-     FILTER LOGIC (SAFE + FIXED)
+     FILTER LOGIC
   ========================= */
   const filteredAdmins = admins.filter((admin) => {
     const orgName =
-      admin.organization?.organizationName?.toLowerCase() || '';
+      admin.organization?.org_name?.toLowerCase() || '';
+    const orgId = admin.org_id?.toLowerCase() || '';
 
-    const adminText = `${admin.username || ''} ${admin.email || ''}`
-      .toLowerCase();
+    const adminText = `
+      ${admin.username || ''}
+      ${admin.email || ''}
+      ${admin.role || ''}
+    `.toLowerCase();
 
     return (
-      orgName.includes(orgSearch.toLowerCase()) &&
+      (orgName.includes(orgSearch.toLowerCase()) ||
+        orgId.includes(orgSearch.toLowerCase())) &&
       adminText.includes(adminSearch.toLowerCase())
     );
   });
@@ -162,6 +171,7 @@ const AdminInfo = () => {
             <Button onClick={() => navigate('/super-admin/createAdmin')}>
               Create
             </Button>
+
             <Button
               variant="edit"
               disabled={!selectedId}
@@ -171,6 +181,7 @@ const AdminInfo = () => {
             >
               Edit
             </Button>
+
             <Button
               variant="delete"
               disabled={!selectedId}
@@ -186,7 +197,7 @@ const AdminInfo = () => {
         ========================= */}
         <SearchRow>
           <SearchBox
-            placeholder="Search by organization..."
+            placeholder="Search by organization name / org ID..."
             value={orgSearch}
             onChange={(e) => setOrgSearch(e.target.value)}
           />
@@ -206,6 +217,7 @@ const AdminInfo = () => {
             <thead>
               <tr>
                 <Th></Th>
+                <Th>Org ID</Th>
                 <Th>Organization</Th>
                 <Th>Username</Th>
                 <Th>Email</Th>
@@ -230,9 +242,8 @@ const AdminInfo = () => {
                     />
                   </Td>
 
-                  <Td>
-                    {admin.organization?.organizationName || '-'}
-                  </Td>
+                  <Td>{admin.org_id || '-'}</Td>
+                  <Td>{admin.organization?.org_name || '-'}</Td>
                   <Td>{admin.username || '-'}</Td>
                   <Td>{admin.email || '-'}</Td>
                   <Td>{admin.phoneNo || '-'}</Td>
@@ -245,7 +256,7 @@ const AdminInfo = () => {
 
               {filteredAdmins.length === 0 && (
                 <Tr>
-                  <Td colSpan="7">No admins found</Td>
+                  <Td colSpan="8">No admins found</Td>
                 </Tr>
               )}
             </tbody>
