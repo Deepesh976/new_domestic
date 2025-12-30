@@ -22,9 +22,7 @@ const UnifiedLoginPage = () => {
 
     if (token && role === 'superadmin') {
       navigate('/super-admin', { replace: true });
-    }
-
-    if (token && role === 'headadmin') {
+    } else if (token && role === 'headadmin') {
       navigate('/head-admin', { replace: true });
     }
   }, [navigate]);
@@ -53,13 +51,30 @@ const UnifiedLoginPage = () => {
       let data = await response.json();
 
       if (response.ok && data.role === 'superadmin') {
+        // 🔥 CLEAR OLD SESSION
+        localStorage.clear();
+
+        // 🔐 SAVE AUTH DATA
         localStorage.setItem('token', data.token);
         localStorage.setItem('role', data.role);
 
+        // 🔥 SAVE USER INFO (THIS FIXES PROFILE EMAIL)
+        localStorage.setItem(
+          'email',
+          data.user?.email || email
+        );
+        localStorage.setItem(
+          'username',
+          data.user?.username || 'Super Admin'
+        );
+
+        // 🔄 SAVE TO REDUX
         dispatch(
           loginSuccess({
             token: data.token,
             role: data.role,
+            email: data.user?.email || email,
+            username: data.user?.username || 'Super Admin',
           })
         );
 
@@ -82,15 +97,28 @@ const UnifiedLoginPage = () => {
       data = await response.json();
 
       if (response.ok && data.role === 'headadmin') {
+        localStorage.clear();
+
         localStorage.setItem('token', data.token);
         localStorage.setItem('role', data.role);
         localStorage.setItem('organization', data.organization);
+
+        localStorage.setItem(
+          'email',
+          data.user?.email || email
+        );
+        localStorage.setItem(
+          'username',
+          data.user?.username || 'Head Admin'
+        );
 
         dispatch(
           loginSuccess({
             token: data.token,
             role: data.role,
             organization: data.organization,
+            email: data.user?.email || email,
+            username: data.user?.username || 'Head Admin',
           })
         );
 
@@ -117,17 +145,14 @@ const UnifiedLoginPage = () => {
     <div className="login-container">
       <div className="login-wrapper">
         <div className="login-card">
-          {/* Header */}
           <div className="login-header">
             <div className="login-logo">D</div>
             <h1 className="login-title">Domesticro</h1>
             <p className="login-subtitle">Sign in to your account</p>
           </div>
 
-          {/* Error */}
           {error && <div className="error-message">{error}</div>}
 
-          {/* Form */}
           <form className="login-form" onSubmit={handleLogin}>
             <div className="form-group">
               <label className="form-label">Email Address</label>
@@ -164,7 +189,6 @@ const UnifiedLoginPage = () => {
             </button>
           </form>
 
-          {/* Footer */}
           <div className="login-footer">
             © 2025 Domesticro. All rights reserved.
           </div>

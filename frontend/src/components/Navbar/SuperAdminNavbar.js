@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { FiLogOut, FiUser, FiMenu } from 'react-icons/fi';
 import './SuperAdminNavbar.css';
@@ -7,168 +7,103 @@ const SuperAdminNavbar = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const navigate = useNavigate();
-  const email = localStorage.getItem('email') || 'Admin';
+
+  const sidebarRef = useRef(null);
+  const hamburgerRef = useRef(null);
+
+  const email = localStorage.getItem('email') || 'SuperAdmin';
 
   const handleLogout = () => {
     localStorage.clear();
-    navigate('/login');
+    navigate('/');
   };
 
+  /* =========================
+     CLOSE SIDEBAR ON OUTSIDE CLICK
+  ========================= */
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        sidebarOpen &&
+        sidebarRef.current &&
+        !sidebarRef.current.contains(event.target) &&
+        hamburgerRef.current &&
+        !hamburgerRef.current.contains(event.target)
+      ) {
+        setSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [sidebarOpen]);
+
   return (
-    <div className="navbar-page">
-      {/* TOP NAVBAR */}
-      <div className="navbar-top">
-        <div className="navbar-left">
+    <div className="layout">
+      {/* TOP BAR */}
+      <header className="topbar">
+        <div className="topbar-left">
           <button
-            className="navbar-hamburger"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            title="Toggle sidebar"
+            ref={hamburgerRef}
+            className="icon-btn"
+            onClick={() => setSidebarOpen((prev) => !prev)}
           >
-            <FiMenu size={22} />
+            <FiMenu size={20} />
           </button>
+          <h1 className="brand">Domesticro</h1>
         </div>
 
-        <div className="navbar-center">
-          <h1 className="navbar-title">Domesticro</h1>
-        </div>
-
-        <div className="navbar-right">
+        <div className="topbar-right">
           <button
-            className="navbar-profile-btn"
-            onClick={() => setProfileOpen(!profileOpen)}
-            title="Open profile menu"
+            className="profile-btn"
+            onClick={() => setProfileOpen((prev) => !prev)}
           >
-            <div className="profile-avatar-icon">
-              <FiUser size={14} />
-            </div>
+            <FiUser size={14} />
             <span>{email.split('@')[0]}</span>
           </button>
 
           {profileOpen && (
-            <div className="navbar-dropdown">
+            <div className="profile-dropdown">
               <button
-                className="dropdown-item"
                 onClick={() => {
-                  navigate('/super-admin/profile');
+                  navigate('/profile');
                   setProfileOpen(false);
                 }}
               >
-                <FiUser className="dropdown-icon" size={14} />
-                <span>Profile</span>
+                <FiUser /> Profile
               </button>
-              <button
-                className="dropdown-item logout"
-                onClick={handleLogout}
-              >
-                <FiLogOut className="dropdown-icon" size={14} />
-                <span>Logout</span>
+
+              <button className="logout" onClick={handleLogout}>
+                <FiLogOut /> Logout
               </button>
             </div>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* BODY */}
-      <div className="navbar-body">
+      {/* MAIN */}
+      <div className="main">
         {/* SIDEBAR */}
-        <div className={`navbar-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
-          <div className="sidebar-header">
-            <div className="sidebar-logo">D</div>
-            <h2 className="sidebar-title">Domesticro</h2>
-          </div>
-
-          <nav className="sidebar-menu">
-            <li className="sidebar-menu-item">
-              <NavLink
-                to="/super-admin"
-                end
-                className={({ isActive }) =>
-                  isActive
-                    ? 'sidebar-menu-link active'
-                    : 'sidebar-menu-link'
-                }
-              >
-                <span className="sidebar-menu-icon">📊</span>
-                <span>Dashboard</span>
-              </NavLink>
-            </li>
-
-            <li className="sidebar-menu-item">
-              <NavLink
-                to="/super-admin/org"
-                className={({ isActive }) =>
-                  isActive
-                    ? 'sidebar-menu-link active'
-                    : 'sidebar-menu-link'
-                }
-              >
-                <span className="sidebar-menu-icon">🏢</span>
-                <span>Organizations</span>
-              </NavLink>
-            </li>
-
-            <li className="sidebar-menu-item">
-              <NavLink
-                to="/super-admin/adminInfo"
-                className={({ isActive }) =>
-                  isActive
-                    ? 'sidebar-menu-link active'
-                    : 'sidebar-menu-link'
-                }
-              >
-                <span className="sidebar-menu-icon">👤</span>
-                <span>Admins</span>
-              </NavLink>
-            </li>
-
-            <li className="sidebar-menu-item">
-              <NavLink
-                to="/super-admin/devices"
-                className={({ isActive }) =>
-                  isActive
-                    ? 'sidebar-menu-link active'
-                    : 'sidebar-menu-link'
-                }
-              >
-                <span className="sidebar-menu-icon">📱</span>
-                <span>Devices</span>
-              </NavLink>
-            </li>
-
-            <li className="sidebar-menu-item">
-              <NavLink
-                to="/super-admin/customer"
-                className={({ isActive }) =>
-                  isActive
-                    ? 'sidebar-menu-link active'
-                    : 'sidebar-menu-link'
-                }
-              >
-                <span className="sidebar-menu-icon">👥</span>
-                <span>Customers</span>
-              </NavLink>
-            </li>
-
-            <li className="sidebar-menu-item">
-              <NavLink
-                to="/super-admin/transaction"
-                className={({ isActive }) =>
-                  isActive
-                    ? 'sidebar-menu-link active'
-                    : 'sidebar-menu-link'
-                }
-              >
-                <span className="sidebar-menu-icon">💳</span>
-                <span>Transactions</span>
-              </NavLink>
-            </li>
+        <aside
+          ref={sidebarRef}
+          className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}
+        >
+          <nav>
+            <NavLink end to="/super-admin">📊 Dashboard</NavLink>
+            <NavLink to="/super-admin/organizations">🏢 Organizations</NavLink>
+            <NavLink to="/super-admin/admins">👤 Admins</NavLink>
+            <NavLink to="/super-admin/devices">📱 Devices</NavLink>
+            <NavLink to="/super-admin/customers">👥 Customers</NavLink>
+            <NavLink to="/super-admin/transactions">💳 Transactions</NavLink>
           </nav>
-        </div>
+        </aside>
 
         {/* CONTENT */}
-        <div className="navbar-content">
+        <section className="content">
           {children}
-        </div>
+        </section>
       </div>
     </div>
   );

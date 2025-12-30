@@ -1,204 +1,132 @@
-/* ========================================
-   SUPER ADMIN NAVBAR & LAYOUT STYLES
-======================================== */
+/* RESET */
+* {
+  box-sizing: border-box;
+  font-family: Inter, system-ui, sans-serif;
+}
 
-.navbar-page {
+.layout {
   height: 100vh;
   display: flex;
   flex-direction: column;
   background: #f8fafc;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* ========== TOP NAVBAR ========== */
-.navbar-top {
-  height: 70px;
-  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-  color: white;
+/* TOP BAR */
+.topbar {
+  height: 60px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.topbar-left {
   display: flex;
   align-items: center;
-  padding: 0 24px;
-  box-shadow: 0 4px 20px rgba(30, 64, 175, 0.15);
-  position: relative;
-  z-index: 1000; /* 🔥 FIX */
+  gap: 14px;
 }
 
-/* LEFT / CENTER / RIGHT */
-.navbar-left,
-.navbar-right {
-  width: 200px;
-  display: flex;
-  align-items: center;
-}
-
-.navbar-center {
-  flex: 1;
-  text-align: center;
-}
-
-/* Hamburger */
-.navbar-hamburger {
-  font-size: 1.6rem;
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 8px;
-}
-
-.navbar-hamburger:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* Title */
-.navbar-title {
-  font-size: 16px;
+.brand {
+  font-size: 18px;
   font-weight: 700;
-  margin: 0;
-  color: white;
 }
 
-/* Profile Button */
-.navbar-profile-btn {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 20px;
+.icon-btn {
+  background: transparent;
+  border: none;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
+}
+
+.topbar-right {
+  position: relative;
+}
+
+.profile-btn {
   display: flex;
   align-items: center;
   gap: 8px;
+  background: #f1f5f9;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 20px;
+  cursor: pointer;
 }
 
-/* Dropdown */
-.navbar-dropdown {
+/* PROFILE DROPDOWN */
+.profile-dropdown {
   position: absolute;
-  top: 70px;
   right: 0;
+  top: 45px;
   background: white;
-  border-radius: 12px;
-  width: 200px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
-  z-index: 2000; /* 🔥 FIX */
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  overflow: hidden;
+  width: 150px;
 }
 
-/* ========== BODY & SIDEBAR ========== */
-.navbar-body {
+.profile-dropdown button {
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: white;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.profile-dropdown button:hover {
+  background: #f1f5f9;
+}
+
+.profile-dropdown .logout {
+  color: #dc2626;
+}
+
+/* MAIN */
+.main {
   flex: 1;
   display: flex;
-  overflow: hidden;
-  position: relative;
 }
 
 /* SIDEBAR */
-.navbar-sidebar {
-  width: 260px;
-  background: linear-gradient(180deg, #0f172a 0%, #1a202c 100%);
-  color: #cbd5f5;
-  position: fixed; /* 🔥 FIX */
-  left: 0;
-  top: 70px;
-  height: calc(100vh - 70px);
-  z-index: 900; /* 🔥 FIX */
-  transition: transform 0.35s ease;
-  pointer-events: auto; /* 🔥 FIX */
+.sidebar {
+  width: 220px;
+  background: #0f172a;
+  color: white;
+  transition: width 0.2s ease;
 }
 
-.navbar-sidebar.open {
-  transform: translateX(0);
+.sidebar.closed {
+  width: 60px;
 }
 
-.navbar-sidebar.closed {
-  transform: translateX(-100%);
-  pointer-events: none; /* 🔥 FIX */
-}
-
-/* Sidebar Header */
-.sidebar-header {
-  padding: 24px 20px;
-}
-
-.sidebar-menu {
-  padding: 16px 12px;
-  list-style: none;
-  margin: 0;
-}
-
-/* Sidebar Items */
-.sidebar-menu-item {
-  margin-bottom: 8px;
-}
-
-/* Sidebar Links */
-.sidebar-menu-link {
+.sidebar nav {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  flex-direction: column;
+  padding: 12px;
+}
+
+.sidebar a {
   color: #cbd5f5;
   text-decoration: none;
-  border-radius: 8px;
-  font-size: 13px;
-  border-left: 3px solid transparent;
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  font-size: 14px;
 }
 
-.sidebar-menu-link:hover {
-  background: rgba(59, 130, 246, 0.1);
-  color: white;
+.sidebar a.active,
+.sidebar a:hover {
+  background: #1e293b;
+  color: #ffffff;
 }
 
-.sidebar-menu-link.active {
-  background: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
-  border-left-color: #3b82f6;
-}
-
-/* ========== MAIN CONTENT ========== */
-.navbar-content {
+/* CONTENT */
+.content {
   flex: 1;
-  margin-left: 260px; /* 🔥 FIX */
-  padding: 28px;
+  padding: 20px;
   overflow-y: auto;
-  background: #f8fafc;
-  position: relative;
-  z-index: 1;
-}
-
-/* ========== MOBILE FIXES ========== */
-@media (max-width: 1024px) {
-  .navbar-content {
-    margin-left: 0;
-  }
-
-  .navbar-sidebar {
-    width: 240px;
-  }
-
-  .navbar-sidebar.closed {
-    transform: translateX(-240px);
-  }
-}
-
-@media (max-width: 768px) {
-  .navbar-sidebar {
-    width: 220px;
-  }
-
-  .navbar-sidebar.closed {
-    transform: translateX(-220px);
-  }
-}
-
-@media (max-width: 480px) {
-  .navbar-sidebar {
-    width: 200px;
-  }
-
-  .navbar-sidebar.closed {
-    transform: translateX(-200px);
-  }
 }

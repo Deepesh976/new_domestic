@@ -1,33 +1,37 @@
 import { useSelector } from 'react-redux';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
-const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+const ProtectedRoute = ({ allowedRoles = [], children }) => {
   const location = useLocation();
 
   /* =========================
-     READ FROM REDUX FIRST
+     READ FROM REDUX
   ========================= */
-  const {
-    token: reduxToken,
-    role: reduxRole,
-    organization: reduxOrg,
-  } = useSelector((state) => state.auth);
+  const auth = useSelector((state) => state.auth || {});
+
+  const reduxToken = auth.token;
+  const reduxRole = auth.role;
+  const reduxOrganization = auth.organization;
 
   /* =========================
      FALLBACK TO LOCALSTORAGE
   ========================= */
-  const token = reduxToken || localStorage.getItem('token');
-  const role = reduxRole || localStorage.getItem('role');
+  const token =
+    reduxToken || localStorage.getItem('token');
+
+  const role =
+    reduxRole || localStorage.getItem('role');
+
   const organization =
-    reduxOrg || localStorage.getItem('organization');
+    reduxOrganization || localStorage.getItem('organization');
 
   /* =========================
-     NO TOKEN → LOGIN
+     NOT AUTHENTICATED
   ========================= */
   if (!token || !role) {
     return (
       <Navigate
-        to="/login"
+        to="/"
         replace
         state={{ from: location }}
       />
@@ -35,44 +39,44 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   }
 
   /* =========================
-     ROLE VALIDATION
+     ROLE CHECK
   ========================= */
-  const normalizedRole = role.toLowerCase();
+  const normalizedRole = String(role).toLowerCase();
   const normalizedAllowedRoles = allowedRoles.map((r) =>
-    r.toLowerCase()
+    String(r).toLowerCase()
   );
 
   if (
     normalizedAllowedRoles.length > 0 &&
     !normalizedAllowedRoles.includes(normalizedRole)
   ) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-        state={{ from: location }}
-      />
-    );
+    return <Navigate to="/" replace />;
   }
 
   /* =========================
-     HEADADMIN → ORG REQUIRED
+     HEAD ADMIN → ORG REQUIRED
   ========================= */
-  if (normalizedRole === 'headadmin' && !organization) {
-    console.error('❌ HeadAdmin missing organization in auth state');
-    return (
-      <Navigate
-        to="/login"
-        replace
-        state={{ from: location }}
-      />
+  if (
+    normalizedRole === 'headadmin' &&
+    !organization
+  ) {
+    console.error(
+      '❌ HeadAdmin missing organization in auth state'
     );
+    return <Navigate to="/" replace />;
   }
 
   /* =========================
      ACCESS GRANTED ✅
   ========================= */
-  return children;
+  // 🔥 THIS IS THE FIX
+  // If this route is wrapped (like /profile), render children
+  if (children) {
+    return children;
+  }
+
+  // Otherwise render nested routes (/super-admin/*, /head-admin/*)
+  return <Outlet />;
 };
 
 export default ProtectedRoute;
