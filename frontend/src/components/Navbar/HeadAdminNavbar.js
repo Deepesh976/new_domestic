@@ -1,199 +1,112 @@
-import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { FiLogOut, FiUser, FiMenu } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { FiMenu, FiUser, FiLogOut } from 'react-icons/fi';
+import {
+  MdDashboard,
+  MdPeople,
+  MdAdminPanelSettings,
+  MdDevices,
+  MdPayments,
+  MdListAlt,
+  MdEngineering,
+  MdSupportAgent,
+} from 'react-icons/md';
 import './HeadAdminNavbar.css';
 
 export default function HeadAdminNavbar({ children }) {
-  const [menuOpen, setMenuOpen] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const email = localStorage.getItem('email') || 'Admin';
 
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate('/login');
-  };
-
-  const closeSidebar = () => {
+  /* Close sidebar on route change (mobile UX fix) */
+  useEffect(() => {
     setMenuOpen(false);
+    setProfileOpen(false);
+  }, [location.pathname]);
+
+  const logout = () => {
+    localStorage.clear();
+    navigate('/');
   };
 
   return (
-    <div className="head-admin-layout">
-      {/* =========================
-         TOP NAVBAR
-      ========================= */}
-      <header className="head-admin-navbar">
-        <div className="head-admin-navbar-left">
-          <button
-            className="head-admin-hamburger"
-            type="button"
-            title="Toggle sidebar"
-            onClick={() => setMenuOpen((prev) => !prev)}
-          >
-            <FiMenu size={22} />
-          </button>
-        </div>
+    <div className="layout">
+      {/* ================= TOP BAR ================= */}
+      <header className="topbar">
+        <button
+          className="hamburger"
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          <FiMenu size={22} />
+        </button>
 
-        <div className="head-admin-navbar-center">
-          <h1 className="head-admin-navbar-title">Domesticro</h1>
-        </div>
+        <h1 className="brand">Domesticro</h1>
 
-        <div className="head-admin-navbar-right">
+        <div className="profile">
           <button
-            className="head-admin-profile-btn"
-            type="button"
-            onClick={() => setProfileOpen((prev) => !prev)}
+            className="profile-btn"
+            onClick={() => setProfileOpen((v) => !v)}
           >
-            <div className="head-admin-profile-icon">
-              <FiUser size={14} />
-            </div>
+            <FiUser />
             <span>{email.split('@')[0]}</span>
           </button>
 
           {profileOpen && (
-            <div className="head-admin-dropdown">
-              <button
-                type="button"
-                className="head-admin-dropdown-item"
-                onClick={() => {
-                  navigate('/head-admin/profile');
-                  setProfileOpen(false);
-                }}
-              >
-                <FiUser size={14} />
-                <span>Profile</span>
+            <div className="profile-menu">
+              <button onClick={() => navigate('/profile')}>
+                <FiUser /> Profile
               </button>
-
-              <button
-                type="button"
-                className="head-admin-dropdown-item logout"
-                onClick={handleLogout}
-              >
-                <FiLogOut size={14} />
-                <span>Logout</span>
+              <button className="logout" onClick={logout}>
+                <FiLogOut /> Logout
               </button>
             </div>
           )}
         </div>
       </header>
 
-      {/* =========================
-         BODY
-      ========================= */}
-      <div className="head-admin-body">
-        {/* SIDEBAR */}
-        <aside
-          className={`head-admin-sidebar ${
-            menuOpen ? 'open' : 'closed'
-          }`}
-        >
-          <div className="head-admin-sidebar-header">
-            <div className="head-admin-sidebar-logo">D</div>
-            <h2 className="head-admin-sidebar-title">Domesticro</h2>
-          </div>
+      {/* ================= OVERLAY (MOBILE) ================= */}
+      {menuOpen && (
+        <div
+          className="overlay"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
 
-          <ul className="head-admin-sidebar-menu">
-            <li className="head-admin-sidebar-menu-item">
-              <NavLink
-                to="/head-admin"
-                end
-                onClick={closeSidebar}
-                className={({ isActive }) =>
-                  isActive
-                    ? 'head-admin-sidebar-menu-link active'
-                    : 'head-admin-sidebar-menu-link'
-                }
-              >
-                <span className="head-admin-sidebar-menu-icon">📊</span>
-                <span>Dashboard</span>
-              </NavLink>
-            </li>
+      {/* ================= SIDEBAR ================= */}
+      <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
+        <nav className="menu">
+          <NavItem to="/head-admin" icon={<MdDashboard />} label="Dashboard" />
+          <NavItem to="/head-admin/customers" icon={<MdPeople />} label="Customers" />
+          <NavItem to="/head-admin/admins" icon={<MdAdminPanelSettings />} label="Admins" />
+          <NavItem to="/head-admin/purifiers" icon={<MdDevices />} label="Purifiers" />
+          <NavItem to="/head-admin/transactions" icon={<MdPayments />} label="Transactions" />
+          <NavItem to="/head-admin/plans" icon={<MdListAlt />} label="Plans" />
+          <NavItem to="/head-admin/orders" icon={<MdListAlt />} label="Orders" />
+          <NavItem to="/head-admin/technicians" icon={<MdEngineering />} label="Technicians" />
+          <NavItem to="/head-admin/installations" icon={<MdEngineering />} label="Installations" />
+          <NavItem to="/head-admin/service-requests" icon={<MdSupportAgent />} label="Service Requests" />
+          <NavItem to="/head-admin/support" icon={<MdSupportAgent />} label="Support" />
+        </nav>
+      </aside>
 
-            <li className="head-admin-sidebar-menu-item">
-              <NavLink
-                to="/head-admin/customers"
-                onClick={closeSidebar}
-                className={({ isActive }) =>
-                  isActive
-                    ? 'head-admin-sidebar-menu-link active'
-                    : 'head-admin-sidebar-menu-link'
-                }
-              >
-                <span className="head-admin-sidebar-menu-icon">👤</span>
-                <span>Customers</span>
-              </NavLink>
-            </li>
-
-            <li className="head-admin-sidebar-menu-item">
-              <NavLink
-                to="/head-admin/admins"
-                onClick={closeSidebar}
-                className={({ isActive }) =>
-                  isActive
-                    ? 'head-admin-sidebar-menu-link active'
-                    : 'head-admin-sidebar-menu-link'
-                }
-              >
-                <span className="head-admin-sidebar-menu-icon">🧑‍💼</span>
-                <span>Admins</span>
-              </NavLink>
-            </li>
-
-            <li className="head-admin-sidebar-menu-item">
-              <NavLink
-                to="/head-admin/purifiers"
-                onClick={closeSidebar}
-                className={({ isActive }) =>
-                  isActive
-                    ? 'head-admin-sidebar-menu-link active'
-                    : 'head-admin-sidebar-menu-link'
-                }
-              >
-                <span className="head-admin-sidebar-menu-icon">📱</span>
-                <span>Purifiers</span>
-              </NavLink>
-            </li>
-
-            <li className="head-admin-sidebar-menu-item">
-              <NavLink
-                to="/head-admin/transactions"
-                onClick={closeSidebar}
-                className={({ isActive }) =>
-                  isActive
-                    ? 'head-admin-sidebar-menu-link active'
-                    : 'head-admin-sidebar-menu-link'
-                }
-              >
-                <span className="head-admin-sidebar-menu-icon">💳</span>
-                <span>Transactions</span>
-              </NavLink>
-            </li>
-
-
-            <li className="head-admin-sidebar-menu-item">
-              <NavLink
-                to="/head-admin/plans"
-                onClick={closeSidebar}
-                className={({ isActive }) =>
-                  isActive
-                    ? 'head-admin-sidebar-menu-link active'
-                    : 'head-admin-sidebar-menu-link'
-                }
-              >
-                <span className="head-admin-sidebar-menu-icon">💳</span>
-                <span>Plans</span>
-              </NavLink>
-            </li>
-          </ul>
-        </aside>
-
-        {/* CONTENT */}
-        <main className="head-admin-content">
-          {children}
-        </main>
-      </div>
+      {/* ================= MAIN CONTENT ================= */}
+      <main className="content">{children}</main>
     </div>
   );
 }
+
+/* ================= MENU ITEM ================= */
+const NavItem = ({ to, icon, label }) => (
+  <NavLink
+    to={to}
+    className={({ isActive }) =>
+      isActive ? 'menu-item active' : 'menu-item'
+    }
+  >
+    <span className="icon">{icon}</span>
+    <span>{label}</span>
+  </NavLink>
+);

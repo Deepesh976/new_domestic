@@ -13,7 +13,9 @@ const UnifiedLoginPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  /* Auto redirect if already logged in */
+  /* =========================
+     AUTO REDIRECT IF LOGGED IN
+  ========================= */
   useEffect(() => {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
@@ -27,14 +29,18 @@ const UnifiedLoginPage = () => {
     }
   }, [navigate]);
 
-  /* Login handler - tries SuperAdmin first, then HeadAdmin */
+  /* =========================
+     LOGIN HANDLER
+  ========================= */
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      /* Try SuperAdmin login */
+      /* =========================
+         TRY SUPER ADMIN LOGIN
+      ========================= */
       let response = await fetch(
         'http://localhost:5000/api/superadmin/auth/login',
         {
@@ -61,7 +67,9 @@ const UnifiedLoginPage = () => {
         return;
       }
 
-      /* Try HeadAdmin login */
+      /* =========================
+         TRY HEAD ADMIN LOGIN
+      ========================= */
       response = await fetch(
         'http://localhost:5000/api/headadmin/auth/login',
         {
@@ -90,16 +98,21 @@ const UnifiedLoginPage = () => {
         return;
       }
 
-      /* Invalid credentials */
+      /* =========================
+         INVALID CREDENTIALS
+      ========================= */
       setError('Invalid email or password');
     } catch (err) {
-      console.error(err);
+      console.error('LOGIN ERROR:', err);
       setError('Server error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  /* =========================
+     UI
+  ========================= */
   return (
     <div className="login-container">
       <div className="login-wrapper">
@@ -111,7 +124,7 @@ const UnifiedLoginPage = () => {
             <p className="login-subtitle">Sign in to your account</p>
           </div>
 
-          {/* Error Message */}
+          {/* Error */}
           {error && <div className="error-message">{error}</div>}
 
           {/* Form */}
@@ -147,10 +160,7 @@ const UnifiedLoginPage = () => {
               type="submit"
               disabled={loading}
             >
-              <span className="button-text">
-                {loading && <span className="spinner"></span>}
-                {loading ? 'Signing in...' : 'Sign In'}
-              </span>
+              {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 

@@ -29,12 +29,16 @@ import superAdminDashboardRoutes from './routes/superadmin/superAdminDashboardRo
 import headAdminAuthRoutes from './routes/headadmin/headAdminAuthRoutes.js';
 import headAdminCustomerRoutes from './routes/headadmin/headAdminCustomerRoutes.js';
 import headAdminPurifierRoutes from './routes/headadmin/headAdminPurifierRoutes.js';
+import headAdminPurifierHistoryRoutes from './routes/headadmin/headAdminPurifierHistoryRoutes.js';
 import headAdminTransactionRoutes from './routes/headadmin/headAdminTransactionRoutes.js';
 import headAdminDashboardRoutes from './routes/headadmin/headAdminDashboardRoutes.js';
 import headAdminAdminRoutes from './routes/headadmin/headAdminAdminRoutes.js';
-import headAdminPurifierHistoryRoutes from './routes/headadmin/headAdminPurifierHistoryRoutes.js';
 import headAdminPlanRoutes from './routes/headadmin/headAdminPlanRoutes.js';
-import rechargedPlanRoutes from './routes/headadmin/rechargedPlanRoutes.js';
+import headAdminRechargedPlanRoutes from './routes/headadmin/headAdminRechargedPlanRoutes.js';
+import headAdminSupportRoutes from './routes/headadmin/headAdminSupportRoutes.js';
+import headAdminTechnicianRoutes from './routes/headadmin/headAdminTechnicianRoutes.js';
+import headAdminInstallationOrderRoutes from './routes/headadmin/headAdminInstallationOrderRoutes.js';
+import headAdminServiceRequestRoutes from './routes/headadmin/headAdminServiceRequestRoutes.js';
 
 const app = express();
 
@@ -85,7 +89,11 @@ app.use('/api/headadmin/purifiers', headAdminPurifierHistoryRoutes);
 app.use('/api/headadmin/transactions', headAdminTransactionRoutes);
 app.use('/api/headadmin/dashboard', headAdminDashboardRoutes);
 app.use('/api/headadmin/plans', headAdminPlanRoutes);
-app.use('/api/headadmin/recharged-plans', rechargedPlanRoutes);
+app.use('/api/headadmin/recharged-plans', headAdminRechargedPlanRoutes);
+app.use('/api/headadmin/support', headAdminSupportRoutes);
+app.use('/api/headadmin/technicians', headAdminTechnicianRoutes);
+app.use('/api/headadmin/installations', headAdminInstallationOrderRoutes);
+app.use('/api/headadmin/service-requests', headAdminServiceRequestRoutes);
 
 /* =========================
    HEALTH CHECK

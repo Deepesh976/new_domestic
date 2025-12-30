@@ -1,10 +1,12 @@
 import OrgUser from '../../models/OrgUser.js';
+import InstallationOrder from '../../models/InstallationOrder.js';
 
 /* =====================================================
    HEAD ADMIN – CUSTOMER CONTROLLER
    RULES:
-   - Organization isolation via org_id (string)
-   - HeadAdmin can access ONLY their org customers
+   - Organization isolation via org_id
+   - Customer KYC is the SINGLE source of truth
+   - KYC changes auto-sync to installation orders
 ===================================================== */
 
 /* =========================
@@ -20,7 +22,9 @@ export const getCustomers = async (req, res) => {
       });
     }
 
-    const customers = await OrgUser.find({ org_id }).sort({ createdAt: -1 });
+    const customers = await OrgUser.find({ org_id }).sort({
+      createdAt: -1,
+    });
 
     res.status(200).json({
       count: customers.length,
@@ -36,7 +40,8 @@ export const getCustomers = async (req, res) => {
 
 /* =========================
    UPDATE KYC STATUS
-   allowed: approved | rejected
+   allowed: approved | pending | rejected
+   🔥 ALSO SYNC TO INSTALLATION ORDERS
 ========================= */
 export const updateKycStatus = async (req, res) => {
   try {
@@ -44,7 +49,7 @@ export const updateKycStatus = async (req, res) => {
     const org_id = req.user.organization;
     const customer_id = req.params.id;
 
-    const allowedStatuses = ['approved', 'rejected'];
+    const allowedStatuses = ['approved', 'pending', 'rejected'];
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
@@ -52,6 +57,9 @@ export const updateKycStatus = async (req, res) => {
       });
     }
 
+    /* =========================
+       1. UPDATE CUSTOMER KYC
+    ========================= */
     const customer = await OrgUser.findOneAndUpdate(
       {
         _id: customer_id,
@@ -74,8 +82,26 @@ export const updateKycStatus = async (req, res) => {
       });
     }
 
+    /* =========================
+       2. SYNC INSTALLATION ORDERS
+    ========================= */
+    const kycVerified = status === 'approved';
+
+    await InstallationOrder.updateMany(
+      {
+        user_id: customer.user_id,
+        org_id,
+      },
+      {
+        $set: {
+          'stages.kyc_verified': kycVerified,
+        },
+      }
+    );
+
     res.status(200).json({
-      message: 'KYC status updated successfully',
+      message: 'KYC status updated and synced successfully',
+      kyc_verified: kycVerified,
       customer,
     });
   } catch (error) {
