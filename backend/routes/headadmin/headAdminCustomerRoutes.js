@@ -1,6 +1,6 @@
 import express from 'express';
 import auth from '../../middleware/auth.js';
-import role from '../../middleware/roleMiddleware.js';
+import roleMiddleware from '../../middleware/roleMiddleware.js';
 
 import {
   getCustomers,
@@ -10,14 +10,46 @@ import {
 
 const router = express.Router();
 
-router.get('/', auth, role('headadmin'), getCustomers);
+/* =====================================================
+   CUSTOMER ROUTES
+   - HeadAdmin: full access
+   - Admin: read-only access
+===================================================== */
 
-router.patch('/:id/kyc', auth, role('headadmin'), updateKycStatus);
+/**
+ * GET /api/headadmin/customers
+ * Access:
+ *  - headadmin
+ *  - admin (read-only)
+ */
+router.get(
+  '/',
+  auth,
+  roleMiddleware('headadmin', 'admin'),
+  getCustomers
+);
 
+/**
+ * PATCH /api/headadmin/customers/:id/kyc
+ * Access:
+ *  - headadmin only
+ */
+router.patch(
+  '/:id/kyc',
+  auth,
+  roleMiddleware('headadmin'),
+  updateKycStatus
+);
+
+/**
+ * PATCH /api/headadmin/customers/:id/device-status
+ * Access:
+ *  - headadmin only
+ */
 router.patch(
   '/:id/device-status',
   auth,
-  role('headadmin'),
+  roleMiddleware('headadmin'),
   updateDeviceStatus
 );
 

@@ -1,72 +1,109 @@
 import axios from '../utils/axiosConfig';
 
-/* =========================
+/* =====================================================
    SUPPORT
-========================= */
-export const getSupport = () =>
-  axios.get('/api/headadmin/support');
+===================================================== */
 
-export const createSupport = (data) =>
-  axios.post('/api/headadmin/support', data);
+/* Get all support tickets */
+export const getSupport = () => {
+  return axios.get('/api/headadmin/support');
+};
 
-export const updateSupport = (data) =>
-  axios.put('/api/headadmin/support', data);
+/* Create support ticket */
+export const createSupport = (data) => {
+  return axios.post('/api/headadmin/support', data);
+};
 
-export const deleteSupport = () =>
-  axios.delete('/api/headadmin/support');
+/* Update support ticket */
+export const updateSupport = (id, data) => {
+  return axios.put(`/api/headadmin/support/${id}`, data);
+};
 
-/* =========================
+/* Delete support ticket */
+export const deleteSupport = (id) => {
+  return axios.delete(`/api/headadmin/support/${id}`);
+};
+
+/* =====================================================
    TECHNICIANS
-========================= */
-export const getTechnicians = () =>
-  axios.get('/api/headadmin/technicians');
+===================================================== */
 
-/* 🔥 Update technician (KYC / Active / Status) */
-export const updateTechnician = (id, data) =>
-  axios.put(`/api/headadmin/technicians/${id}`, data);
+/* Get all technicians */
+export const getTechnicians = () => {
+  return axios.get('/api/headadmin/technicians');
+};
 
-/* =========================
+/* Update technician (KYC / Active / Work Status) */
+export const updateTechnician = (id, data) => {
+  return axios.put(`/api/headadmin/technicians/${id}`, data);
+};
+
+/* =====================================================
    INSTALLATION ORDERS
-========================= */
-export const getInstallationOrders = () =>
-  axios.get('/api/headadmin/installations');
+===================================================== */
 
-/* 🔥 Assign technician to installation order */
-export const assignInstallationTechnician = (id, data) =>
-  axios.put(`/api/headadmin/installations/${id}/assign`, data);
+/* Get installation orders */
+export const getInstallationOrders = () => {
+  return axios.get('/api/headadmin/installations');
+};
 
-/* =========================
+/* Assign technician to installation order */
+export const assignInstallationTechnician = (
+  installationId,
+  technician_id
+) => {
+  return axios.put(
+    `/api/headadmin/installations/${installationId}/assign`,
+    { technician_id } // ✅ always object
+  );
+};
+
+/* =====================================================
    SERVICE REQUESTS 🔥🔥🔥
-========================= */
+===================================================== */
 
 /* Get service requests
-   - params: { status, search }
+   params:
+   - status
+   - search
 */
-export const getServiceRequests = (params = {}) =>
-  axios.get('/api/headadmin/service-requests', { params });
+export const getServiceRequests = (params = {}) => {
+  return axios.get('/api/headadmin/service-requests', {
+    params,
+  });
+};
 
-/* Get only available technicians */
-export const getAvailableServiceTechnicians = () =>
-  axios.get(
+/* Get only FREE + APPROVED technicians */
+export const getAvailableServiceTechnicians = () => {
+  return axios.get(
     '/api/headadmin/service-requests/technicians/available'
   );
+};
 
 /* Assign technician to service request */
 export const assignServiceTechnician = (
   serviceRequestId,
   technician_id
-) =>
-  axios.patch(
+) => {
+  return axios.patch(
     `/api/headadmin/service-requests/${serviceRequestId}/assign`,
-    { technician_id }
+    {
+      technician_id, // ✅ backend expects this exact key
+    }
   );
+};
 
-/* Update service status (manual fallback) */
+/* Update service request status
+   status: 'open' | 'assigned' | 'closed'
+*/
 export const updateServiceRequestStatus = (
   serviceRequestId,
   status
-) =>
-  axios.patch(
+) => {
+  return axios.patch(
     `/api/headadmin/service-requests/${serviceRequestId}/status`,
-    { status }
+    {
+      status, // ✅ FIXED: must be object
+    }
   );
+};

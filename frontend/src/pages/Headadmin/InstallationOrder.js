@@ -11,7 +11,6 @@ import axios from '../../utils/axiosConfig';
 /* =========================
    PAGE LAYOUT
 ========================= */
-
 const Page = styled.div`
   background: #f8fafc;
   min-height: calc(100vh - 64px);
@@ -46,7 +45,6 @@ const Search = styled.input`
 /* =========================
    TABLE
 ========================= */
-
 const TableWrapper = styled.div`
   background: white;
   border-radius: 16px;
@@ -77,7 +75,6 @@ const Td = styled.td`
 /* =========================
    UI ELEMENTS
 ========================= */
-
 const Name = styled.div`
   font-weight: 600;
   color: #0f172a;
@@ -99,18 +96,13 @@ const StatusBadge = styled.span`
   font-size: 11px;
   font-weight: 600;
   background: ${(p) =>
-    p.status === 'open'
-      ? '#fef9c3'
-      : p.status === 'assigned'
-      ? '#dbeafe'
-      : '#dcfce7'};
+    p.type === 'completed'
+      ? '#dcfce7'
+      : '#fef9c3'};
   color: #1e293b;
-  text-transform: capitalize;
 `;
 
-const YesNoBadge = styled.span.withConfig({
-  shouldForwardProp: (prop) => prop !== 'yes',
-})`
+const YesNoBadge = styled.span`
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
@@ -145,7 +137,6 @@ const Button = styled.button`
 /* =========================
    COMPONENT
 ========================= */
-
 const HeadAdminInstallationOrder = () => {
   const [orders, setOrders] = useState([]);
   const [technicians, setTechnicians] = useState([]);
@@ -170,7 +161,6 @@ const HeadAdminInstallationOrder = () => {
 
       setOrders(orderRes.data || []);
 
-      // ✅ ONLY AVAILABLE TECHNICIANS
       const availableTechs = (techRes.data || []).filter(
         (t) => t.is_active === true && t.work_status === 'free'
       );
@@ -184,7 +174,7 @@ const HeadAdminInstallationOrder = () => {
   };
 
   /* =========================
-     SEARCH FILTER
+     SEARCH
   ========================= */
   const filteredOrders = useMemo(() => {
     return orders.filter((o) =>
@@ -213,7 +203,7 @@ const HeadAdminInstallationOrder = () => {
      COMPLETE INSTALLATION
   ========================= */
   const handleComplete = async (order) => {
-    if (!window.confirm(`Mark installation as completed?`)) return;
+    if (!window.confirm('Mark installation as completed?')) return;
 
     await axios.put(
       `/api/headadmin/installations/${order._id}/complete`
@@ -267,8 +257,8 @@ const HeadAdminInstallationOrder = () => {
                     </Td>
 
                     <Td>
-                      <YesNoBadge yes={o.payment_received}>
-                        {o.payment_received ? 'Paid' : 'Unpaid'}
+                      <YesNoBadge yes={o.stages?.payment_received}>
+                        {o.stages?.payment_received ? 'Paid' : 'Unpaid'}
                       </YesNoBadge>
                     </Td>
 
@@ -287,9 +277,7 @@ const HeadAdminInstallationOrder = () => {
                     </Td>
 
                     <Td>
-                      <AddressLine>
-                        {o.delivery_address?.house_flat_no}
-                      </AddressLine>
+                      <AddressLine>{o.delivery_address?.house_flat_no}</AddressLine>
                       <AddressLine>
                         {o.delivery_address?.area},{' '}
                         {o.delivery_address?.district}
@@ -302,13 +290,21 @@ const HeadAdminInstallationOrder = () => {
                     </Td>
 
                     <Td>
-                      <StatusBadge status={o.status}>
-                        {o.status}
+                      <StatusBadge
+                        type={
+                          o.stages?.installation_completed
+                            ? 'completed'
+                            : 'pending'
+                        }
+                      >
+                        {o.stages?.installation_completed
+                          ? 'Completed'
+                          : 'Pending'}
                       </StatusBadge>
                     </Td>
 
                     <Td>
-                      {o.status === 'open' ? (
+                      {o.stages?.technician_assigned === false ? (
                         <Select
                           onChange={(e) =>
                             setAssignments({
@@ -331,20 +327,18 @@ const HeadAdminInstallationOrder = () => {
                     </Td>
 
                     <Td>
-                      {o.status === 'open' && (
+                      {o.stages?.technician_assigned === false && (
                         <Button onClick={() => handleAssign(o)}>
                           Assign
                         </Button>
                       )}
 
-                      {o.status === 'assigned' && (
-                        <Button
-                          danger
-                          onClick={() => handleComplete(o)}
-                        >
-                          Complete
-                        </Button>
-                      )}
+                      {o.stages?.technician_assigned === true &&
+                        o.stages?.installation_completed === false && (
+                          <Button danger onClick={() => handleComplete(o)}>
+                            Complete
+                          </Button>
+                        )}
                     </Td>
                   </tr>
                 ))}

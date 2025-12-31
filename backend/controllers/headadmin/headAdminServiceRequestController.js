@@ -5,17 +5,21 @@ import OrgUser from '../../models/OrgUser.js';
 /* =====================================================
    GET SERVICE REQUESTS
    - Org scoped
-   - Search: device_id OR user name
    - Filter by status
+   - Search by device_id OR user name
    - Maps:
      - user_name
-     - assigned_technician_name ✅ FIX
+     - assigned_technician_name
+     - fixed_by_name ✅
 ===================================================== */
 export const getServiceRequests = async (req, res) => {
   try {
     const org_id = req.user.organization;
     const { status, search } = req.query;
 
+    /* =========================
+       BASE FILTER
+    ========================= */
     const filter = { org_id };
     if (status) filter.status = status;
 
@@ -45,7 +49,7 @@ export const getServiceRequests = async (req, res) => {
     }
 
     /* =========================
-       MAP USER NAME
+       MAP USER NAMES
     ========================= */
     const userIds = [
       ...new Set(requests.map((r) => r.user_id).filter(Boolean)),
@@ -62,10 +66,14 @@ export const getServiceRequests = async (req, res) => {
     });
 
     /* =========================
-       MAP ASSIGNED TECHNICIAN NAME ✅ FIX
+       MAP TECHNICIAN NAMES
     ========================= */
     const technicianIds = [
-      ...new Set(requests.map((r) => r.assigned_to).filter(Boolean)),
+      ...new Set(
+        requests
+          .map((r) => r.assigned_to || r.fixed_by?.technician_id)
+          .filter(Boolean)
+      ),
     ];
 
     const technicians = await OrgTechnician.find({
@@ -84,8 +92,16 @@ export const getServiceRequests = async (req, res) => {
     const finalData = requests.map((r) => ({
       ...r,
       user_name: userMap[r.user_id] || 'Unknown',
+
       assigned_technician_name:
-        technicianMap[r.assigned_to] || null,
+        r.assigned_to
+          ? technicianMap[r.assigned_to?.toString()] || null
+          : null,
+
+      fixed_by_name:
+        r.status === 'closed'
+          ? r.fixed_by?.technician_name || '—'
+          : '—',
     }));
 
     return res.status(200).json(finalData);
@@ -122,6 +138,7 @@ export const getAvailableTechnicians = async (req, res) => {
 
 /* =====================================================
    ASSIGN TECHNICIAN TO SERVICE REQUEST
+   - ❌ Block if CLOSED
 ===================================================== */
 export const assignTechnicianToRequest = async (req, res) => {
   try {
@@ -130,7 +147,23 @@ export const assignTechnicianToRequest = async (req, res) => {
     const org_id = req.user.organization;
 
     if (!technician_id) {
-      return res.status(400).json({ message: 'Technician ID required' });
+      return res.status(400).json({
+        message: 'Technician ID is required',
+      });
+    }
+
+    const request = await ServiceRequest.findOne({ _id: id, org_id });
+
+    if (!request) {
+      return res.status(404).json({
+        message: 'Service request not found',
+      });
+    }
+
+    if (request.status === 'closed') {
+      return res.status(400).json({
+        message: 'Cannot assign technician to closed request',
+      });
     }
 
     const technician = await OrgTechnician.findOne({
@@ -140,12 +173,9 @@ export const assignTechnicianToRequest = async (req, res) => {
     });
 
     if (!technician) {
-      return res.status(400).json({ message: 'Technician not available' });
-    }
-
-    const request = await ServiceRequest.findOne({ _id: id, org_id });
-    if (!request) {
-      return res.status(404).json({ message: 'Service request not found' });
+      return res.status(400).json({
+        message: 'Technician not available',
+      });
     }
 
     request.assigned_to = technician_id;
@@ -168,6 +198,8 @@ export const assignTechnicianToRequest = async (req, res) => {
 
 /* =====================================================
    UPDATE SERVICE STATUS
+   - ❌ Closed requests are immutable
+   - ✅ Store Fixed By on close
 ===================================================== */
 export const updateServiceStatus = async (req, res) => {
   try {
@@ -175,26 +207,48 @@ export const updateServiceStatus = async (req, res) => {
     const { status } = req.body;
     const org_id = req.user.organization;
 
-    const allowed = ['open', 'assigned', 'closed'];
-    if (!allowed.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
+    const allowedStatuses = ['open', 'assigned', 'closed'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        message: 'Invalid status value',
+      });
     }
 
     const request = await ServiceRequest.findOne({ _id: id, org_id });
+
     if (!request) {
-      return res.status(404).json({ message: 'Service request not found' });
+      return res.status(404).json({
+        message: 'Service request not found',
+      });
     }
 
-    if (status === 'closed' && request.assigned_to) {
-      await OrgTechnician.findByIdAndUpdate(
-        request.assigned_to,
-        { work_status: 'free' }
-      );
-      request.assigned_to = null;
+    if (request.status === 'closed') {
+      return res.status(400).json({
+        message: 'Closed service request cannot be modified',
+      });
     }
 
-    if (request.status === 'closed' && status !== 'closed') {
-      request.assigned_to = null;
+    /* =========================
+       CLOSE SERVICE REQUEST
+    ========================= */
+    if (status === 'closed') {
+      if (request.assigned_to) {
+        const technician = await OrgTechnician.findById(
+          request.assigned_to
+        );
+
+        if (technician) {
+          request.fixed_by = {
+            technician_id: technician._id.toString(),
+            technician_name: `${technician.user_name?.first_name || ''} ${technician.user_name?.last_name || ''}`.trim(),
+          };
+
+          technician.work_status = 'free';
+          await technician.save();
+        }
+      }
+
+      request.completed_at = new Date();
     }
 
     request.status = status;

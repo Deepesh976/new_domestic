@@ -12,116 +12,116 @@ const Page = styled.div`
 `;
 
 const Header = styled.div`
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
 `;
 
 const Title = styled.h2`
-  font-weight:700;
+  font-weight: 700;
 `;
 
 const Actions = styled.div`
-  display:flex;
-  gap:10px;
+  display: flex;
+  gap: 10px;
 `;
 
 const Input = styled.input`
-  padding:8px;
-  border-radius:6px;
-  border:1px solid #cbd5e1;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
 `;
 
 const Button = styled.button`
-  padding:8px 14px;
-  background:#2563eb;
-  color:white;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
+  padding: 8px 14px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
 `;
 
 const TableWrap = styled.div`
-  background:white;
-  border-radius:12px;
-  border:1px solid #e5e7eb;
-  overflow:auto;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  overflow: auto;
 `;
 
 const Table = styled.table`
-  width:100%;
-  border-collapse:collapse;
+  width: 100%;
+  border-collapse: collapse;
 `;
 
 const Th = styled.th`
-  padding:12px;
-  background:#f8fafc;
-  font-size:0.75rem;
-  text-align:left;
+  padding: 12px;
+  background: #f8fafc;
+  font-size: 0.75rem;
+  text-align: left;
 `;
 
 const Td = styled.td`
-  padding:12px;
-  font-size:0.8rem;
-  border-top:1px solid #e5e7eb;
+  padding: 12px;
+  font-size: 0.8rem;
+  border-top: 1px solid #e5e7eb;
 `;
 
 const Badge = styled.span`
-  padding:4px 8px;
-  border-radius:6px;
-  font-size:0.7rem;
-  color:white;
-  background:${p => (p.active ? '#16a34a' : '#64748b')};
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  color: white;
+  background: ${(p) => (p.active ? '#16a34a' : '#64748b')};
 `;
 
 const LinkBtn = styled.button`
-  background:none;
-  border:none;
-  color:#2563eb;
-  cursor:pointer;
-  font-weight:600;
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  font-weight: 600;
 `;
 
 const ActionBtn = styled.button`
-  padding:4px 10px;
-  font-size:0.75rem;
-  border-radius:6px;
-  border:none;
-  color:white;
-  cursor:pointer;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  border: none;
+  color: white;
+  cursor: pointer;
 `;
 
 const Empty = styled.div`
-  padding:24px;
-  text-align:center;
-  color:#64748b;
+  padding: 24px;
+  text-align: center;
+  color: #64748b;
 `;
 
 /* =========================
    MODAL
 ========================= */
 const Overlay = styled.div`
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.45);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:2000;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
 `;
 
 const Modal = styled.div`
-  background:white;
-  width:650px;
-  padding:24px;
-  border-radius:12px;
-  max-height:80vh;
-  overflow:auto;
+  background: white;
+  width: 650px;
+  padding: 24px;
+  border-radius: 12px;
+  max-height: 80vh;
+  overflow: auto;
 `;
 
 const Hr = styled.hr`
-  margin:14px 0;
+  margin: 14px 0;
 `;
 
 /* =========================
@@ -150,18 +150,34 @@ export default function Purifiers() {
   const [search, setSearch] = useState('');
   const [view, setView] = useState(null);
   const [userView, setUserView] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
+  /* =========================
+     FETCH PURIFIERS
+  ========================= */
   useEffect(() => {
-    axios
-      .get('/api/headadmin/purifiers')
-      .then((res) => setPurifiers(res.data.purifiers || []))
-      .catch(() => alert('Failed to load purifiers'));
+    const fetchPurifiers = async () => {
+      try {
+        const res = await axios.get('/api/headadmin/purifiers');
+        setPurifiers(res.data.purifiers || []);
+      } catch (err) {
+        console.error('PURIFIER ERROR:', err);
+        setError('Failed to load purifiers');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPurifiers();
   }, []);
 
   const filtered = purifiers.filter(
     (p) =>
       p.device_id?.toLowerCase().includes(search.toLowerCase()) ||
-      `${p.user_details?.user_name?.first_name || ''} ${p.user_details?.user_name?.last_name || ''}`
+      `${p.user_details?.user_name?.first_name || ''} ${
+        p.user_details?.user_name?.last_name || ''
+      }`
         .toLowerCase()
         .includes(search.toLowerCase())
   );
@@ -212,9 +228,14 @@ export default function Purifiers() {
           </Actions>
         </Header>
 
-        {filtered.length === 0 ? (
+        {loading && <Empty>Loading purifiers…</Empty>}
+        {error && <Empty>{error}</Empty>}
+
+        {!loading && !error && filtered.length === 0 && (
           <Empty>No purifiers found</Empty>
-        ) : (
+        )}
+
+        {!loading && !error && filtered.length > 0 && (
           <TableWrap>
             <Table>
               <thead>
@@ -238,7 +259,9 @@ export default function Purifiers() {
                     <Td>
                       <LinkBtn
                         onClick={() =>
-                          navigate(`/head-admin/purifiers/${p.device_id}/history`)
+                          navigate(
+                            `/headadmin/purifiers/${p.device_id}/history`
+                          )
                         }
                       >
                         {p.device_id}
@@ -267,7 +290,6 @@ export default function Purifiers() {
                     <Td>{p.avg_usage ?? '—'}</Td>
                     <Td>{formatIST(p.createdAt)}</Td>
 
-                    {/* ✅ ACTION BUTTONS */}
                     <Td>
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <ActionBtn
@@ -280,7 +302,9 @@ export default function Purifiers() {
                         <ActionBtn
                           style={{ background: '#6366f1' }}
                           onClick={() =>
-                            navigate(`/head-admin/purifiers/${p.device_id}/analytics`)
+                            navigate(
+                              `/headadmin/purifiers/${p.device_id}/analytics`
+                            )
                           }
                         >
                           Analytics
@@ -289,7 +313,9 @@ export default function Purifiers() {
                         <ActionBtn
                           style={{ background: '#16a34a' }}
                           onClick={() =>
-                            navigate(`/head-admin/purifiers/${p.device_id}/recharged-plans`)
+                            navigate(
+                              `/headadmin/purifiers/${p.device_id}/recharged-plans`
+                            )
                           }
                         >
                           Recharged Plan
@@ -312,10 +338,22 @@ export default function Purifiers() {
             <Hr />
             <Table>
               <tbody>
-                <tr><Th>First Name</Th><Td>{userView.user_name?.first_name || '—'}</Td></tr>
-                <tr><Th>Last Name</Th><Td>{userView.user_name?.last_name || '—'}</Td></tr>
-                <tr><Th>Email</Th><Td>{userView.email_address || '—'}</Td></tr>
-                <tr><Th>Phone</Th><Td>{userView.phone_number || '—'}</Td></tr>
+                <tr>
+                  <Th>First Name</Th>
+                  <Td>{userView.user_name?.first_name || '—'}</Td>
+                </tr>
+                <tr>
+                  <Th>Last Name</Th>
+                  <Td>{userView.user_name?.last_name || '—'}</Td>
+                </tr>
+                <tr>
+                  <Th>Email</Th>
+                  <Td>{userView.email_address || '—'}</Td>
+                </tr>
+                <tr>
+                  <Th>Phone</Th>
+                  <Td>{userView.phone_number || '—'}</Td>
+                </tr>
               </tbody>
             </Table>
             <div style={{ textAlign: 'right', marginTop: 16 }}>
@@ -333,12 +371,30 @@ export default function Purifiers() {
             <Hr />
             <Table>
               <tbody>
-                <tr><Th>Installed At</Th><Td>{formatIST(view.installed_at)}</Td></tr>
-                <tr><Th>Last Service Date</Th><Td>{formatIST(view.last_service_date)}</Td></tr>
-                <tr><Th>Connectivity Status</Th><Td>{view.connectivity_status || '—'}</Td></tr>
-                <tr><Th>Firmware Version</Th><Td>{view.firmware_version || 'v1.0'}</Td></tr>
-                <tr><Th>Is Locked</Th><Td>{view.is_locked ? 'Yes' : 'No'}</Td></tr>
-                <tr><Th>Deregistered At</Th><Td>{formatIST(view.deregistered_at)}</Td></tr>
+                <tr>
+                  <Th>Installed At</Th>
+                  <Td>{formatIST(view.installed_at)}</Td>
+                </tr>
+                <tr>
+                  <Th>Last Service Date</Th>
+                  <Td>{formatIST(view.last_service_date)}</Td>
+                </tr>
+                <tr>
+                  <Th>Connectivity Status</Th>
+                  <Td>{view.connectivity_status || '—'}</Td>
+                </tr>
+                <tr>
+                  <Th>Firmware Version</Th>
+                  <Td>{view.firmware_version || 'v1.0'}</Td>
+                </tr>
+                <tr>
+                  <Th>Is Locked</Th>
+                  <Td>{view.is_locked ? 'Yes' : 'No'}</Td>
+                </tr>
+                <tr>
+                  <Th>Deregistered At</Th>
+                  <Td>{formatIST(view.deregistered_at)}</Td>
+                </tr>
                 <tr>
                   <Th>Replaced Module History</Th>
                   <Td>
@@ -347,11 +403,26 @@ export default function Purifiers() {
                       : '—'}
                   </Td>
                 </tr>
-                <tr><Th>Flow Sensor Count</Th><Td>{view.flow_sensor_count ?? '—'}</Td></tr>
-                <tr><Th>TDS High</Th><Td>{view.tds_high ?? '—'}</Td></tr>
-                <tr><Th>TDS Low</Th><Td>{view.tds_low ?? '—'}</Td></tr>
-                <tr><Th>Filter Life</Th><Td>{view.filter_life ?? '—'}</Td></tr>
-                <tr><Th>Module Physical ID</Th><Td>{view.module_physical_id || '—'}</Td></tr>
+                <tr>
+                  <Th>Flow Sensor Count</Th>
+                  <Td>{view.flow_sensor_count ?? '—'}</Td>
+                </tr>
+                <tr>
+                  <Th>TDS High</Th>
+                  <Td>{view.tds_high ?? '—'}</Td>
+                </tr>
+                <tr>
+                  <Th>TDS Low</Th>
+                  <Td>{view.tds_low ?? '—'}</Td>
+                </tr>
+                <tr>
+                  <Th>Filter Life</Th>
+                  <Td>{view.filter_life ?? '—'}</Td>
+                </tr>
+                <tr>
+                  <Th>Module Physical ID</Th>
+                  <Td>{view.module_physical_id || '—'}</Td>
+                </tr>
               </tbody>
             </Table>
 

@@ -1,27 +1,59 @@
-   import express from 'express';
-   import {
-   getTechnicians,
-   createTechnician,
-   updateTechnician,
-   } from '../../controllers/headadmin/headAdminTechnicianController.js';
+import express from 'express';
+import auth from '../../middleware/auth.js';
+import roleMiddleware from '../../middleware/roleMiddleware.js';
 
-   import authMiddleware from '../../middleware/auth.js';
+import {
+  getTechnicians,
+  createTechnician,
+  updateTechnician,
+} from '../../controllers/headadmin/headAdminTechnicianController.js';
 
-   const router = express.Router();
+const router = express.Router();
 
-   /* =========================
-      GET TECHNICIANS
-   ========================= */
-   router.get('/', authMiddleware, getTechnicians);
+/* =====================================================
+   TECHNICIAN ROUTES
+   - HeadAdmin: full access
+   - Admin: read-only access
+===================================================== */
 
-   /* =========================
-      CREATE TECHNICIAN
-   ========================= */
-   router.post('/', authMiddleware, createTechnician);
+/**
+ * GET /api/headadmin/technicians
+ *
+ * Access:
+ *  - headadmin → full access
+ *  - admin     → read-only access
+ */
+router.get(
+  '/',
+  auth,
+  roleMiddleware('headadmin', 'admin'),
+  getTechnicians
+);
 
-   /* =========================
-      UPDATE TECHNICIAN
-   ========================= */
-   router.put('/:id', authMiddleware, updateTechnician);
+/**
+ * POST /api/headadmin/technicians
+ *
+ * Access:
+ *  - headadmin only
+ */
+router.post(
+  '/',
+  auth,
+  roleMiddleware('headadmin'),
+  createTechnician
+);
 
-   export default router;
+/**
+ * PUT /api/headadmin/technicians/:id
+ *
+ * Access:
+ *  - headadmin only
+ */
+router.put(
+  '/:id',
+  auth,
+  roleMiddleware('headadmin'),
+  updateTechnician
+);
+
+export default router;

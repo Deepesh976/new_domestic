@@ -1,4 +1,7 @@
 import express from 'express';
+import auth from '../../middleware/auth.js';
+import roleMiddleware from '../../middleware/roleMiddleware.js';
+
 import {
   getSupport,
   createSupport,
@@ -6,34 +9,63 @@ import {
   deleteSupport,
 } from '../../controllers/headadmin/headAdminSupportController.js';
 
-import authMiddleware from '../../middleware/auth.js';
-import roleMiddleware from '../../middleware/roleMiddleware.js';
-
 const router = express.Router();
 
-// View (Admin + HeadAdmin)
-router.get('/', authMiddleware, getSupport);
+/* =====================================================
+   SUPPORT ROUTES
+   - HeadAdmin: full access
+   - Admin: read-only access
+===================================================== */
 
-// Create
+/**
+ * GET /api/headadmin/support
+ *
+ * Access:
+ *  - headadmin → full access
+ *  - admin     → read-only access
+ */
+router.get(
+  '/',
+  auth,
+  roleMiddleware('headadmin', 'admin'),
+  getSupport
+);
+
+/**
+ * POST /api/headadmin/support
+ *
+ * Access:
+ *  - headadmin only
+ */
 router.post(
   '/',
-  authMiddleware,
+  auth,
   roleMiddleware('headadmin'),
   createSupport
 );
 
-// Update
+/**
+ * PUT /api/headadmin/support
+ *
+ * Access:
+ *  - headadmin only
+ */
 router.put(
   '/',
-  authMiddleware,
+  auth,
   roleMiddleware('headadmin'),
   updateSupport
 );
 
-// Delete
+/**
+ * DELETE /api/headadmin/support
+ *
+ * Access:
+ *  - headadmin only
+ */
 router.delete(
   '/',
-  authMiddleware,
+  auth,
   roleMiddleware('headadmin'),
   deleteSupport
 );

@@ -121,14 +121,15 @@ export default function Admins() {
   const [loading, setLoading] = useState(true);
 
   /* =========================
-     FETCH USERS (ORG ONLY)
+     FETCH USERS
   ========================= */
   const fetchAdmins = async () => {
     try {
       setLoading(true);
       const res = await axios.get('/api/headadmin/admins');
       setUsers(res.data.admins || []);
-    } catch {
+    } catch (error) {
+      console.error(error);
       alert('Failed to load users');
     } finally {
       setLoading(false);
@@ -153,7 +154,8 @@ export default function Admins() {
     try {
       await axios.delete(`/api/headadmin/admins/${u._id}`);
       fetchAdmins();
-    } catch {
+    } catch (error) {
+      console.error(error);
       alert('Failed to delete admin');
     }
   };
@@ -163,8 +165,12 @@ export default function Admins() {
       <Page>
         <Header>
           <Title>Organization Users</Title>
+
+          {/* ✅ FIXED ROUTE */}
           <AddButton
-            onClick={() => navigate('/head-admin/create-admin')}
+            onClick={() =>
+              navigate('/head-admin/admins/create')
+            }
           >
             + Create Admin
           </AddButton>
@@ -187,6 +193,7 @@ export default function Admins() {
                   <Th>Actions</Th>
                 </tr>
               </thead>
+
               <tbody>
                 {users.map((u) => (
                   <Row key={u._id}>
@@ -200,11 +207,12 @@ export default function Admins() {
                     <Td>
                       {u.role === 'admin' ? (
                         <ActionGroup>
+                          {/* ✅ FIXED ROUTE */}
                           <ActionBtn
                             className="edit"
                             onClick={() =>
                               navigate(
-                                `/head-admin/edit-admin/${u._id}`
+                                `/head-admin/admins/${u._id}/edit`
                               )
                             }
                           >

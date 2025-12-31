@@ -3,9 +3,10 @@ import jwt from 'jsonwebtoken';
 /* =====================================================
    AUTH MIDDLEWARE
    - Verifies JWT
-   - Attaches decoded payload to req.user
-   - Works for all roles (superadmin, headadmin, etc.)
+   - Normalizes org context
+   - Supports superadmin, headadmin, admin
 ===================================================== */
+
 const auth = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -13,21 +14,12 @@ const auth = (req, res, next) => {
     /* =========================
        CHECK AUTH HEADER
     ========================= */
-    if (!authHeader) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
-        message: 'Authorization header missing',
+        message: 'Authorization token required',
       });
     }
 
-    if (!authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        message: 'Invalid authorization format',
-      });
-    }
-
-    /* =========================
-       EXTRACT TOKEN
-    ========================= */
     const token = authHeader.split(' ')[1];
 
     if (!token) {
@@ -37,20 +29,12 @@ const auth = (req, res, next) => {
     }
 
     /* =========================
-       VERIFY TOKEN
+       VERIFY JWT
     ========================= */
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    /*
-      decoded contains:
-      {
-        id,
-        role,
-        organization,
-        iat,
-        exp
-      }
-    */
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET
+    );
 
     if (!decoded?.id || !decoded?.role) {
       return res.status(401).json({
@@ -59,13 +43,33 @@ const auth = (req, res, next) => {
     }
 
     /* =========================
-       ATTACH USER
+       NORMALIZE USER CONTEXT
+       (CRITICAL FIX)
     ========================= */
-    req.user = decoded;
+    const orgId =
+      decoded.organization ||
+      decoded.org_id ||
+      null;
+
+    req.user = {
+      id: decoded.id,
+      role: decoded.role,
+      org_id: orgId,          // admin-compatible
+      organization: orgId,    // headadmin-compatible
+    };
 
     next();
   } catch (error) {
-    console.error('❌ Auth Middleware Error:', error.message);
+    console.error(
+      '❌ Auth Middleware Error:',
+      error.message
+    );
+
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        message: 'Token expired, please login again',
+      });
+    }
 
     return res.status(401).json({
       message: 'Invalid or expired token',

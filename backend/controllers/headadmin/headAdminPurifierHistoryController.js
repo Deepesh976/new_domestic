@@ -1,32 +1,33 @@
 import DailyPurifierLog from '../../models/DailyPurifierLog.js';
 
-/* =========================
-   GET PURIFIER HISTORY
-========================= */
+/* =====================================================
+   GET PURIFIER HISTORY (ADMIN + HEADADMIN)
+===================================================== */
 export const getPurifierHistory = async (req, res) => {
   try {
     const { deviceId } = req.params;
-    const { from, to } = req.query;
+    const orgId = req.user.organization;
 
-    const query = {
-      'metadata.device_id': deviceId,
-      'metadata.org_id': req.user.org_id, // 🔐 org isolation
-    };
-
-    // Date filter
-    if (from || to) {
-      query.timestamp = {};
-      if (from) query.timestamp.$gte = new Date(from);
-      if (to) query.timestamp.$lte = new Date(to);
+    if (!orgId) {
+      return res.status(401).json({
+        message: 'Organization missing in token',
+      });
     }
 
-    const history = await DailyPurifierLog.find(query)
-      .sort({ timestamp: -1 });
+    const history = await DailyPurifierLog.find({
+      'metadata.device_id': deviceId,
+      'metadata.org_id': orgId,
+    })
+      .sort({ timestamp: -1 })
+      .limit(500);
 
-    res.status(200).json({ history });
+    return res.status(200).json({
+      device_id: deviceId,
+      history,
+    });
   } catch (error) {
-    console.error('Get purifier history error:', error);
-    res.status(500).json({
+    console.error('❌ Purifier history error:', error);
+    return res.status(500).json({
       message: 'Failed to fetch purifier history',
     });
   }

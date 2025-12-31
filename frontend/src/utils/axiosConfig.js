@@ -1,25 +1,21 @@
 import axios from 'axios';
 import store from '../redux/store';
 import { logout } from '../redux/authSlice';
-import { checkTokenExpiration } from './authUtils';
 
 const instance = axios.create({
-  baseURL: 'http://localhost:5000', // 🔥 IMPORTANT
+  baseURL: 'http://localhost:5000',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor
+/* =========================
+   REQUEST INTERCEPTOR
+========================= */
 instance.interceptors.request.use(
   (config) => {
-    if (!checkTokenExpiration()) {
-      store.dispatch(logout());
-      window.location.href = '/login';
-      return Promise.reject('Token expired');
-    }
-
     const token = localStorage.getItem('token');
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -29,13 +25,15 @@ instance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor
+/* =========================
+   RESPONSE INTERCEPTOR
+========================= */
 instance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       store.dispatch(logout());
-      window.location.href = '/login';
+      window.location.href = '/'; // ✅ correct route
     }
     return Promise.reject(error);
   }

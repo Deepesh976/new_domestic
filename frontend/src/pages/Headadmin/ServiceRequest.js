@@ -103,6 +103,7 @@ const Overlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 50;
 `;
 
 const Modal = styled.div`
@@ -156,7 +157,7 @@ const HeadAdminServiceRequest = () => {
   const [loading, setLoading] = useState(false);
 
   /* =========================
-     LOAD DATA (NO LOOP)
+     LOAD REQUESTS
   ========================= */
   const loadRequests = async () => {
     setLoading(true);
@@ -166,25 +167,25 @@ const HeadAdminServiceRequest = () => {
         status: filterStatus,
       });
       setRequests(res.data || []);
-    } catch (err) {
-      console.error('Failed to load requests', err);
+    } catch (error) {
+      console.error('❌ Failed to load service requests', error);
     } finally {
       setLoading(false);
     }
   };
 
+  /* =========================
+     LOAD TECHNICIANS
+  ========================= */
   const loadTechnicians = async () => {
     try {
       const res = await getAvailableServiceTechnicians();
       setTechnicians(res.data || []);
-    } catch (err) {
-      console.error('Failed to load technicians', err);
+    } catch (error) {
+      console.error('❌ Failed to load technicians', error);
     }
   };
 
-  /* =========================
-     INITIAL LOAD
-  ========================= */
   useEffect(() => {
     loadRequests();
     loadTechnicians();
@@ -194,6 +195,8 @@ const HeadAdminServiceRequest = () => {
      ACTIONS
   ========================= */
   const handleStatusChange = async (id, newStatus) => {
+    if (!newStatus) return;
+
     const ok = window.confirm(`Change status to "${newStatus}"?`);
     if (!ok) return;
 
@@ -205,7 +208,7 @@ const HeadAdminServiceRequest = () => {
   const handleAssignTech = async (requestId, techId) => {
     if (!techId) return;
 
-    const tech = technicians.find(t => t._id === techId);
+    const tech = technicians.find((t) => t._id === techId);
     const ok = window.confirm(
       `Assign technician ${tech?.user_name?.first_name || ''} ${tech?.user_name?.last_name || ''}?`
     );
@@ -251,14 +254,14 @@ const HeadAdminServiceRequest = () => {
             <Table>
               <thead>
                 <tr>
-                  <Th>S.No</Th>
-                  {/* <Th>Service ID</Th> */}
+                  <Th>#</Th>
                   <Th>User</Th>
                   <Th>Device ID</Th>
                   <Th>Service Type</Th>
                   <Th>Location</Th>
                   <Th>Status</Th>
                   <Th>Assigned Technician</Th>
+                  <Th>Fixed By</Th>
                   <Th>View</Th>
                 </tr>
               </thead>
@@ -274,7 +277,6 @@ const HeadAdminServiceRequest = () => {
                   requests.map((r, i) => (
                     <tr key={r._id}>
                       <Td>{i + 1}</Td>
-                      {/* <Td>{r.request_id}</Td> */}
                       <Td>{r.user_name || 'Guest User'}</Td>
                       <Td>{r.device_id}</Td>
                       <Td>{r.request_type}</Td>
@@ -293,6 +295,7 @@ const HeadAdminServiceRequest = () => {
                       <Td>
                         <Select
                           value={r.status}
+                          disabled={r.status === 'closed'}
                           onChange={(e) =>
                             handleStatusChange(r._id, e.target.value)
                           }
@@ -305,7 +308,9 @@ const HeadAdminServiceRequest = () => {
 
                       {/* ASSIGNED TECH */}
                       <Td>
-                        {r.assigned_technician_name ? (
+                        {r.status === 'closed' ? (
+                          <span style={{ color: '#64748b' }}>Closed</span>
+                        ) : r.assigned_technician_name ? (
                           <>
                             {r.assigned_technician_name}
                             <Badge>Assigned</Badge>
@@ -324,6 +329,13 @@ const HeadAdminServiceRequest = () => {
                             ))}
                           </Select>
                         )}
+                      </Td>
+
+                      {/* FIXED BY */}
+                      <Td>
+                        {r.status === 'closed'
+                          ? r.fixed_by_name || '—'
+                          : '—'}
                       </Td>
 
                       <Td>
@@ -357,6 +369,7 @@ const HeadAdminServiceRequest = () => {
             <p><b>Scheduled At:</b> {formatDate(selected.scheduled_at)}</p>
             <p><b>Arrival At:</b> {formatDate(selected.arrived_at)}</p>
             <p><b>Completed At:</b> {formatDate(selected.completed_at)}</p>
+            <p><b>Fixed By:</b> {selected.fixed_by?.technician_name || '—'}</p>
             <p><b>Observation:</b> {selected.observations}</p>
 
             <p><b>Replaced Parts:</b></p>

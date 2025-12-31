@@ -60,7 +60,7 @@ const Button = styled.button`
    COMPONENT
 ========================= */
 export default function EditAdmin() {
-  const { adminId } = useParams();
+  const { id } = useParams(); // ✅ FIXED
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
@@ -79,8 +79,9 @@ export default function EditAdmin() {
     const fetchAdmin = async () => {
       try {
         const res = await axios.get('/api/headadmin/admins');
+
         const admin = res.data.admins.find(
-          (a) => a._id === adminId && a.role === 'admin'
+          (a) => a._id === id && a.role === 'admin'
         );
 
         if (!admin) {
@@ -96,13 +97,14 @@ export default function EditAdmin() {
           phone_no: admin.phoneNo || '',
           location: admin.location || '',
         });
-      } catch {
+      } catch (error) {
+        console.error(error);
         alert('Failed to load admin');
       }
     };
 
     fetchAdmin();
-  }, [adminId, navigate]);
+  }, [id, navigate]);
 
   /* =========================
      HANDLE CHANGE
@@ -134,10 +136,7 @@ export default function EditAdmin() {
         payload.password = form.password;
       }
 
-      await axios.put(
-        `/api/headadmin/admins/${adminId}`,
-        payload
-      );
+      await axios.put(`/api/headadmin/admins/${id}`, payload);
 
       alert('Admin updated successfully');
       navigate('/head-admin/admins');

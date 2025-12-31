@@ -1,8 +1,14 @@
 import mongoose from 'mongoose';
-import { v4 as uuidv4 } from 'uuid'; // ✅ REQUIRED IMPORT
+import { v4 as uuidv4 } from 'uuid';
 
+/* =====================================================
+   SERVICE REQUEST SCHEMA
+===================================================== */
 const ServiceRequestSchema = new mongoose.Schema(
   {
+    /* =========================
+       IDENTIFIERS
+    ========================= */
     request_id: {
       type: String,
       default: uuidv4, // ✅ UUID v4 auto-generated
@@ -21,15 +27,41 @@ const ServiceRequestSchema = new mongoose.Schema(
       index: true,
     },
 
+    /* =========================
+       REQUEST DETAILS
+    ========================= */
     request_type: String,
     device_id: String,
     description: String,
 
+    /* =========================
+       TECHNICIAN ASSIGNMENT
+    ========================= */
     assigned_to: {
-      type: String, // OrgTechnician _id
+      type: String, // OrgTechnician _id (current / last assigned)
       default: null,
+      index: true,
     },
 
+    /* =========================
+       FIXED BY (IMMUTABLE HISTORY)
+       - Stored at CLOSE time
+       - Never changes
+    ========================= */
+    fixed_by: {
+      technician_id: {
+        type: String,
+        default: null,
+      },
+      technician_name: {
+        type: String,
+        default: null,
+      },
+    },
+
+    /* =========================
+       TIMELINE
+    ========================= */
     scheduled_at: {
       type: Date,
       default: null,
@@ -45,6 +77,9 @@ const ServiceRequestSchema = new mongoose.Schema(
       default: null,
     },
 
+    /* =========================
+       STATUS
+    ========================= */
     status: {
       type: String,
       enum: ['open', 'assigned', 'closed'],
@@ -52,6 +87,9 @@ const ServiceRequestSchema = new mongoose.Schema(
       index: true,
     },
 
+    /* =========================
+       SERVICE OUTPUT
+    ========================= */
     replaced_parts: {
       type: [String],
       default: [],
@@ -62,6 +100,11 @@ const ServiceRequestSchema = new mongoose.Schema(
       default: [],
     },
 
+    observations: String,
+
+    /* =========================
+       LOCATION
+    ========================= */
     location: {
       street: String,
       area: String,
@@ -70,8 +113,6 @@ const ServiceRequestSchema = new mongoose.Schema(
       postal_code: String,
       country: String,
     },
-
-    observations: String,
   },
   {
     timestamps: true, // createdAt, updatedAt
@@ -82,6 +123,8 @@ const ServiceRequestSchema = new mongoose.Schema(
    INDEXES
 ========================= */
 ServiceRequestSchema.index({ org_id: 1, status: 1 });
+ServiceRequestSchema.index({ org_id: 1, device_id: 1 });
+ServiceRequestSchema.index({ 'fixed_by.technician_id': 1 });
 
 export default mongoose.model(
   'service_requests',

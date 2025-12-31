@@ -25,8 +25,9 @@ import superAdminDashboardRoutes from './routes/superadmin/superAdminDashboardRo
 
 /* =========================
    ROUTES – HEAD ADMIN
+   (Admin INCLUDED here)
 ========================= */
-import headAdminAuthRoutes from './routes/headadmin/headAdminAuthRoutes.js';
+import headAdminAuthRoutes from './routes/headadmin/authRoutes.js';
 import headAdminCustomerRoutes from './routes/headadmin/headAdminCustomerRoutes.js';
 import headAdminPurifierRoutes from './routes/headadmin/headAdminPurifierRoutes.js';
 import headAdminPurifierHistoryRoutes from './routes/headadmin/headAdminPurifierHistoryRoutes.js';
@@ -43,7 +44,7 @@ import headAdminServiceRequestRoutes from './routes/headadmin/headAdminServiceRe
 const app = express();
 
 /* =========================
-   BASIC VALIDATIONS
+   ENV VALIDATION
 ========================= */
 if (!process.env.JWT_SECRET) {
   console.error('❌ JWT_SECRET missing in environment variables');
@@ -51,25 +52,31 @@ if (!process.env.JWT_SECRET) {
 }
 
 /* =========================
-   MIDDLEWARE
+   GLOBAL MIDDLEWARE
 ========================= */
-app.use(cors());
+app.use(
+  cors({
+    origin: '*', // 🔒 lock this in production
+    credentials: true,
+  })
+);
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Logger (only in development)
+// Logger (dev only)
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
 
 /* =========================
-   DATABASE
+   DATABASE CONNECTION
 ========================= */
 connectDB();
 
-/* =========================
+/* =====================================================
    API ROUTES – SUPER ADMIN
-========================= */
+===================================================== */
 app.use('/api/superadmin/auth', superAdminAuthRoutes);
 app.use('/api/superadmin/organizations', superAdminOrganizationRoutes);
 app.use('/api/superadmin/admins', superAdminAdminRoutes);
@@ -78,12 +85,13 @@ app.use('/api/superadmin/customers', superAdminCustomerRoutes);
 app.use('/api/superadmin/transactions', superAdminTransactionRoutes);
 app.use('/api/superadmin/dashboard', superAdminDashboardRoutes);
 
-/* =========================
-   API ROUTES – HEAD ADMIN
-========================= */
+/* =====================================================
+   API ROUTES – HEAD ADMIN (ADMIN INCLUDED)
+===================================================== */
 app.use('/api/headadmin/auth', headAdminAuthRoutes);
 app.use('/api/headadmin/customers', headAdminCustomerRoutes);
 app.use('/api/headadmin/admins', headAdminAdminRoutes);
+app.use('/api/headadmin/purifiers', headAdminPurifierRoutes);
 app.use('/api/headadmin/purifiers', headAdminPurifierRoutes);
 app.use('/api/headadmin/purifiers', headAdminPurifierHistoryRoutes);
 app.use('/api/headadmin/transactions', headAdminTransactionRoutes);

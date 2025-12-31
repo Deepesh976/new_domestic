@@ -1,6 +1,7 @@
 import express from 'express';
-import auth from '../../middleware/auth.js';          // 🔥 ADD THIS
+import auth from '../../middleware/auth.js';
 import roleMiddleware from '../../middleware/roleMiddleware.js';
+
 import {
   createPlan,
   getActivePlans,
@@ -11,21 +12,36 @@ import {
 
 const router = express.Router();
 
+/* =====================================================
+   PLAN ROUTES
+   Rules:
+   - HeadAdmin: full access (CRUD)
+   - Admin: read-only (active + archived)
+===================================================== */
+
 /* =========================
-   AUTH FIRST (CRITICAL)
+   AUTH (REQUIRED FOR ALL)
 ========================= */
 router.use(auth);
 
 /* =========================
    READ ACCESS
-   headadmin + admin
+   - headadmin
+   - admin
 ========================= */
+
+/**
+ * GET /api/headadmin/plans/active
+ */
 router.get(
   '/active',
   roleMiddleware('headadmin', 'admin'),
   getActivePlans
 );
 
+/**
+ * GET /api/headadmin/plans/archived
+ */
 router.get(
   '/archived',
   roleMiddleware('headadmin', 'admin'),
@@ -34,20 +50,30 @@ router.get(
 
 /* =========================
    WRITE ACCESS
-   headadmin only
+   - headadmin only
 ========================= */
+
+/**
+ * POST /api/headadmin/plans
+ */
 router.post(
   '/',
   roleMiddleware('headadmin'),
   createPlan
 );
 
+/**
+ * PUT /api/headadmin/plans/:id
+ */
 router.put(
   '/:id',
   roleMiddleware('headadmin'),
   updatePlan
 );
 
+/**
+ * DELETE /api/headadmin/plans/:id
+ */
 router.delete(
   '/:id',
   roleMiddleware('headadmin'),

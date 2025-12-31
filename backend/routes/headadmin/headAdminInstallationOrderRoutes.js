@@ -1,4 +1,6 @@
 import express from 'express';
+import auth from '../../middleware/auth.js';
+import roleMiddleware from '../../middleware/roleMiddleware.js';
 
 import {
   getInstallationOrders,
@@ -6,41 +8,58 @@ import {
   completeInstallation,
 } from '../../controllers/headadmin/headAdminInstallationOrderController.js';
 
-import authMiddleware from '../../middleware/auth.js';
-import roleMiddleware from '../../middleware/roleMiddleware.js';
-
 const router = express.Router();
 
 /* =====================================================
-   GET INSTALLATION ORDERS
-   - Org scoped
-   - payment_received === true
-   - kyc_verified === true
+   INSTALLATION ORDER ROUTES
+   Rules:
+   - HeadAdmin: full access
+   - Admin: read-only access
 ===================================================== */
+
+/**
+ * GET /api/headadmin/installations
+ *
+ * Access:
+ *  - headadmin → full access
+ *  - admin     → read-only access
+ *
+ * Conditions handled in controller:
+ *  - payment_received === true
+ *  - kyc_verified === true
+ */
 router.get(
   '/',
-  authMiddleware,
-  roleMiddleware('headadmin'),
+  auth,
+  roleMiddleware('headadmin', 'admin'),
   getInstallationOrders
 );
 
-/* =====================================================
-   ASSIGN TECHNICIAN TO INSTALLATION ORDER
-===================================================== */
+/**
+ * PUT /api/headadmin/installations/:id/assign
+ *
+ * Access:
+ *  - headadmin only
+ */
 router.put(
   '/:id/assign',
-  authMiddleware,
+  auth,
   roleMiddleware('headadmin'),
   assignInstallationTechnician
 );
 
-/* =====================================================
-   COMPLETE INSTALLATION ORDER
-   - Releases technician (busy → free)
-===================================================== */
+/**
+ * PUT /api/headadmin/installations/:id/complete
+ *
+ * Access:
+ *  - headadmin only
+ *
+ * Effect:
+ *  - technician status updated (busy → free)
+ */
 router.put(
   '/:id/complete',
-  authMiddleware,
+  auth,
   roleMiddleware('headadmin'),
   completeInstallation
 );

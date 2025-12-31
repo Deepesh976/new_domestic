@@ -4,6 +4,14 @@ import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../redux/authSlice';
 import './UnifiedLoginPage.css';
 
+/* =====================================================
+   UNIFIED LOGIN PAGE
+   Roles:
+   - superadmin
+   - headadmin
+   - admin
+===================================================== */
+
 const UnifiedLoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,10 +28,12 @@ const UnifiedLoginPage = () => {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
 
-    if (token && role === 'superadmin') {
-      navigate('/super-admin', { replace: true });
-    } else if (token && role === 'headadmin') {
-      navigate('/head-admin', { replace: true });
+    if (!token || !role) return;
+
+    if (role === 'superadmin') {
+      navigate('/superadmin', { replace: true });
+    } else if (role === 'headadmin' || role === 'admin') {
+      navigate('/headadmin', { replace: true });
     }
   }, [navigate]);
 
@@ -35,11 +45,14 @@ const UnifiedLoginPage = () => {
     setError('');
     setLoading(true);
 
+    // Clear old session
+    localStorage.clear();
+
     try {
       /* =========================
-         TRY SUPER ADMIN LOGIN
+         1️⃣ TRY SUPERADMIN LOGIN
       ========================= */
-      let response = await fetch(
+      const superAdminRes = await fetch(
         'http://localhost:5000/api/superadmin/auth/login',
         {
           method: 'POST',
@@ -48,44 +61,18 @@ const UnifiedLoginPage = () => {
         }
       );
 
-      let data = await response.json();
+      const superAdminData = await superAdminRes.json();
 
-      if (response.ok && data.role === 'superadmin') {
-        // 🔥 CLEAR OLD SESSION
-        localStorage.clear();
-
-        // 🔐 SAVE AUTH DATA
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('role', data.role);
-
-        // 🔥 SAVE USER INFO (THIS FIXES PROFILE EMAIL)
-        localStorage.setItem(
-          'email',
-          data.user?.email || email
-        );
-        localStorage.setItem(
-          'username',
-          data.user?.username || 'Super Admin'
-        );
-
-        // 🔄 SAVE TO REDUX
-        dispatch(
-          loginSuccess({
-            token: data.token,
-            role: data.role,
-            email: data.user?.email || email,
-            username: data.user?.username || 'Super Admin',
-          })
-        );
-
-        navigate('/super-admin', { replace: true });
+      if (superAdminRes.ok && superAdminData.role === 'superadmin') {
+        saveSession(superAdminData);
+        navigate('/superadmin', { replace: true });
         return;
       }
 
       /* =========================
-         TRY HEAD ADMIN LOGIN
+         2️⃣ TRY HEADADMIN / ADMIN
       ========================= */
-      response = await fetch(
+      const orgUserRes = await fetch(
         'http://localhost:5000/api/headadmin/auth/login',
         {
           method: 'POST',
@@ -94,41 +81,18 @@ const UnifiedLoginPage = () => {
         }
       );
 
-      data = await response.json();
+      const orgUserData = await orgUserRes.json();
 
-      if (response.ok && data.role === 'headadmin') {
-        localStorage.clear();
-
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('role', data.role);
-        localStorage.setItem('organization', data.organization);
-
-        localStorage.setItem(
-          'email',
-          data.user?.email || email
-        );
-        localStorage.setItem(
-          'username',
-          data.user?.username || 'Head Admin'
-        );
-
-        dispatch(
-          loginSuccess({
-            token: data.token,
-            role: data.role,
-            organization: data.organization,
-            email: data.user?.email || email,
-            username: data.user?.username || 'Head Admin',
-          })
-        );
-
-        navigate('/head-admin', { replace: true });
+      if (
+        orgUserRes.ok &&
+        (orgUserData.role === 'headadmin' ||
+          orgUserData.role === 'admin')
+      ) {
+        saveSession(orgUserData);
+        navigate('/headadmin', { replace: true });
         return;
       }
 
-      /* =========================
-         INVALID CREDENTIALS
-      ========================= */
       setError('Invalid email or password');
     } catch (err) {
       console.error('LOGIN ERROR:', err);
@@ -136,6 +100,45 @@ const UnifiedLoginPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  /* =========================
+     SAVE SESSION (HELPER)
+  ========================= */
+  const saveSession = (data) => {
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('role', data.role);
+
+    if (data.organization) {
+      localStorage.setItem('org_id', data.organization);
+    }
+
+    localStorage.setItem('email', data.user?.email || '');
+    localStorage.setItem(
+      'username',
+      data.user?.username ||
+        (data.role === 'superadmin'
+          ? 'Super Admin'
+          : data.role === 'headadmin'
+          ? 'Head Admin'
+          : 'Admin')
+    );
+
+    dispatch(
+      loginSuccess({
+        token: data.token,
+        role: data.role,
+        org_id: data.organization || null,
+        email: data.user?.email || '',
+        username:
+          data.user?.username ||
+          (data.role === 'superadmin'
+            ? 'Super Admin'
+            : data.role === 'headadmin'
+            ? 'Head Admin'
+            : 'Admin'),
+      })
+    );
   };
 
   /* =========================
@@ -148,10 +151,14 @@ const UnifiedLoginPage = () => {
           <div className="login-header">
             <div className="login-logo">D</div>
             <h1 className="login-title">Domesticro</h1>
-            <p className="login-subtitle">Sign in to your account</p>
+            <p className="login-subtitle">
+              Sign in to your account
+            </p>
           </div>
 
-          {error && <div className="error-message">{error}</div>}
+          {error && (
+            <div className="error-message">{error}</div>
+          )}
 
           <form className="login-form" onSubmit={handleLogin}>
             <div className="form-group">
@@ -185,7 +192,7 @@ const UnifiedLoginPage = () => {
               type="submit"
               disabled={loading}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Signing in…' : 'Sign In'}
             </button>
           </form>
 

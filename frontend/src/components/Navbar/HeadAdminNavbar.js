@@ -16,17 +16,25 @@ import './HeadAdminNavbar.css';
 export default function HeadAdminNavbar({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
 
-  const email = localStorage.getItem('email') || 'Admin';
+  const role = localStorage.getItem('role'); // headadmin | admin
+  const email = localStorage.getItem('email') || 'User';
+  const isHeadAdmin = role === 'headadmin';
 
-  /* Close sidebar on route change (mobile UX fix) */
+  /* =========================
+     CLOSE MENUS ON ROUTE CHANGE
+  ========================= */
   useEffect(() => {
     setMenuOpen(false);
     setProfileOpen(false);
   }, [location.pathname]);
 
+  /* =========================
+     LOGOUT
+  ========================= */
   const logout = () => {
     localStorage.clear();
     navigate('/');
@@ -78,17 +86,68 @@ export default function HeadAdminNavbar({ children }) {
       {/* ================= SIDEBAR ================= */}
       <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
         <nav className="menu">
-          <NavItem to="/head-admin" icon={<MdDashboard />} label="Dashboard" />
-          <NavItem to="/head-admin/customers" icon={<MdPeople />} label="Customers" />
-          <NavItem to="/head-admin/admins" icon={<MdAdminPanelSettings />} label="Admins" />
-          <NavItem to="/head-admin/purifiers" icon={<MdDevices />} label="Purifiers" />
-          <NavItem to="/head-admin/transactions" icon={<MdPayments />} label="Transactions" />
-          <NavItem to="/head-admin/plans" icon={<MdListAlt />} label="Plans" />
-          {/* <NavItem to="/head-admin/orders" icon={<MdListAlt />} label="Orders" /> */}
-          <NavItem to="/head-admin/technicians" icon={<MdEngineering />} label="Technicians" />
-          <NavItem to="/head-admin/installations" icon={<MdEngineering />} label="Installations" />
-          <NavItem to="/head-admin/service-requests" icon={<MdSupportAgent />} label="Service Requests" />
-          <NavItem to="/head-admin/support" icon={<MdSupportAgent />} label="Support" />
+          <NavItem
+            to="/headadmin"
+            icon={<MdDashboard />}
+            label="Dashboard"
+          />
+
+          <NavItem
+            to="/headadmin/customers"
+            icon={<MdPeople />}
+            label="Customers"
+          />
+
+          {/* HEADADMIN ONLY */}
+          {isHeadAdmin && (
+            <NavItem
+              to="/headadmin/admins"
+              icon={<MdAdminPanelSettings />}
+              label="Admins"
+            />
+          )}
+
+          <NavItem
+            to="/headadmin/purifiers"
+            icon={<MdDevices />}
+            label="Purifiers"
+          />
+
+          <NavItem
+            to="/headadmin/transactions"
+            icon={<MdPayments />}
+            label="Transactions"
+          />
+          
+            <NavItem
+              to="/headadmin/plans"
+              icon={<MdListAlt />}
+              label="Plans"
+            />
+
+          <NavItem
+            to="/headadmin/technicians"
+            icon={<MdEngineering />}
+            label="Technicians"
+          />
+
+          <NavItem
+            to="/headadmin/installations"
+            icon={<MdEngineering />}
+            label="Installations"
+          />
+
+          <NavItem
+            to="/headadmin/service-requests"
+            icon={<MdSupportAgent />}
+            label="Service Requests"
+          />
+
+          <NavItem
+            to="/headadmin/support"
+            icon={<MdSupportAgent />}
+            label="Support"
+          />
         </nav>
       </aside>
 

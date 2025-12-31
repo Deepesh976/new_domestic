@@ -7,8 +7,24 @@ import {
 
 const router = express.Router();
 
-router.use(auth, roleMiddleware('headadmin'));
+/* =====================================================
+   PURIFIER HISTORY
+   - HeadAdmin: full access
+   - Admin: read-only access
+===================================================== */
 
-router.get('/:deviceId/history', getPurifierHistory);
+/**
+ * GET /api/headadmin/purifiers/:deviceId/history
+ *
+ * Access:
+ *  - headadmin
+ *  - admin (same org)
+ */
+router.get(
+  '/:deviceId/history',
+  auth,
+  roleMiddleware('headadmin', 'admin'),
+  getPurifierHistory
+);
 
 export default router;

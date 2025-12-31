@@ -1,6 +1,13 @@
 import { useSelector } from 'react-redux';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
+/* =====================================================
+   PROTECTED ROUTE
+   - Auth + Role guard
+   - Supports superadmin, headadmin, admin
+   - NO dependency on password hashing
+===================================================== */
+
 const ProtectedRoute = ({ allowedRoles = [], children }) => {
   const location = useLocation();
 
@@ -11,7 +18,8 @@ const ProtectedRoute = ({ allowedRoles = [], children }) => {
 
   const reduxToken = auth.token;
   const reduxRole = auth.role;
-  const reduxOrganization = auth.organization;
+  const reduxOrgId =
+    auth.org_id || auth.organization || null;
 
   /* =========================
      FALLBACK TO LOCALSTORAGE
@@ -22,8 +30,10 @@ const ProtectedRoute = ({ allowedRoles = [], children }) => {
   const role =
     reduxRole || localStorage.getItem('role');
 
-  const organization =
-    reduxOrganization || localStorage.getItem('organization');
+  const orgId =
+    reduxOrgId ||
+    localStorage.getItem('org_id') ||
+    localStorage.getItem('organization');
 
   /* =========================
      NOT AUTHENTICATED
@@ -39,29 +49,37 @@ const ProtectedRoute = ({ allowedRoles = [], children }) => {
   }
 
   /* =========================
-     ROLE CHECK
+     NORMALIZE ROLE
   ========================= */
   const normalizedRole = String(role).toLowerCase();
   const normalizedAllowedRoles = allowedRoles.map((r) =>
     String(r).toLowerCase()
   );
 
+  /* =========================
+     ROLE CHECK
+  ========================= */
   if (
     normalizedAllowedRoles.length > 0 &&
     !normalizedAllowedRoles.includes(normalizedRole)
   ) {
+    console.warn(
+      `❌ Role "${normalizedRole}" not allowed`
+    );
     return <Navigate to="/" replace />;
   }
 
   /* =========================
-     HEAD ADMIN → ORG REQUIRED
+     ORG CONTEXT CHECK
+     (Admin + HeadAdmin ONLY)
   ========================= */
   if (
-    normalizedRole === 'headadmin' &&
-    !organization
+    (normalizedRole === 'headadmin' ||
+      normalizedRole === 'admin') &&
+    !orgId
   ) {
     console.error(
-      '❌ HeadAdmin missing organization in auth state'
+      `❌ ${normalizedRole} missing org_id`
     );
     return <Navigate to="/" replace />;
   }
@@ -69,13 +87,12 @@ const ProtectedRoute = ({ allowedRoles = [], children }) => {
   /* =========================
      ACCESS GRANTED ✅
   ========================= */
-  // 🔥 THIS IS THE FIX
-  // If this route is wrapped (like /profile), render children
+  // Wrapped usage
   if (children) {
     return children;
   }
 
-  // Otherwise render nested routes (/super-admin/*, /head-admin/*)
+  // Nested routes usage
   return <Outlet />;
 };
 

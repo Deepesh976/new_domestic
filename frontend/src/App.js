@@ -21,7 +21,7 @@ import Device from './pages/SuperAdmin/Device';
 import AddDevice from './pages/SuperAdmin/AddDevice';
 import SuperAdminCustomerInfo from './pages/SuperAdmin/SuperAdminCustomerInfo';
 
-/* ================= HEAD ADMIN ================= */
+/* ================= HEAD ADMIN (ADMIN INCLUDED) ================= */
 import HeadAdminDashboard from './components/Dashboard/HeadAdminDashboard';
 import HeadAdminCustomers from './pages/HeadAdmin/Customers';
 import HeadAdminAdmins from './pages/HeadAdmin/Admins';
@@ -51,37 +51,34 @@ function App() {
 
         {/* ================= SUPER ADMIN ================= */}
         <Route
-          path="/super-admin"
+          path="/superadmin"
           element={<ProtectedRoute allowedRoles={['superadmin']} />}
         >
           <Route index element={<SuperAdminDashboard />} />
-
           <Route path="organizations" element={<SuperAdminOrg />} />
           <Route path="organizations/create" element={<CreateOrganization />} />
           <Route path="organizations/:id/edit" element={<EditOrganization />} />
-
           <Route path="admins" element={<AdminInfo />} />
           <Route path="admins/create" element={<CreateAdmin />} />
           <Route path="admins/:id/edit" element={<EditAdmin />} />
-
           <Route path="customers" element={<Customer />} />
           <Route path="customers/:id" element={<SuperAdminCustomerInfo />} />
-
           <Route path="devices" element={<Device />} />
           <Route path="devices/add" element={<AddDevice />} />
-
           <Route path="transactions" element={<Transaction />} />
         </Route>
 
-        {/* ================= HEAD ADMIN ================= */}
+        {/* ================= HEAD ADMIN (ADMIN INCLUDED) ================= */}
         <Route
-          path="/head-admin"
-          element={<ProtectedRoute allowedRoles={['headadmin']} />}
+          path="/headadmin"
+          element={
+            <ProtectedRoute allowedRoles={['headadmin', 'admin']} />
+          }
         >
           <Route index element={<HeadAdminDashboard />} />
-
           <Route path="customers" element={<HeadAdminCustomers />} />
 
+          {/* HEADADMIN ONLY PAGES (UI will hide for admin) */}
           <Route path="admins" element={<HeadAdminAdmins />} />
           <Route path="admins/create" element={<HeadAdminCreateAdmin />} />
           <Route path="admins/:id/edit" element={<HeadAdminEditAdmin />} />
@@ -91,28 +88,24 @@ function App() {
             path="purifiers/:deviceId/history"
             element={<HeadAdminPurifierHistory />}
           />
-
           <Route path="analysis" element={<HeadAdminAnalysis />} />
           <Route path="recharged-plans" element={<HeadAdminRechargedPlan />} />
           <Route path="transactions" element={<HeadAdminTransactions />} />
-
           <Route path="plans" element={<HeadAdminPlans />} />
           <Route path="plans/create" element={<HeadAdminCreatePlan />} />
           <Route path="plans/:planId/edit" element={<HeadAdminEditPlan />} />
-
           <Route path="orders" element={<HeadAdminOrders />} />
           <Route path="technicians" element={<HeadAdminTechnicians />} />
           <Route path="installations" element={<HeadAdminInstallationOrder />} />
-
           <Route path="service-requests" element={<HeadAdminServiceRequest />} />
           <Route path="support" element={<HeadAdminSupport />} />
         </Route>
 
-        {/* ================= GLOBAL PROFILE ================= */}
+        {/* ================= PROFILE ================= */}
         <Route
           path="/profile"
           element={
-            <ProtectedRoute allowedRoles={['superadmin', 'headadmin']}>
+            <ProtectedRoute allowedRoles={['superadmin', 'headadmin', 'admin']}>
               <Profile />
             </ProtectedRoute>
           }

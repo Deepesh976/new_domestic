@@ -6,7 +6,7 @@ import ArchivedPlan from './ArchivedPlan';
 import { useNavigate } from 'react-router-dom';
 
 /* =========================
-   LAYOUT CONSTANTS
+   CONSTANTS
 ========================= */
 const NAVBAR_HEIGHT = 64;
 const SIDEBAR_WIDTH = 260;
@@ -44,6 +44,7 @@ const Title = styled.h2`
 const Tabs = styled.div`
   display: flex;
   gap: 10px;
+  margin-top: 8px;
 `;
 
 const Tab = styled.button`
@@ -150,6 +151,10 @@ export default function Plan() {
   const [tab, setTab] = useState('active');
   const navigate = useNavigate();
 
+  /* 🔐 ROLE CHECK */
+  const role = localStorage.getItem('role'); // 'headadmin' | 'admin'
+  const isHeadAdmin = role === 'headadmin';
+
   const loadPlans = async () => {
     const url =
       tab === 'active'
@@ -192,7 +197,8 @@ export default function Plan() {
               </Tabs>
             </div>
 
-            {tab === 'active' && (
+            {/* ✅ ONLY HEADADMIN CAN CREATE */}
+            {isHeadAdmin && tab === 'active' && (
               <CreateButton
                 onClick={() => navigate('/head-admin/plans/create')}
               >
@@ -217,7 +223,7 @@ export default function Plan() {
                       <Th>Type</Th>
                       <Th>Created At</Th>
                       <Th>Plan ID</Th>
-                      <Th>Actions</Th>
+                      {isHeadAdmin && <Th>Actions</Th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -233,21 +239,25 @@ export default function Plan() {
                         </Td>
                         <Td>{formatDateTime(p.created_at)}</Td>
                         <Td>{p.plan_id}</Td>
-                        <Td>
-                          <ActionButton
-                            onClick={() =>
-                              navigate(`/head-admin/plans/${p._id}/edit`)
-                            }
-                          >
-                            Edit
-                          </ActionButton>
-                          <ActionButton
-                            variant="delete"
-                            onClick={() => deletePlan(p._id)}
-                          >
-                            Delete
-                          </ActionButton>
-                        </Td>
+
+                        {/* ✅ ACTIONS ONLY FOR HEADADMIN */}
+                        {isHeadAdmin && (
+                          <Td>
+                            <ActionButton
+                              onClick={() =>
+                                navigate(`/head-admin/plans/${p._id}/edit`)
+                              }
+                            >
+                              Edit
+                            </ActionButton>
+                            <ActionButton
+                              variant="delete"
+                              onClick={() => deletePlan(p._id)}
+                            >
+                              Delete
+                            </ActionButton>
+                          </Td>
+                        )}
                       </tr>
                     ))}
                   </tbody>

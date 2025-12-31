@@ -1,14 +1,29 @@
 import express from 'express';
-import { getRechargeTransactions } from '../../controllers/headadmin/headAdminTransactionController.js';
-import authMiddleware from '../../middleware/auth.js';
+import auth from '../../middleware/auth.js';
 import roleMiddleware from '../../middleware/roleMiddleware.js';
+import {
+  getRechargeTransactions,
+} from '../../controllers/headadmin/headAdminTransactionController.js';
 
 const router = express.Router();
 
+/* =====================================================
+   TRANSACTION ROUTES
+   - HeadAdmin: full access
+   - Admin: read-only access
+===================================================== */
+
+/**
+ * GET /api/headadmin/transactions
+ *
+ * Access:
+ *  - headadmin → full access
+ *  - admin     → read-only access
+ */
 router.get(
   '/',
-  authMiddleware,
-  roleMiddleware('headadmin'),
+  auth,
+  roleMiddleware('headadmin', 'admin'),
   getRechargeTransactions
 );
 

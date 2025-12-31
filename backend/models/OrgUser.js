@@ -57,8 +57,8 @@ const orgUserSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true,
-    collection: 'org_users',
+    timestamps: true,          // ✅ ONE place only
+    collection: 'org_users',   // ✅ correct
   }
 );
 
