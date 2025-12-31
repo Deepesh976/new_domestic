@@ -1,18 +1,17 @@
 import mongoose from 'mongoose';
+import { v4 as uuidv4 } from 'uuid'; // ✅ REQUIRED IMPORT
 
 const ServiceRequestSchema = new mongoose.Schema(
   {
-    /* =========================
-       IDENTIFIERS
-    ========================= */
     request_id: {
       type: String,
-      required: true,
+      default: uuidv4, // ✅ UUID v4 auto-generated
+      unique: true,
       index: true,
     },
 
     user_id: {
-      type: String,
+      type: String, // OrgUser.user_id
       index: true,
     },
 
@@ -22,40 +21,46 @@ const ServiceRequestSchema = new mongoose.Schema(
       index: true,
     },
 
-    /* =========================
-       REQUEST DETAILS
-    ========================= */
     request_type: String,
     device_id: String,
     description: String,
 
-    /* =========================
-       ASSIGNMENT & TIMELINE
-    ========================= */
     assigned_to: {
-      type: String, // technician_id (string for now)
-      default: '',
+      type: String, // OrgTechnician _id
+      default: null,
     },
 
-    scheduled_at: String,
-    arrived_at: String,
-    completed_at: String,
+    scheduled_at: {
+      type: Date,
+      default: null,
+    },
 
-    /* =========================
-       STATUS
-       (stored as string in DB)
-    ========================= */
+    arrived_at: {
+      type: Date,
+      default: null,
+    },
+
+    completed_at: {
+      type: Date,
+      default: null,
+    },
+
     status: {
       type: String,
+      enum: ['open', 'assigned', 'closed'],
       default: 'open',
       index: true,
     },
 
-    /* =========================
-       ADDITIONAL INFO
-    ========================= */
-    replaced_parts: [String],
-    completion_images: [String],
+    replaced_parts: {
+      type: [String],
+      default: [],
+    },
+
+    completion_images: {
+      type: [String],
+      default: [],
+    },
 
     location: {
       street: String,
@@ -63,14 +68,13 @@ const ServiceRequestSchema = new mongoose.Schema(
       city: String,
       state: String,
       postal_code: String,
-      address_line: String,
       country: String,
     },
 
     observations: String,
   },
   {
-    timestamps: true,
+    timestamps: true, // createdAt, updatedAt
   }
 );
 

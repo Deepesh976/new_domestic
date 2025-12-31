@@ -4,9 +4,6 @@ import OrgHeadAdmin from '../../models/OrgHeadAdmin.js';
 
 /* =====================================================
    HEAD ADMIN LOGIN
-   - Secure password check
-   - Org scoped JWT
-   - Matches frontend + middleware expectations
 ===================================================== */
 export const login = async (req, res) => {
   try {
@@ -35,12 +32,9 @@ export const login = async (req, res) => {
     }
 
     /* =========================
-       PASSWORD CHECK 🔐
+       PASSWORD CHECK
     ========================= */
-    const isMatch = await bcrypt.compare(
-      password,
-      headAdmin.password
-    );
+    const isMatch = await bcrypt.compare(password, headAdmin.password);
 
     if (!isMatch) {
       return res.status(401).json({
@@ -51,10 +45,7 @@ export const login = async (req, res) => {
     /* =========================
        ORG VALIDATION
     ========================= */
-    if (
-      !headAdmin.organization ||
-      !headAdmin.organization.org_id
-    ) {
+    if (!headAdmin.organization || !headAdmin.organization.org_id) {
       return res.status(400).json({
         message: 'Organization not linked properly',
       });
@@ -62,7 +53,6 @@ export const login = async (req, res) => {
 
     /* =========================
        SIGN JWT
-       org_id is STRING (org_001)
     ========================= */
     const token = jwt.sign(
       {
@@ -74,9 +64,6 @@ export const login = async (req, res) => {
       { expiresIn: '1d' }
     );
 
-    /* =========================
-       SUCCESS RESPONSE
-    ========================= */
     return res.status(200).json({
       token,
       role: 'headadmin',
@@ -91,6 +78,58 @@ export const login = async (req, res) => {
     console.error('❌ HeadAdmin Login Error:', error);
     return res.status(500).json({
       message: 'Login failed',
+    });
+  }
+};
+
+/* =====================================================
+   CHANGE PASSWORD – HEAD ADMIN
+===================================================== */
+export const changePassword = async (req, res) => {
+  try {
+    const { password } = req.body;
+    const headAdminId = req.user.id;
+
+    /* =========================
+       VALIDATION
+    ========================= */
+    if (!password) {
+      return res.status(400).json({
+        message: 'Password is required',
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        message: 'Password must be at least 6 characters long',
+      });
+    }
+
+    /* =========================
+       FIND HEAD ADMIN
+    ========================= */
+    const headAdmin = await OrgHeadAdmin.findById(headAdminId).select('+password');
+
+    if (!headAdmin) {
+      return res.status(404).json({
+        message: 'Head admin not found',
+      });
+    }
+
+    /* =========================
+       HASH & SAVE PASSWORD
+    ========================= */
+    const hashedPassword = await bcrypt.hash(password, 10);
+    headAdmin.password = hashedPassword;
+    await headAdmin.save();
+
+    return res.status(200).json({
+      message: 'Password updated successfully',
+    });
+  } catch (error) {
+    console.error('❌ HeadAdmin Change Password Error:', error);
+    return res.status(500).json({
+      message: 'Failed to update password',
     });
   }
 };

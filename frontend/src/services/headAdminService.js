@@ -21,7 +21,7 @@ export const deleteSupport = () =>
 export const getTechnicians = () =>
   axios.get('/api/headadmin/technicians');
 
-/* 🔥 REQUIRED for dropdown submit (KYC + Active/Inactive) */
+/* 🔥 Update technician (KYC / Active / Status) */
 export const updateTechnician = (id, data) =>
   axios.put(`/api/headadmin/technicians/${id}`, data);
 
@@ -31,6 +31,42 @@ export const updateTechnician = (id, data) =>
 export const getInstallationOrders = () =>
   axios.get('/api/headadmin/installations');
 
-/* 🔥 Assign technician to order */
+/* 🔥 Assign technician to installation order */
 export const assignInstallationTechnician = (id, data) =>
   axios.put(`/api/headadmin/installations/${id}/assign`, data);
+
+/* =========================
+   SERVICE REQUESTS 🔥🔥🔥
+========================= */
+
+/* Get service requests
+   - params: { status, search }
+*/
+export const getServiceRequests = (params = {}) =>
+  axios.get('/api/headadmin/service-requests', { params });
+
+/* Get only available technicians */
+export const getAvailableServiceTechnicians = () =>
+  axios.get(
+    '/api/headadmin/service-requests/technicians/available'
+  );
+
+/* Assign technician to service request */
+export const assignServiceTechnician = (
+  serviceRequestId,
+  technician_id
+) =>
+  axios.patch(
+    `/api/headadmin/service-requests/${serviceRequestId}/assign`,
+    { technician_id }
+  );
+
+/* Update service status (manual fallback) */
+export const updateServiceRequestStatus = (
+  serviceRequestId,
+  status
+) =>
+  axios.patch(
+    `/api/headadmin/service-requests/${serviceRequestId}/status`,
+    { status }
+  );

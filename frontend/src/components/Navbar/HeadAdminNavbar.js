@@ -84,7 +84,7 @@ export default function HeadAdminNavbar({ children }) {
           <NavItem to="/head-admin/purifiers" icon={<MdDevices />} label="Purifiers" />
           <NavItem to="/head-admin/transactions" icon={<MdPayments />} label="Transactions" />
           <NavItem to="/head-admin/plans" icon={<MdListAlt />} label="Plans" />
-          <NavItem to="/head-admin/orders" icon={<MdListAlt />} label="Orders" />
+          {/* <NavItem to="/head-admin/orders" icon={<MdListAlt />} label="Orders" /> */}
           <NavItem to="/head-admin/technicians" icon={<MdEngineering />} label="Technicians" />
           <NavItem to="/head-admin/installations" icon={<MdEngineering />} label="Installations" />
           <NavItem to="/head-admin/service-requests" icon={<MdSupportAgent />} label="Service Requests" />

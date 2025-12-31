@@ -15,33 +15,28 @@ const Profile = () => {
   const navigate = useNavigate();
 
   /* =========================
-     USER INFO (FIXED)
+     USER INFO
   ========================= */
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('Super Admin');
+  const [username, setUsername] = useState('Head Admin');
 
   useEffect(() => {
-    const storedEmail = localStorage.getItem('email');
-    const storedUsername = localStorage.getItem('username');
-
-    if (storedEmail) setEmail(storedEmail);
-    if (storedUsername) setUsername(storedUsername);
+    setEmail(localStorage.getItem('email') || '');
+    setUsername(localStorage.getItem('username') || 'Head Admin');
   }, []);
 
   /* =========================
      UI STATE
   ========================= */
   const [activeTab, setActiveTab] = useState('account');
-
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
 
   /* =========================
-     UPDATE PASSWORD
+     UPDATE PASSWORD (HEAD ADMIN)
   ========================= */
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
@@ -58,11 +53,10 @@ const Profile = () => {
     }
 
     if (password !== confirmPassword) {
-      validationErrors.confirmPassword =
-        'Passwords do not match';
+      validationErrors.confirmPassword = 'Passwords do not match';
     }
 
-    if (Object.keys(validationErrors).length > 0) {
+    if (Object.keys(validationErrors).length) {
       setErrors(validationErrors);
       return;
     }
@@ -73,7 +67,7 @@ const Profile = () => {
       const token = localStorage.getItem('token');
 
       const res = await fetch(
-        '/api/superadmin/auth/change-password',
+        '/api/headadmin/auth/change-password',
         {
           method: 'POST',
           headers: {
@@ -87,7 +81,7 @@ const Profile = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || 'Failed to update password');
+        throw new Error(data.message || 'Password update failed');
       }
 
       setSuccessMessage('Password updated successfully');
@@ -110,14 +104,15 @@ const Profile = () => {
       </button>
 
       <div className="profile-layout">
-        {/* LEFT SIDEBAR */}
+        {/* SIDEBAR */}
         <aside className="profile-sidebar">
           <div className="profile-card">
             <div className="profile-avatar">
               <FaUser />
             </div>
+
             <h2 className="profile-username">{username}</h2>
-            <p className="profile-role">Super Admin</p>
+            <p className="profile-role">Head Admin</p>
 
             <nav className="profile-nav">
               <button
@@ -141,7 +136,7 @@ const Profile = () => {
           </div>
         </aside>
 
-        {/* RIGHT CONTENT */}
+        {/* CONTENT */}
         <main className="profile-content">
           {successMessage && (
             <div className="alert success-alert">
@@ -184,14 +179,10 @@ const Profile = () => {
                   <input
                     type="password"
                     value={password}
-                    onChange={(e) =>
-                      setPassword(e.target.value)
-                    }
+                    onChange={(e) => setPassword(e.target.value)}
                   />
                   {errors.password && (
-                    <p className="error-message">
-                      {errors.password}
-                    </p>
+                    <p className="error-message">{errors.password}</p>
                   )}
                 </div>
 
@@ -218,9 +209,7 @@ const Profile = () => {
                   className="submit-button"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting
-                    ? 'Updating...'
-                    : 'Update Password'}
+                  {isSubmitting ? 'Updating...' : 'Update Password'}
                 </button>
               </form>
             </section>
