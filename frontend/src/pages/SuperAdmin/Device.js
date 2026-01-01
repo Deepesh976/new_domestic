@@ -13,6 +13,7 @@ const Page = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding: 24px;
 `;
 
 const TopBar = styled.div`
@@ -39,6 +40,7 @@ const Button = styled.button`
 const SearchRow = styled.div`
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
 `;
 
 const SearchBox = styled.input`
@@ -73,13 +75,20 @@ const Td = styled.td`
   border-top: 1px solid #e5e7eb;
 `;
 
+const Empty = styled.div`
+  padding: 24px;
+  text-align: center;
+  color: #64748b;
+`;
+
 const Modal = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 2000;
 `;
 
 const ModalBox = styled.div`
@@ -97,13 +106,16 @@ const Devices = () => {
   const [search, setSearch] = useState('');
   const [orgSearch, setOrgSearch] = useState('');
   const [qrData, setQrData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
+  /* ================= LOAD DATA ================= */
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
     try {
+      setLoading(true);
       const [deviceRes, orgRes] = await Promise.all([
         getDevices(),
         getOrganizations(),
@@ -111,8 +123,11 @@ const Devices = () => {
 
       setDevices(deviceRes.data || []);
       setOrganizations(orgRes.data || []);
-    } catch {
+    } catch (err) {
+      console.error(err);
       alert('Failed to load devices');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -126,30 +141,26 @@ const Devices = () => {
   }, [organizations]);
 
   /* ================= FILTER ================= */
-  const filteredDevices = devices.filter((d) => {
-    const deviceText = `
-      ${d.mac_id || ''}
-      ${d.serial_number || ''}
-    `.toLowerCase();
+  const filteredDevices = useMemo(() => {
+    return devices.filter((d) => {
+      const deviceText = `${d.mac_id || ''} ${d.serial_number || ''}`.toLowerCase();
+      const orgText = `${d.org_id || ''} ${orgMap[d.org_id] || ''}`.toLowerCase();
 
-    const orgText = `
-      ${d.org_id || ''}
-      ${orgMap[d.org_id] || ''}
-    `.toLowerCase();
+      return (
+        deviceText.includes(search.toLowerCase()) &&
+        orgText.includes(orgSearch.toLowerCase())
+      );
+    });
+  }, [devices, search, orgSearch, orgMap]);
 
-    return (
-      deviceText.includes(search.toLowerCase()) &&
-      orgText.includes(orgSearch.toLowerCase())
-    );
-  });
-
+  /* ================= UI ================= */
   return (
     <SuperAdminNavbar>
       <Page>
         <TopBar>
           <h2>Devices</h2>
           <Actions>
-            <Button onClick={() => navigate('/super-admin/addDevice')}>
+            <Button onClick={() => navigate('/superadmin/devices/add')}>
               Add Device
             </Button>
           </Actions>
@@ -169,46 +180,51 @@ const Devices = () => {
         </SearchRow>
 
         <Card>
-          <Table>
-            <thead>
-              <tr>
-                <Th>S.No</Th>
-                <Th>Organization</Th>
-                <Th>Org ID</Th>
-                <Th>MAC ID</Th>
-                <Th>Serial Number</Th>
-                <Th>QR Code</Th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredDevices.map((d, index) => (
-                <tr key={d._id}>
-                  <Td>{index + 1}</Td>
-                  <Td>{orgMap[d.org_id] || '—'}</Td>
-                  <Td>{d.org_id}</Td>
-                  <Td>{d.mac_id}</Td>
-                  <Td>{d.serial_number}</Td>
-                  <Td>
-                    <span
-                      style={{ color: '#2563eb', cursor: 'pointer' }}
-                      onClick={() => setQrData(d.qr_code)}
-                    >
-                      View
-                    </span>
-                  </Td>
-                </tr>
-              ))}
-
-              {filteredDevices.length === 0 && (
+          {loading ? (
+            <Empty>Loading devices…</Empty>
+          ) : filteredDevices.length === 0 ? (
+            <Empty>No devices found</Empty>
+          ) : (
+            <Table>
+              <thead>
                 <tr>
-                  <Td colSpan="6">No devices found</Td>
+                  <Th>#</Th>
+                  <Th>Organization</Th>
+                  <Th>Org ID</Th>
+                  <Th>MAC ID</Th>
+                  <Th>Serial Number</Th>
+                  <Th>QR Code</Th>
                 </tr>
-              )}
-            </tbody>
-          </Table>
+              </thead>
+
+              <tbody>
+                {filteredDevices.map((d, index) => (
+                  <tr key={d._id}>
+                    <Td>{index + 1}</Td>
+                    <Td>{orgMap[d.org_id] || '—'}</Td>
+                    <Td>{d.org_id}</Td>
+                    <Td>{d.mac_id}</Td>
+                    <Td>{d.serial_number}</Td>
+                    <Td>
+                      <span
+                        style={{
+                          color: '#2563eb',
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                        }}
+                        onClick={() => setQrData(d.qr_code)}
+                      >
+                        View
+                      </span>
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
         </Card>
 
+        {/* ================= QR MODAL ================= */}
         {qrData && (
           <Modal onClick={() => setQrData(null)}>
             <ModalBox onClick={(e) => e.stopPropagation()}>

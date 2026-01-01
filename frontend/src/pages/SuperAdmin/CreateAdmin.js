@@ -150,7 +150,7 @@ const CreateAdmin = () => {
     try {
       await createAdmin(form); // org_id ignored by backend (safe)
       alert('Admin created successfully');
-      navigate('/super-admin/adminInfo');
+      navigate('/superadmin/admins');
     } catch (err) {
       alert(
         err?.response?.data?.message || 'Failed to create admin'

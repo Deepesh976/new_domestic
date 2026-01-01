@@ -52,6 +52,16 @@ const Input = styled.input`
   border: 1px solid #cbd5e1;
 `;
 
+const Preview = styled.img`
+  margin-top: 8px;
+  height: 60px;
+  object-fit: contain;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 6px;
+  background: #f8fafc;
+`;
+
 const ButtonBar = styled.div`
   display: flex;
   justify-content: flex-end;
@@ -75,7 +85,9 @@ const Button = styled.button`
 const CreateOrganization = () => {
   const navigate = useNavigate();
 
-  /* 🔥 EXACT MATCH WITH MONGOOSE SCHEMA */
+  /* =========================
+     FORM STATE
+  ========================= */
   const [form, setForm] = useState({
     org_id: '',
     org_name: '',
@@ -88,6 +100,13 @@ const CreateOrganization = () => {
     country: 'India',
   });
 
+  const [logo, setLogo] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  /* =========================
+     HANDLERS
+  ========================= */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({
@@ -96,22 +115,47 @@ const CreateOrganization = () => {
     }));
   };
 
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setLogo(file);
+    setPreview(URL.createObjectURL(file));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
 
     try {
-      await createOrganization(form);
+      const formData = new FormData();
+
+      Object.entries(form).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+
+      if (logo) {
+        formData.append('logo', logo);
+      }
+
+      await createOrganization(formData);
+
       alert('Organization created successfully');
-      navigate('/super-admin/org');
+      navigate('/superadmin/organizations');
     } catch (err) {
       if (err.response?.status === 409) {
         alert('Organization already exists');
       } else {
-        alert('Failed to create organization');
+        alert(err.response?.data?.message || 'Failed to create organization');
       }
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  /* =========================
+     RENDER
+  ========================= */
   return (
     <SuperAdminNavbar>
       <Page>
@@ -208,13 +252,31 @@ const CreateOrganization = () => {
                   onChange={handleChange}
                 />
               </Field>
+
+              {/* LOGO UPLOAD */}
+              <Field>
+                <Label>Organization Logo</Label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoChange}
+                />
+                {preview && <Preview src={preview} alt="Logo preview" />}
+              </Field>
             </Grid>
 
             <ButtonBar>
-              <Button type="button" $cancel onClick={() => navigate(-1)}>
+              <Button
+                type="button"
+                $cancel
+                onClick={() => navigate(-1)}
+                disabled={submitting}
+              >
                 Cancel
               </Button>
-              <Button type="submit">Create</Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? 'Creating...' : 'Create'}
+              </Button>
             </ButtonBar>
           </form>
         </Card>

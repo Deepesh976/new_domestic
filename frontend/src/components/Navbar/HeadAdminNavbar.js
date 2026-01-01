@@ -20,8 +20,19 @@ export default function HeadAdminNavbar({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
 
+  /* =========================
+     AUTH / ORG CONTEXT
+  ========================= */
   const role = localStorage.getItem('role'); // headadmin | admin
   const email = localStorage.getItem('email') || 'User';
+
+  const orgName =
+    localStorage.getItem('org_name') || 'Organization';
+  const orgLogo = localStorage.getItem('org_logo');
+
+  const API_BASE =
+    process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
   const isHeadAdmin = role === 'headadmin';
 
   /* =========================
@@ -37,43 +48,65 @@ export default function HeadAdminNavbar({ children }) {
   ========================= */
   const logout = () => {
     localStorage.clear();
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   return (
     <div className="layout">
       {/* ================= TOP BAR ================= */}
-      <header className="topbar">
-        <button
-          className="hamburger"
-          onClick={() => setMenuOpen((v) => !v)}
-        >
-          <FiMenu size={22} />
+<header className="topbar">
+  {/* LEFT */}
+  <div className="topbar-left">
+    <button
+      className="hamburger"
+      onClick={() => setMenuOpen((v) => !v)}
+    >
+      <FiMenu size={22} />
+    </button>
+  </div>
+
+  {/* CENTER (LOGO + ORG NAME) */}
+  <div className="topbar-center">
+    {orgLogo ? (
+      <img
+        src={`${API_BASE}/uploads/organizations/${orgLogo}`}
+        alt="Organization Logo"
+        className="org-logo"
+      />
+    ) : (
+      <div className="org-fallback">
+        {orgName?.charAt(0)?.toUpperCase() || 'O'}
+      </div>
+    )}
+
+    <span className="org-name">
+      {orgName || 'Organization'}
+    </span>
+  </div>
+
+  {/* RIGHT */}
+  <div className="topbar-right profile">
+    <button
+      className="profile-btn"
+      onClick={() => setProfileOpen((v) => !v)}
+    >
+      <FiUser />
+      <span>{email.split('@')[0]}</span>
+    </button>
+
+    {profileOpen && (
+      <div className="profile-menu">
+        <button onClick={() => navigate('/profile')}>
+          <FiUser /> Profile
         </button>
+        <button className="logout" onClick={logout}>
+          <FiLogOut /> Logout
+        </button>
+      </div>
+    )}
+  </div>
+</header>
 
-        <h1 className="brand">Domesticro</h1>
-
-        <div className="profile">
-          <button
-            className="profile-btn"
-            onClick={() => setProfileOpen((v) => !v)}
-          >
-            <FiUser />
-            <span>{email.split('@')[0]}</span>
-          </button>
-
-          {profileOpen && (
-            <div className="profile-menu">
-              <button onClick={() => navigate('/profile')}>
-                <FiUser /> Profile
-              </button>
-              <button className="logout" onClick={logout}>
-                <FiLogOut /> Logout
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
 
       {/* ================= OVERLAY (MOBILE) ================= */}
       {menuOpen && (
@@ -118,12 +151,12 @@ export default function HeadAdminNavbar({ children }) {
             icon={<MdPayments />}
             label="Transactions"
           />
-          
-            <NavItem
-              to="/headadmin/plans"
-              icon={<MdListAlt />}
-              label="Plans"
-            />
+
+          <NavItem
+            to="/headadmin/plans"
+            icon={<MdListAlt />}
+            label="Plans"
+          />
 
           <NavItem
             to="/headadmin/technicians"

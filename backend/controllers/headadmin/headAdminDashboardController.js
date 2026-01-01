@@ -1,81 +1,147 @@
 import OrgUser from '../../models/OrgUser.js';
-import Device from '../../models/Device.js';
-import Plan from '../../models/Plan.js';
+import OrgPurifier from '../../models/OrgPurifier.js';
+import OrgTechnician from '../../models/OrgTechnician.js';
+import RechargedPlan from '../../models/RechargedPlan.js';
 
+/* =====================================================
+   HEAD ADMIN DASHBOARD — GUARANTEED PIE FIX
+===================================================== */
 export const getDashboard = async (req, res) => {
   try {
     const org_id = req.user.organization;
-    const year = Number(req.query.year) || new Date().getFullYear();
-    const month = req.query.month; // optional
+    const purifierYear = Number(req.query.purifierYear);
+    const planYear = Number(req.query.planYear);
 
-    /* =========================
-       TOP COUNTS
-    ========================= */
-    const customers = await OrgUser.countDocuments({ org_id });
-    const devices = await Device.countDocuments({
-      org_id,
-      is_active: true,
-    });
-
-    /* =========================
-       CUSTOMER GROWTH (YEAR)
-    ========================= */
-    const users = await OrgUser.find(
-      {
-        org_id,
-        createdAt: {
-          $gte: new Date(`${year}-01-01`),
-          $lte: new Date(`${year}-12-31`),
-        },
-      },
-      { createdAt: 1 }
-    );
-
-    const monthMap = Array.from({ length: 12 }, (_, i) => ({
-      month: new Date(year, i, 1).toLocaleString('en-IN', {
-        month: 'short',
-      }),
-      customers: 0,
-    }));
-
-    users.forEach((u) => {
-      const m = new Date(u.createdAt).getMonth();
-      monthMap[m].customers += 1;
-    });
-
-    /* =========================
-       TRENDING PLANS (MONTH + YEAR)
-    ========================= */
-    const planFilter = { org_id };
-
-    if (month) {
-      const mIndex = new Date(`${month} 1, ${year}`).getMonth();
-      planFilter.created_at = {
-        $gte: new Date(year, mIndex, 1),
-        $lte: new Date(year, mIndex + 1, 0),
-      };
+    if (!org_id || !purifierYear || !planYear) {
+      return res.status(400).json({ message: 'Missing year params' });
     }
 
-    const plans = await Plan.find(planFilter, { name: 1 });
+    /* =========================
+       STATS
+    ========================= */
+    const totalCustomers = await OrgUser.countDocuments({ org_id });
+    const totalTechnicians = await OrgTechnician.countDocuments({ org_id });
 
-    const planMap = {};
-    plans.forEach((p) => {
-      planMap[p.name] = (planMap[p.name] || 0) + 1;
-    });
+    /* =========================
+       PURIFIER CREATION GROWTH
+    ========================= */
+    const purifierStart = new Date(Date.UTC(purifierYear, 0, 1));
+    const purifierEnd = new Date(Date.UTC(purifierYear, 11, 31, 23, 59, 59));
 
-    const trendingPlans = Object.keys(planMap).map((k) => ({
-      plan: k,
-      count: planMap[k],
+    const purifierRaw = await OrgPurifier.aggregate([
+      {
+        $match: {
+          org_id,
+          created_at: { $gte: purifierStart, $lte: purifierEnd },
+        },
+      },
+      {
+        $group: {
+          _id: { month: { $month: '$created_at' } },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { '_id.month': 1 } },
+    ]);
+
+    const purifierGrowth = Array.from({ length: 12 }, (_, i) => ({
+      month: new Date(purifierYear, i).toLocaleString('en-IN', {
+        month: 'short',
+      }),
+      purifiers: 0,
     }));
 
+    purifierRaw.forEach((r) => {
+      purifierGrowth[r._id.month - 1].purifiers = r.count;
+    });
+
+    /* =========================
+       🔥 TRENDING PLANS — TRY YEAR FIRST
+    ========================= */
+    const yearStart = new Date(Date.UTC(planYear, 0, 1));
+    const yearEnd = new Date(Date.UTC(planYear, 11, 31, 23, 59, 59));
+
+    const buildPipeline = (match) => [
+      { $match: match },
+
+      {
+        $lookup: {
+          from: 'active_plans',
+          let: { pid: '$plan_id', oid: '$org_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$plan_id', '$$pid'] },
+                    { $eq: ['$org_id', '$$oid'] },
+                  ],
+                },
+              },
+            },
+            { $project: { name: 1 } },
+          ],
+          as: 'plan_info',
+        },
+      },
+
+      {
+        $addFields: {
+          plan: {
+            $ifNull: [
+              { $arrayElemAt: ['$plan_info.name', 0] },
+              'Unknown Plan',
+            ],
+          },
+        },
+      },
+
+      {
+        $group: {
+          _id: '$plan',
+          count: { $sum: 1 },
+          firstUsedOn: { $min: '$createdAt' },
+          lastUsedOn: { $max: '$createdAt' },
+        },
+      },
+
+      {
+        $project: {
+          _id: 0,
+          plan: '$_id',
+          count: 1,
+          firstUsedOn: 1,
+          lastUsedOn: 1,
+        },
+      },
+
+      { $sort: { count: -1 } },
+    ];
+
+    // 1️⃣ Try year filter
+    let trendingPlans = await RechargedPlan.aggregate(
+      buildPipeline({
+        org_id,
+        createdAt: { $gte: yearStart, $lte: yearEnd },
+      })
+    );
+
+    // 2️⃣ Fallback → ALL TIME
+    if (trendingPlans.length === 0) {
+      trendingPlans = await RechargedPlan.aggregate(
+        buildPipeline({ org_id })
+      );
+    }
+
+    console.log('🥧 FINAL PIE DATA:', trendingPlans);
+
     return res.json({
-      customers,
-      devices,
-      customerGrowth: monthMap,
+      stats: { totalCustomers, totalTechnicians },
+      purifierGrowth,
       trendingPlans,
     });
-  } catch (err) {
-    console.error('❌ DASHBOARD ERROR:', err);
-    res.status(500).json({ message: 'Dashboard failed' });
+  } catch (error) {
+    console.error('❌ DASHBOARD ERROR:', error);
+    return res.status(500).json({ message: 'Dashboard failed' });
   }
 };

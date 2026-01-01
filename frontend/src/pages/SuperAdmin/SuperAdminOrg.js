@@ -9,15 +9,19 @@ import {
 import SuperAdminNavbar from '../../components/Navbar/SuperAdminNavbar';
 import './SuperAdminOrg.css';
 
+const API_BASE = process.env.REACT_APP_API_URL || '';
+
 const SuperAdminOrg = () => {
   const [orgs, setOrgs] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [page, setPage] = useState(1);
-  
-  /* Modal State */
+
+  /* =========================
+     MODAL STATE
+  ========================= */
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState('create'); /* 'create' or 'edit' */
+  const [modalMode, setModalMode] = useState('create'); // create | edit
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -33,8 +37,14 @@ const SuperAdminOrg = () => {
     country: 'India',
   });
 
+  const [logo, setLogo] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+
   const pageSize = 5;
 
+  /* =========================
+     FETCH
+  ========================= */
   useEffect(() => {
     fetchOrganizations();
   }, []);
@@ -48,7 +58,9 @@ const SuperAdminOrg = () => {
     }
   };
 
-  /* Filter and Pagination */
+  /* =========================
+     FILTER + PAGINATION
+  ========================= */
   const filtered = orgs.filter((org) =>
     `
       ${org.org_name || ''}
@@ -67,7 +79,9 @@ const SuperAdminOrg = () => {
     page * pageSize
   );
 
-  /* Modal Handlers */
+  /* =========================
+     MODAL HANDLERS
+  ========================= */
   const openCreateModal = () => {
     setModalMode('create');
     setForm({
@@ -81,6 +95,8 @@ const SuperAdminOrg = () => {
       pincode: '',
       country: 'India',
     });
+    setLogo(null);
+    setLogoPreview(null);
     setFormError('');
     setModalOpen(true);
   };
@@ -88,22 +104,30 @@ const SuperAdminOrg = () => {
   const openEditModal = () => {
     if (!selectedId) return;
     const org = orgs.find((o) => o._id === selectedId);
-    if (org) {
-      setModalMode('edit');
-      setForm({
-        org_id: org.org_id || '',
-        org_name: org.org_name || '',
-        type: org.type || '',
-        gst_number: org.gst_number || '',
-        email_id: org.email_id || '',
-        phone_number: org.phone_number || '',
-        state: org.state || '',
-        pincode: org.pincode || '',
-        country: org.country || 'India',
-      });
-      setFormError('');
-      setModalOpen(true);
-    }
+    if (!org) return;
+
+    setModalMode('edit');
+    setForm({
+      org_id: org.org_id || '',
+      org_name: org.org_name || '',
+      type: org.type || '',
+      gst_number: org.gst_number || '',
+      email_id: org.email_id || '',
+      phone_number: org.phone_number || '',
+      state: org.state || '',
+      pincode: org.pincode || '',
+      country: org.country || 'India',
+    });
+
+    setLogo(null);
+    setLogoPreview(
+      org.logo
+        ? `${API_BASE}/uploads/organizations/${org.logo}`
+        : null
+    );
+
+    setFormError('');
+    setModalOpen(true);
   };
 
   const closeModal = () => {
@@ -111,6 +135,9 @@ const SuperAdminOrg = () => {
     setFormError('');
   };
 
+  /* =========================
+     FORM HANDLERS
+  ========================= */
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({
@@ -120,29 +147,51 @@ const SuperAdminOrg = () => {
     setFormError('');
   };
 
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setLogo(file);
+    setLogoPreview(URL.createObjectURL(file));
+  };
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setFormSubmitting(true);
     setFormError('');
 
     try {
-      if (modalMode === 'create') {
-        await createOrganization(form);
-      } else {
-        await updateOrganization(selectedId, form);
+      const formData = new FormData();
+
+      Object.entries(form).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+
+      if (logo) {
+        formData.append('logo', logo);
       }
-      
+
+      if (modalMode === 'create') {
+        await createOrganization(formData);
+      } else {
+        await updateOrganization(selectedId, formData);
+      }
+
       setModalOpen(false);
       setSelectedId(null);
       fetchOrganizations();
     } catch (err) {
-      const message = err.response?.data?.message || 'Failed to save organization';
-      setFormError(message);
+      setFormError(
+        err.response?.data?.message || 'Failed to save organization'
+      );
     } finally {
       setFormSubmitting(false);
     }
   };
 
+  /* =========================
+     DELETE
+  ========================= */
   const handleDelete = async () => {
     if (!selectedId) return;
     if (!window.confirm('Delete this organization?')) return;
@@ -156,10 +205,13 @@ const SuperAdminOrg = () => {
     }
   };
 
+  /* =========================
+     RENDER
+  ========================= */
   return (
     <SuperAdminNavbar>
       <div className="org-page">
-        {/* Header */}
+        {/* HEADER */}
         <div className="org-header">
           <h1 className="org-title">Organizations</h1>
 
@@ -186,7 +238,7 @@ const SuperAdminOrg = () => {
           </div>
         </div>
 
-        {/* Search */}
+        {/* SEARCH */}
         <input
           className="org-search"
           type="text"
@@ -198,26 +250,18 @@ const SuperAdminOrg = () => {
           }}
         />
 
-        {/* Table */}
+        {/* TABLE */}
         <div className="org-card">
           <table className="org-table">
             <thead className="org-table-header">
               <tr>
-                <th className="org-table-header-cell" style={{ width: '40px' }}>
-                  <input
-                    type="checkbox"
-                    className="org-checkbox"
-                    checked={selectedId !== null}
-                    onChange={() =>
-                      setSelectedId(selectedId === null ? orgs[0]?._id : null)
-                    }
-                  />
-                </th>
-                <th className="org-table-header-cell">Org ID</th>
-                <th className="org-table-header-cell">Organization Name</th>
-                <th className="org-table-header-cell">Email</th>
-                <th className="org-table-header-cell">Phone</th>
-                <th className="org-table-header-cell">State</th>
+                <th style={{ width: 40 }}></th>
+                <th>Logo</th>
+                <th>Org ID</th>
+                <th>Organization Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>State</th>
               </tr>
             </thead>
 
@@ -225,39 +269,40 @@ const SuperAdminOrg = () => {
               {paginated.map((org) => (
                 <tr
                   key={org._id}
-                  className={`org-table-body-row ${
-                    selectedId === org._id ? 'selected' : ''
-                  }`}
+                  className={selectedId === org._id ? 'selected' : ''}
+                  onClick={() => setSelectedId(org._id)}
                 >
-                  <td className="org-table-body-cell" style={{ width: '40px' }}>
+                  <td>
                     <input
-                      type="checkbox"
-                      className="org-checkbox"
+                      type="radio"
                       checked={selectedId === org._id}
-                      onChange={() =>
-                        setSelectedId(
-                          selectedId === org._id ? null : org._id
-                        )
-                      }
+                      readOnly
                     />
                   </td>
-                  <td className="org-table-body-cell">{org.org_id}</td>
-                  <td className="org-table-body-cell">{org.org_name}</td>
-                  <td className="org-table-body-cell">
-                    {org.email_id || <span className="org-table-body-cell empty">—</span>}
+
+                  <td>
+                    {org.logo ? (
+                      <img
+                        src={`${API_BASE}/uploads/organizations/${org.logo}`}
+                        alt="logo"
+                        style={{ height: 32 }}
+                      />
+                    ) : (
+                      '—'
+                    )}
                   </td>
-                  <td className="org-table-body-cell">
-                    {org.phone_number || <span className="org-table-body-cell empty">—</span>}
-                  </td>
-                  <td className="org-table-body-cell">
-                    {org.state || <span className="org-table-body-cell empty">—</span>}
-                  </td>
+
+                  <td>{org.org_id}</td>
+                  <td>{org.org_name}</td>
+                  <td>{org.email_id || '—'}</td>
+                  <td>{org.phone_number || '—'}</td>
+                  <td>{org.state || '—'}</td>
                 </tr>
               ))}
 
               {paginated.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="org-empty">
+                  <td colSpan="7" className="org-empty">
                     No organizations found
                   </td>
                 </tr>
@@ -265,15 +310,12 @@ const SuperAdminOrg = () => {
             </tbody>
           </table>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="org-pagination">
               {Array.from({ length: totalPages }).map((_, i) => (
                 <button
                   key={i}
-                  className={`org-pagination-btn ${
-                    page === i + 1 ? 'active' : ''
-                  }`}
+                  className={page === i + 1 ? 'active' : ''}
                   onClick={() => setPage(i + 1)}
                 >
                   {i + 1}
@@ -284,173 +326,63 @@ const SuperAdminOrg = () => {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* MODAL */}
       {modalOpen && (
         <div className="modal-overlay" onClick={closeModal}>
-          <div
-            className="modal-content"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">
-                {modalMode === 'create'
-                  ? 'Create Organization'
-                  : 'Edit Organization'}
-              </h2>
-              <button className="modal-close" onClick={closeModal}>
-                <FiX size={24} />
+              <h2>{modalMode === 'create' ? 'Create' : 'Edit'} Organization</h2>
+              <button onClick={closeModal}>
+                <FiX size={22} />
               </button>
             </div>
 
-            {formError && (
-              <div
-                style={{
-                  padding: '12px 14px',
-                  background: '#fee2e2',
-                  border: '1px solid #fecaca',
-                  borderRadius: '8px',
-                  color: '#991b1b',
-                  fontSize: '13px',
-                  marginBottom: '16px',
-                }}
-              >
-                ⚠️ {formError}
-              </div>
-            )}
+            {formError && <div className="modal-error">⚠️ {formError}</div>}
 
             <form onSubmit={handleFormSubmit}>
               <div className="modal-form">
-                <div className="form-group">
-                  <label className="form-label required">Organization ID</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    name="org_id"
-                    value={form.org_id}
-                    onChange={handleFormChange}
-                    placeholder="org_001"
-                    required
-                    disabled={modalMode === 'edit'}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label required">Organization Name</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    name="org_name"
-                    value={form.org_name}
-                    onChange={handleFormChange}
-                    placeholder="Enter organization name"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Organization Type</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    name="type"
-                    value={form.type}
-                    onChange={handleFormChange}
-                    placeholder="e.g., LLC, Partnership"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">GST Number</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    name="gst_number"
-                    value={form.gst_number}
-                    onChange={handleFormChange}
-                    placeholder="00AABCT1234A1Z5"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label required">Email</label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    name="email_id"
-                    value={form.email_id}
-                    onChange={handleFormChange}
-                    placeholder="email@example.com"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Phone Number</label>
-                  <input
-                    type="tel"
-                    className="form-input"
-                    name="phone_number"
-                    value={form.phone_number}
-                    onChange={handleFormChange}
-                    placeholder="1234567890"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">State</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    name="state"
-                    value={form.state}
-                    onChange={handleFormChange}
-                    placeholder="e.g., California"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Pincode</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    name="pincode"
-                    value={form.pincode}
-                    onChange={handleFormChange}
-                    placeholder="000000"
-                  />
-                </div>
+                {[
+                  ['org_id', 'Organization ID', modalMode === 'edit'],
+                  ['org_name', 'Organization Name'],
+                  ['type', 'Organization Type'],
+                  ['gst_number', 'GST Number'],
+                  ['email_id', 'Email'],
+                  ['phone_number', 'Phone Number'],
+                  ['state', 'State'],
+                  ['pincode', 'Pincode'],
+                  ['country', 'Country'],
+                ].map(([name, label, disabled]) => (
+                  <div className="form-group" key={name}>
+                    <label>{label}</label>
+                    <input
+                      name={name}
+                      value={form[name]}
+                      onChange={handleFormChange}
+                      disabled={disabled}
+                      required={name === 'org_id' || name === 'org_name' || name === 'email_id'}
+                    />
+                  </div>
+                ))}
 
                 <div className="form-group full">
-                  <label className="form-label">Country</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    name="country"
-                    value={form.country}
-                    onChange={handleFormChange}
-                  />
+                  <label>Organization Logo</label>
+                  <input type="file" accept="image/*" onChange={handleLogoChange} />
+                  {logoPreview && (
+                    <img
+                      src={logoPreview}
+                      alt="preview"
+                      style={{ height: 60, marginTop: 8 }}
+                    />
+                  )}
                 </div>
               </div>
 
               <div className="modal-footer">
-                <button
-                  type="button"
-                  className="modal-button cancel"
-                  onClick={closeModal}
-                  disabled={formSubmitting}
-                >
+                <button type="button" onClick={closeModal}>
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="modal-button submit"
-                  disabled={formSubmitting}
-                >
-                  {formSubmitting
-                    ? 'Saving...'
-                    : modalMode === 'create'
-                    ? 'Create'
-                    : 'Update'}
+                <button type="submit" disabled={formSubmitting}>
+                  {formSubmitting ? 'Saving...' : modalMode === 'create' ? 'Create' : 'Update'}
                 </button>
               </div>
             </form>

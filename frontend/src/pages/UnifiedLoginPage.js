@@ -32,7 +32,7 @@ const UnifiedLoginPage = () => {
 
     if (role === 'superadmin') {
       navigate('/superadmin', { replace: true });
-    } else if (role === 'headadmin' || role === 'admin') {
+    } else {
       navigate('/headadmin', { replace: true });
     }
   }, [navigate]);
@@ -45,12 +45,11 @@ const UnifiedLoginPage = () => {
     setError('');
     setLoading(true);
 
-    // Clear old session
     localStorage.clear();
 
     try {
       /* =========================
-         1️⃣ TRY SUPERADMIN LOGIN
+         1️⃣ SUPER ADMIN LOGIN
       ========================= */
       const superAdminRes = await fetch(
         'http://localhost:5000/api/superadmin/auth/login',
@@ -70,7 +69,7 @@ const UnifiedLoginPage = () => {
       }
 
       /* =========================
-         2️⃣ TRY HEADADMIN / ADMIN
+         2️⃣ HEADADMIN / ADMIN LOGIN
       ========================= */
       const orgUserRes = await fetch(
         'http://localhost:5000/api/headadmin/auth/login',
@@ -103,14 +102,17 @@ const UnifiedLoginPage = () => {
   };
 
   /* =========================
-     SAVE SESSION (HELPER)
+     SAVE SESSION (FINAL)
   ========================= */
   const saveSession = (data) => {
     localStorage.setItem('token', data.token);
     localStorage.setItem('role', data.role);
 
+    /* 🔥 ORG DATA (USED BY NAVBAR) */
     if (data.organization) {
-      localStorage.setItem('org_id', data.organization);
+      localStorage.setItem('org_id', data.organization.org_id);
+      localStorage.setItem('org_name', data.organization.org_name);
+      localStorage.setItem('org_logo', data.organization.logo || '');
     }
 
     localStorage.setItem('email', data.user?.email || '');
@@ -128,7 +130,9 @@ const UnifiedLoginPage = () => {
       loginSuccess({
         token: data.token,
         role: data.role,
-        org_id: data.organization || null,
+        org_id: data.organization?.org_id || null,
+        org_name: data.organization?.org_name || null,
+        org_logo: data.organization?.logo || null,
         email: data.user?.email || '',
         username:
           data.user?.username ||

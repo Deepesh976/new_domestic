@@ -2,11 +2,15 @@ import mongoose from 'mongoose';
 
 const organizationSchema = new mongoose.Schema(
   {
+    /* =========================
+       IDENTIFIERS
+    ========================= */
     org_id: {
       type: String,
       unique: true,
       index: true, // e.g. "org_001"
       required: true,
+      trim: true,
     },
 
     org_name: {
@@ -15,6 +19,9 @@ const organizationSchema = new mongoose.Schema(
       trim: true,
     },
 
+    /* =========================
+       ORGANIZATION DETAILS
+    ========================= */
     type: {
       type: String,
       trim: true,
@@ -30,6 +37,7 @@ const organizationSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
       required: true,
+      index: true,
     },
 
     phone_number: {
@@ -52,6 +60,15 @@ const organizationSchema = new mongoose.Schema(
       default: 'India',
       trim: true,
     },
+
+    /* =========================
+       ORGANIZATION LOGO
+       (Stored in /uploads/organizations)
+    ========================= */
+    logo: {
+      type: String, // filename only
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -59,6 +76,9 @@ const organizationSchema = new mongoose.Schema(
   }
 );
 
-const Organization = mongoose.model('Organization', organizationSchema);
+const Organization = mongoose.model(
+  'Organization',
+  organizationSchema
+);
 
 export default Organization;

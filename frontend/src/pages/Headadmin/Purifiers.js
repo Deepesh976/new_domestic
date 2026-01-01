@@ -310,16 +310,17 @@ export default function Purifiers() {
                           Analytics
                         </ActionBtn>
 
-                        <ActionBtn
-                          style={{ background: '#16a34a' }}
-                          onClick={() =>
-                            navigate(
-                              `/headadmin/purifiers/${p.device_id}/recharged-plans`
-                            )
-                          }
-                        >
-                          Recharged Plan
-                        </ActionBtn>
+<ActionBtn
+  style={{ background: '#16a34a' }}
+  onClick={() =>
+    navigate(
+      `/headadmin/purifiers/${p.device_id}/recharged-plan`
+    )
+  }
+>
+  Recharged Plan
+</ActionBtn>
+
                       </div>
                     </Td>
                   </tr>

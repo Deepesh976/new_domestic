@@ -85,14 +85,16 @@ const Button = styled.button`
 ========================= */
 const EditAdmin = () => {
   const navigate = useNavigate();
-  const { adminId } = useParams();
+
+  // ✅ MUST MATCH: /admins/:id/edit
+  const { id } = useParams();
 
   const [loading, setLoading] = useState(true);
   const [organizations, setOrganizations] = useState([]);
 
   const [form, setForm] = useState({
     organization: '',
-    org_id: '', // ✅ NEW
+    org_id: '',
     username: '',
     email: '',
     phoneNo: '',
@@ -101,27 +103,36 @@ const EditAdmin = () => {
   });
 
   /* =========================
-     LOAD ADMIN + ORGS
+     LOAD ADMIN + ORGANIZATIONS
   ========================= */
   useEffect(() => {
+    if (!id) {
+      alert('Invalid admin ID');
+      navigate('/superadmin/admins');
+      return;
+    }
+
     loadData();
     // eslint-disable-next-line
-  }, []);
+  }, [id]);
 
   const loadData = async () => {
     try {
       const [adminRes, orgRes] = await Promise.all([
-        getAdminById(adminId),
+        getAdminById(id),
         getOrganizations(),
       ]);
 
       const admin = adminRes.data;
+      const orgs = orgRes.data || [];
 
-      setOrganizations(orgRes.data || []);
+      setOrganizations(orgs);
 
       setForm({
         organization:
-          admin.organization?._id || admin.organization || '',
+          admin.organization?._id ||
+          admin.organization ||
+          '',
         org_id: admin.org_id || '',
         username: admin.username || '',
         email: admin.email || '',
@@ -131,9 +142,10 @@ const EditAdmin = () => {
       });
 
       setLoading(false);
-    } catch (err) {
+    } catch (error) {
+      console.error(error);
       alert('Failed to load admin');
-      navigate('/super-admin/adminInfo');
+      navigate('/superadmin/admins');
     }
   };
 
@@ -143,7 +155,7 @@ const EditAdmin = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // 🔥 Auto-update org_id if organization changes
+    // 🔥 Keep org_id in sync with organization
     if (name === 'organization') {
       const selectedOrg = organizations.find(
         (org) => org._id === value
@@ -166,17 +178,26 @@ const EditAdmin = () => {
     e.preventDefault();
 
     try {
-      await updateAdmin(adminId, form);
+      await updateAdmin(id, form);
       alert('Admin updated successfully');
-      navigate('/super-admin/adminInfo');
+      navigate('/superadmin/admins');
     } catch (err) {
       alert(
-        err?.response?.data?.message || 'Failed to update admin'
+        err?.response?.data?.message ||
+          'Failed to update admin'
       );
     }
   };
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <SuperAdminNavbar>
+        <Page>
+          <Card>Loading admin details...</Card>
+        </Page>
+      </SuperAdminNavbar>
+    );
+  }
 
   return (
     <SuperAdminNavbar>

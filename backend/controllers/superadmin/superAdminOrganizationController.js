@@ -1,7 +1,10 @@
 import Organization from '../../models/Organization.js';
+import fs from 'fs';
+import path from 'path';
 
 /* =====================================================
    CREATE ORGANIZATION
+   - Supports logo upload
 ===================================================== */
 const createOrganization = async (req, res) => {
   try {
@@ -17,14 +20,18 @@ const createOrganization = async (req, res) => {
       country,
     } = req.body;
 
-    // 🔒 Required field validation
+    /* =========================
+       REQUIRED VALIDATION
+    ========================= */
     if (!org_id || !org_name || !email_id) {
       return res.status(400).json({
         message: 'org_id, org_name and email_id are required',
       });
     }
 
-    // 🔁 Duplicate check
+    /* =========================
+       DUPLICATE CHECK
+    ========================= */
     const existingOrg = await Organization.findOne({
       $or: [{ org_id }, { email_id }],
     });
@@ -35,6 +42,9 @@ const createOrganization = async (req, res) => {
       });
     }
 
+    /* =========================
+       CREATE
+    ========================= */
     const organization = await Organization.create({
       org_id,
       org_name,
@@ -45,6 +55,9 @@ const createOrganization = async (req, res) => {
       state,
       pincode,
       country: country || 'India',
+
+      // ✅ LOGO (filename only)
+      logo: req.file ? req.file.filename : null,
     });
 
     return res.status(201).json(organization);
@@ -59,7 +72,10 @@ const createOrganization = async (req, res) => {
 ===================================================== */
 const getOrganizations = async (req, res) => {
   try {
-    const organizations = await Organization.find().sort({ createdAt: -1 });
+    const organizations = await Organization.find().sort({
+      createdAt: -1,
+    });
+
     return res.status(200).json(organizations);
   } catch (error) {
     console.error('Get organizations error:', error);
@@ -75,7 +91,9 @@ const getOrganizationById = async (req, res) => {
     const org = await Organization.findById(req.params.id);
 
     if (!org) {
-      return res.status(404).json({ message: 'Organization not found' });
+      return res.status(404).json({
+        message: 'Organization not found',
+      });
     }
 
     return res.status(200).json(org);
@@ -87,20 +105,45 @@ const getOrganizationById = async (req, res) => {
 
 /* =====================================================
    UPDATE ORGANIZATION
+   - Supports logo replacement
 ===================================================== */
 const updateOrganization = async (req, res) => {
   try {
-    const updated = await Organization.findByIdAndUpdate(
-      req.params.id,
-      req.body, // snake_case safe
-      { new: true, runValidators: true }
-    );
+    const org = await Organization.findById(req.params.id);
 
-    if (!updated) {
-      return res.status(404).json({ message: 'Organization not found' });
+    if (!org) {
+      return res.status(404).json({
+        message: 'Organization not found',
+      });
     }
 
-    return res.status(200).json(updated);
+    /* =========================
+       DELETE OLD LOGO (IF NEW UPLOADED)
+    ========================= */
+    if (req.file && org.logo) {
+      const oldPath = path.join(
+        process.cwd(),
+        'uploads/organizations',
+        org.logo
+      );
+
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
+      }
+    }
+
+    /* =========================
+       UPDATE FIELDS
+    ========================= */
+    Object.assign(org, req.body);
+
+    if (req.file) {
+      org.logo = req.file.filename;
+    }
+
+    await org.save();
+
+    return res.status(200).json(org);
   } catch (error) {
     console.error('Update organization error:', error);
     return res.status(500).json({ message: 'Server error' });
@@ -109,16 +152,38 @@ const updateOrganization = async (req, res) => {
 
 /* =====================================================
    DELETE ORGANIZATION
+   - Also deletes logo file
 ===================================================== */
 const deleteOrganization = async (req, res) => {
   try {
-    const deleted = await Organization.findByIdAndDelete(req.params.id);
+    const org = await Organization.findById(req.params.id);
 
-    if (!deleted) {
-      return res.status(404).json({ message: 'Organization not found' });
+    if (!org) {
+      return res.status(404).json({
+        message: 'Organization not found',
+      });
     }
 
-    return res.status(200).json({ message: 'Organization deleted' });
+    /* =========================
+       DELETE LOGO FILE
+    ========================= */
+    if (org.logo) {
+      const filePath = path.join(
+        process.cwd(),
+        'uploads/organizations',
+        org.logo
+      );
+
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    await org.deleteOne();
+
+    return res.status(200).json({
+      message: 'Organization deleted',
+    });
   } catch (error) {
     console.error('Delete organization error:', error);
     return res.status(500).json({ message: 'Server error' });
@@ -126,7 +191,7 @@ const deleteOrganization = async (req, res) => {
 };
 
 /* =====================================================
-   EXPORTS (NO DUPLICATES)
+   EXPORTS
 ===================================================== */
 export {
   createOrganization,

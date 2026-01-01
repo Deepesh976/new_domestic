@@ -1,80 +1,103 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { FiLogOut, FiUser, FiMenu } from 'react-icons/fi';
 import './SuperAdminNavbar.css';
 
 const SuperAdminNavbar = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // 🔥 CLOSED BY DEFAULT
   const [profileOpen, setProfileOpen] = useState(false);
-  const navigate = useNavigate();
 
   const sidebarRef = useRef(null);
   const hamburgerRef = useRef(null);
+  const profileRef = useRef(null);
 
-  const email = localStorage.getItem('email') || 'SuperAdmin';
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate('/');
-  };
+  const email = localStorage.getItem('email') || 'super@admin.com';
 
   /* =========================
-     CLOSE SIDEBAR ON OUTSIDE CLICK
+     CLOSE SIDEBAR / PROFILE ON ROUTE CHANGE
   ========================= */
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    setSidebarOpen(false);
+    setProfileOpen(false);
+  }, [location.pathname]);
+
+  /* =========================
+     OUTSIDE CLICK HANDLER
+  ========================= */
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      // Sidebar
       if (
         sidebarOpen &&
         sidebarRef.current &&
-        !sidebarRef.current.contains(event.target) &&
+        !sidebarRef.current.contains(e.target) &&
         hamburgerRef.current &&
-        !hamburgerRef.current.contains(event.target)
+        !hamburgerRef.current.contains(e.target)
       ) {
         setSidebarOpen(false);
       }
+
+      // Profile
+      if (
+        profileOpen &&
+        profileRef.current &&
+        !profileRef.current.contains(e.target)
+      ) {
+        setProfileOpen(false);
+      }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [sidebarOpen]);
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () =>
+      document.removeEventListener('mousedown', handleOutsideClick);
+  }, [sidebarOpen, profileOpen]);
+
+  /* =========================
+     LOGOUT
+  ========================= */
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate('/', { replace: true });
+  };
 
   return (
     <div className="layout">
-      {/* TOP BAR */}
+      {/* ================= TOP BAR ================= */}
       <header className="topbar">
+        {/* LEFT */}
         <div className="topbar-left">
           <button
             ref={hamburgerRef}
-            className="icon-btn"
-            onClick={() => setSidebarOpen((prev) => !prev)}
+            className="hamburger"
+            onClick={() => setSidebarOpen((v) => !v)}
           >
             <FiMenu size={20} />
           </button>
-          <h1 className="brand">Domesticro</h1>
         </div>
 
-        <div className="topbar-right">
+        {/* CENTER */}
+        <div className="topbar-center">
+          <h1 className="brand-title">Domesticro</h1>
+        </div>
+
+        {/* RIGHT */}
+        <div className="topbar-right" ref={profileRef}>
           <button
             className="profile-btn"
-            onClick={() => setProfileOpen((prev) => !prev)}
+            onClick={() => setProfileOpen((v) => !v)}
           >
             <FiUser size={14} />
             <span>{email.split('@')[0]}</span>
           </button>
 
           {profileOpen && (
-            <div className="profile-dropdown">
-              <button
-                onClick={() => {
-                  navigate('/profile');
-                  setProfileOpen(false);
-                }}
-              >
+            <div className="profile-menu">
+              <button onClick={() => navigate('/profile')}>
                 <FiUser /> Profile
               </button>
-
               <button className="logout" onClick={handleLogout}>
                 <FiLogOut /> Logout
               </button>
@@ -83,28 +106,31 @@ const SuperAdminNavbar = ({ children }) => {
         </div>
       </header>
 
-      {/* MAIN */}
-      <div className="main">
-        {/* SIDEBAR */}
-        <aside
-          ref={sidebarRef}
-          className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}
-        >
-          <nav>
-            <NavLink end to="/super-admin">📊 Dashboard</NavLink>
-            <NavLink to="/super-admin/organizations">🏢 Organizations</NavLink>
-            <NavLink to="/super-admin/admins">👤 Admins</NavLink>
-            <NavLink to="/super-admin/devices">📱 Devices</NavLink>
-            <NavLink to="/super-admin/customers">👥 Customers</NavLink>
-            <NavLink to="/super-admin/transactions">💳 Transactions</NavLink>
-          </nav>
-        </aside>
+      {/* ================= OVERLAY ================= */}
+      {sidebarOpen && (
+        <div
+          className="overlay"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-        {/* CONTENT */}
-        <section className="content">
-          {children}
-        </section>
-      </div>
+      {/* ================= SIDEBAR ================= */}
+      <aside
+        ref={sidebarRef}
+        className={`sidebar ${sidebarOpen ? 'open' : ''}`}
+      >
+        <nav className="menu">
+          <NavLink end to="/superadmin">📊 Dashboard</NavLink>
+          <NavLink to="/superadmin/organizations">🏢 Organizations</NavLink>
+          <NavLink to="/superadmin/admins">👤 Admins</NavLink>
+          <NavLink to="/superadmin/devices">📱 Devices</NavLink>
+          <NavLink to="/superadmin/customers">👥 Customers</NavLink>
+          <NavLink to="/superadmin/transactions">💳 Transactions</NavLink>
+        </nav>
+      </aside>
+
+      {/* ================= CONTENT ================= */}
+      <main className="content">{children}</main>
     </div>
   );
 };

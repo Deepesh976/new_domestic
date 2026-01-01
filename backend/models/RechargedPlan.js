@@ -2,20 +2,57 @@ import mongoose from 'mongoose';
 
 const RechargedPlanSchema = new mongoose.Schema(
   {
-    org_id: String,
-    device_id: String,
+    org_id: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    device_id: {
+      type: String,
+      required: true,
+      index: true,
+    },
     user_id: String,
-    plan_id: String,
-    txn_id: String,
-    limit: Number,
+
+    plan_id: {
+      type: String,
+      required: true,
+      index: true,
+    },
+
+    txn_id: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+
+    limit: {
+      type: Number,
+      default: 0,
+    },
+
     validity: String,
-    status: String,
-    ack: Boolean,
+
+    status: {
+      type: String,
+      enum: ['active', 'consumed', 'expired', 'failed'],
+      default: 'active',
+    },
+
+    ack: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
-    timestamps: true, // gives createdAt
-    collection: 'recharged_plans', // 🔥 VERY IMPORTANT
+    timestamps: true,
+    collection: 'recharged_plans',
   }
 );
 
-export default mongoose.model('RechargedPlan', RechargedPlanSchema);
+const RechargedPlan = mongoose.model(
+  'RechargedPlan',
+  RechargedPlanSchema
+);
+
+export default RechargedPlan; // ✅ THIS LINE IS REQUIRED

@@ -5,6 +5,11 @@ import roleMiddleware from '../../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
+/**
+ * GET /api/superadmin/dashboard/summary
+ * Query: organizationId, year
+ * Role: superadmin
+ */
 router.get(
   '/summary',
   auth,

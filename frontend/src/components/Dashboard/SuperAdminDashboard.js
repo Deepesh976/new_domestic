@@ -9,57 +9,53 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  Legend,
 } from 'recharts';
 import axios from '../../utils/axiosConfig';
 import SuperAdminNavbar from '../../components/Navbar/SuperAdminNavbar';
 import './SuperAdminDashboard.css';
 
+/* =========================
+   CONSTANTS
+========================= */
 const MONTHS = [
-  '',
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan','Feb','Mar','Apr','May','Jun',
+  'Jul','Aug','Sep','Oct','Nov','Dec',
 ];
 
-const SuperAdminDashboard = () => {
-  const currentYear = new Date().getFullYear();
+const YEARS = [2024, 2025, 2026];
 
+/* =========================
+   COMPONENT
+========================= */
+const SuperAdminDashboard = () => {
   const [organizations, setOrganizations] = useState([]);
   const [selectedOrg, setSelectedOrg] = useState('');
-  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [year, setYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(false);
-  const [orgLoading, setOrgLoading] = useState(true);
-  const [orgError, setOrgError] = useState('');
 
   const [stats, setStats] = useState({
     totalAdmins: 0,
-    totalCustomers: 0,
-    customerGrowth: [],
-    revenue: [],
+    totalDevices: 0,
   });
+
+  const [deviceGrowth, setDeviceGrowth] = useState([]);
+  const [revenueGrowth, setRevenueGrowth] = useState([]);
 
   /* =========================
      LOAD ORGANIZATIONS
   ========================= */
   useEffect(() => {
-    setOrgLoading(true);
-    setOrgError('');
-
     axios
       .get('/api/superadmin/organizations')
       .then((res) => {
         const orgs = Array.isArray(res.data) ? res.data : [];
         setOrganizations(orgs);
-
         if (orgs.length > 0) {
           setSelectedOrg(orgs[0]._id);
         }
       })
-      .catch((err) => {
-        setOrgError(
-          err.response?.data?.message || 'Failed to load organizations'
-        );
-      })
-      .finally(() => setOrgLoading(false));
+      .catch(() => setOrganizations([]));
   }, []);
 
   /* =========================
@@ -74,161 +70,214 @@ const SuperAdminDashboard = () => {
       .get('/api/superadmin/dashboard/summary', {
         params: {
           organizationId: selectedOrg,
-          year: selectedYear,
+          year,
         },
       })
       .then((res) => {
-        setStats({
-          totalAdmins:
-            (res.data.stats?.totalAdmins || 0) +
-            (res.data.stats?.totalHeadAdmins || 0),
-          totalCustomers: res.data.stats?.totalCustomers || 0,
-          customerGrowth: res.data.customerGrowth || [],
-          revenue: res.data.revenueGrowth || [],
-        });
+        setStats(res.data?.stats || { totalAdmins: 0, totalDevices: 0 });
+        setDeviceGrowth(
+          Array.isArray(res.data?.deviceGrowth)
+            ? res.data.deviceGrowth
+            : []
+        );
+        setRevenueGrowth(
+          Array.isArray(res.data?.revenueGrowth)
+            ? res.data.revenueGrowth
+            : []
+        );
       })
       .finally(() => setLoading(false));
-  }, [selectedOrg, selectedYear]);
+  }, [selectedOrg, year]);
 
   /* =========================
-     SELECTED ORG NAME (FIXED)
+     NORMALIZE DEVICE DATA
+     Month-wise device creation
   ========================= */
-  const selectedOrgName = useMemo(() => {
-    const org = organizations.find((o) => o._id === selectedOrg);
-    return org?.org_name || '';
-  }, [selectedOrg, organizations]);
+  const deviceChartData = useMemo(() => {
+    const base = MONTHS.map((m) => ({
+      month: m,
+      devices: 0,
+    }));
 
-  /* =========================
-     CUSTOMER CHART DATA
-  ========================= */
-  const customerChartData = useMemo(() => {
-    const map = {};
-    stats.customerGrowth.forEach((i) => {
-      map[i._id.month] = i.count;
+    deviceGrowth.forEach((item) => {
+      if (!item || typeof item.month !== 'number') return;
+
+      const index = item.month - 1;
+      if (index >= 0 && index < 12) {
+        base[index].devices = item.count || 0;
+      }
     });
 
-    return Array.from({ length: 12 }, (_, i) => ({
-      month: MONTHS[i + 1],
-      customers: map[i + 1] || 0,
-    }));
-  }, [stats.customerGrowth]);
+    return base;
+  }, [deviceGrowth]);
 
   /* =========================
-     REVENUE CHART DATA
+     NORMALIZE REVENUE DATA
   ========================= */
   const revenueChartData = useMemo(() => {
-    const map = {};
-    stats.revenue.forEach((i) => {
-      map[i._id.month] = i.total;
+    const base = MONTHS.map((m) => ({
+      month: m,
+      revenue: 0,
+    }));
+
+    revenueGrowth.forEach((item) => {
+      if (!item || typeof item.month !== 'number') return;
+
+      const index = item.month - 1;
+      if (index >= 0 && index < 12) {
+        base[index].revenue = item.total || 0;
+      }
     });
 
-    return Array.from({ length: 12 }, (_, i) => ({
-      month: MONTHS[i + 1],
-      revenue: map[i + 1] || 0,
-    }));
-  }, [stats.revenue]);
+    return base;
+  }, [revenueGrowth]);
 
+  /* =========================
+     RENDER
+  ========================= */
   return (
     <SuperAdminNavbar>
       <div className="dashboard-page">
+
         {/* HEADER */}
         <div className="dashboard-header">
-          <div>
-            <h1 className="dashboard-title">Dashboard</h1>
-            {selectedOrgName && (
-              <p className="dashboard-subtitle">
-                📊 {selectedOrgName}
-              </p>
-            )}
-          </div>
+          <h1 className="dashboard-title">Dashboard</h1>
 
-          {/* FILTERS */}
           <div className="dashboard-filters">
-            {orgLoading ? (
-              <select className="dashboard-select" disabled>
-                <option>Loading organizations...</option>
-              </select>
-            ) : (
-              <>
-                <select
-                  className="dashboard-select"
-                  value={selectedOrg}
-                  onChange={(e) => setSelectedOrg(e.target.value)}
-                >
-                  <option value="">Select Organization</option>
-                  {organizations.map((org) => (
-                    <option key={org._id} value={org._id}>
-                      {org.org_name} ({org.org_id})
-                    </option>
-                  ))}
-                </select>
+            <select
+              value={selectedOrg}
+              onChange={(e) => setSelectedOrg(e.target.value)}
+            >
+              {organizations.map((org) => (
+                <option key={org._id} value={org._id}>
+                  {org.org_name}
+                </option>
+              ))}
+            </select>
 
-                <select
-                  className="dashboard-select"
-                  value={selectedYear}
-                  onChange={(e) =>
-                    setSelectedYear(Number(e.target.value))
-                  }
-                >
-                  {[currentYear, currentYear - 1, currentYear - 2].map(
-                    (y) => (
-                      <option key={y} value={y}>
-                        {y}
-                      </option>
-                    )
-                  )}
-                </select>
-              </>
-            )}
+            <select
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+            >
+              {YEARS.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
         {/* CONTENT */}
         {loading ? (
-          <div className="dashboard-loading">Loading...</div>
+          <p className="dashboard-loading">Loading...</p>
         ) : (
           <>
+            {/* STATS */}
             <div className="dashboard-stats">
               <div className="stat-card">
                 <div className="stat-value">{stats.totalAdmins}</div>
-                <p>Total Admins & Head Admins</p>
+                <p>Total Admins</p>
               </div>
               <div className="stat-card">
-                <div className="stat-value">{stats.totalCustomers}</div>
-                <p>Total Customers</p>
+                <div className="stat-value">{stats.totalDevices}</div>
+                <p>Total Devices</p>
               </div>
             </div>
 
+            {/* CHARTS */}
             <div className="dashboard-charts">
+
+              {/* DEVICE GROWTH */}
               <div className="chart-card">
-                <h3>Customer Growth</h3>
+                <h3>Device Creation (Monthly)</h3>
+
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={customerChartData}>
+                  <BarChart
+                    data={deviceChartData}
+                    margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
+
+                    <XAxis
+                      dataKey="month"
+                      label={{
+                        value: 'Month',
+                        position: 'insideBottom',
+                        offset: -8,
+                      }}
+                    />
+
+                    <YAxis
+                      allowDecimals={false}
+                      domain={[0, (dataMax) => Math.max(dataMax, 5)]}
+                      tickCount={6}
+                      label={{
+                        value: 'Devices',
+                        angle: -90,
+                        position: 'insideLeft',
+                      }}
+                    />
+
                     <Tooltip />
-                    <Bar dataKey="customers" fill="#3b82f6" />
+                    <Legend />
+
+                    <Bar
+                      dataKey="devices"
+                      name="Devices Created"
+                      fill="#2563eb"
+                      barSize={40}
+                      radius={[6, 6, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
 
+              {/* REVENUE */}
               <div className="chart-card">
                 <h3>Revenue</h3>
+
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={revenueChartData}>
+                  <LineChart
+                    data={revenueChartData}
+                    margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
+
+                    <XAxis
+                      dataKey="month"
+                      label={{
+                        value: 'Month',
+                        position: 'insideBottom',
+                        offset: -8,
+                      }}
+                    />
+
+                    <YAxis
+                      domain={[0, (dataMax) => Math.max(dataMax, 200)]}
+                      label={{
+                        value: 'Revenue (₹)',
+                        angle: -90,
+                        position: 'insideLeft',
+                      }}
+                    />
+
                     <Tooltip />
+                    <Legend />
+
                     <Line
+                      type="monotone"
                       dataKey="revenue"
+                      name="Revenue"
                       stroke="#16a34a"
                       strokeWidth={3}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+
             </div>
           </>
         )}

@@ -55,6 +55,16 @@ const Input = styled.input`
   border: 1px solid #cbd5e1;
 `;
 
+const LogoPreview = styled.img`
+  margin-top: 8px;
+  height: 70px;
+  object-fit: contain;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 6px;
+  background: #f8fafc;
+`;
+
 const ButtonBar = styled.div`
   display: flex;
   justify-content: flex-end;
@@ -79,7 +89,10 @@ const EditOrganization = () => {
   const navigate = useNavigate();
   const { organizationId } = useParams();
 
+  const API_BASE = process.env.REACT_APP_API_URL || '';
+
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState({
     org_id: '',
@@ -90,8 +103,11 @@ const EditOrganization = () => {
     phone_number: '',
     state: '',
     pincode: '',
-    country: '',
+    country: 'India',
   });
+
+  const [logo, setLogo] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
 
   /* =========================
      LOAD ORGANIZATION
@@ -118,10 +134,16 @@ const EditOrganization = () => {
         country: org.country || 'India',
       });
 
+      setLogoPreview(
+        org.logo
+          ? `${API_BASE}/uploads/organizations/${org.logo}`
+          : null
+      );
+
       setLoading(false);
     } catch (error) {
       alert('Failed to load organization');
-      navigate('/super-admin/org');
+      navigate('/superadmin/organizations');
     }
   };
 
@@ -133,31 +155,59 @@ const EditOrganization = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setLogo(file);
+    setLogoPreview(URL.createObjectURL(file));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // 🔥 IMPORTANT: remove org_id from update payload
-    const { org_id, ...updatePayload } = form;
+    setSubmitting(true);
 
     try {
-      await updateOrganization(organizationId, updatePayload);
+      const formData = new FormData();
+
+      // ❗ org_id should NOT be updated
+      Object.entries(form).forEach(([key, value]) => {
+        if (key !== 'org_id') {
+          formData.append(key, value);
+        }
+      });
+
+      if (logo) {
+        formData.append('logo', logo);
+      }
+
+      await updateOrganization(organizationId, formData);
+
       alert('Organization updated successfully');
-      navigate('/super-admin/org');
+      navigate('/superadmin/organizations');
     } catch (error) {
-      alert('Failed to update organization');
+      alert(error.response?.data?.message || 'Failed to update organization');
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  /* =========================
+     LOADING STATE
+  ========================= */
   if (loading) {
     return (
       <SuperAdminNavbar>
         <Page>
-          <Card>Loading organization...</Card>
+          <Card>Loading organization…</Card>
         </Page>
       </SuperAdminNavbar>
     );
   }
 
+  /* =========================
+     RENDER
+  ========================= */
   return (
     <SuperAdminNavbar>
       <Page>
@@ -246,13 +296,33 @@ const EditOrganization = () => {
                   onChange={handleChange}
                 />
               </Field>
+
+              {/* LOGO */}
+              <Field>
+                <Label>Organization Logo</Label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoChange}
+                />
+                {logoPreview && (
+                  <LogoPreview src={logoPreview} alt="Logo preview" />
+                )}
+              </Field>
             </Grid>
 
             <ButtonBar>
-              <Button type="button" $cancel onClick={() => navigate(-1)}>
+              <Button
+                type="button"
+                $cancel
+                onClick={() => navigate(-1)}
+                disabled={submitting}
+              >
                 Cancel
               </Button>
-              <Button type="submit">Update</Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? 'Updating...' : 'Update'}
+              </Button>
             </ButtonBar>
           </form>
         </Card>

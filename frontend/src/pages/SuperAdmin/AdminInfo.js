@@ -99,7 +99,7 @@ const Tr = styled.tr`
 const AdminInfo = () => {
   const navigate = useNavigate();
 
-  const [admins, setAdmins] = useState([]);
+  const [admins, setAdmins] = useState([]); // ✅ always array
   const [selectedId, setSelectedId] = useState(null);
 
   const [orgSearch, setOrgSearch] = useState('');
@@ -115,9 +115,16 @@ const AdminInfo = () => {
   const fetchAdmins = async () => {
     try {
       const res = await getAdmins();
-      setAdmins(res.data || []);
-    } catch {
+
+      // ✅ BACKEND RETURNS { admins, headadmins }
+      const adminsList = res.data?.admins || [];
+      const headAdminsList = res.data?.headadmins || [];
+
+      setAdmins([...adminsList, ...headAdminsList]);
+    } catch (err) {
+      console.error(err);
       alert('Failed to load admins');
+      setAdmins([]);
     }
   };
 
@@ -130,7 +137,8 @@ const AdminInfo = () => {
     const orgId = admin.org_id?.toLowerCase() || '';
 
     const adminText = `
-      ${admin.username || ''}
+      ${admin.user_name?.first_name || ''}
+      ${admin.user_name?.last_name || ''}
       ${admin.email || ''}
       ${admin.role || ''}
     `.toLowerCase();
@@ -147,7 +155,7 @@ const AdminInfo = () => {
   ========================= */
   const handleDelete = async () => {
     if (!selectedId) return;
-    if (!window.confirm('Delete this admin?')) return;
+    if (!window.confirm('Delete this user?')) return;
 
     try {
       await deleteAdmin(selectedId);
@@ -161,14 +169,12 @@ const AdminInfo = () => {
   return (
     <SuperAdminNavbar>
       <Page>
-        {/* =========================
-            TOP BAR
-        ========================= */}
+        {/* ================= TOP BAR ================= */}
         <TopBar>
           <Title>Admins / Head Admins</Title>
 
           <Actions>
-            <Button onClick={() => navigate('/super-admin/createAdmin')}>
+            <Button onClick={() => navigate('/superadmin/admins/create')}>
               Create
             </Button>
 
@@ -176,7 +182,7 @@ const AdminInfo = () => {
               variant="edit"
               disabled={!selectedId}
               onClick={() =>
-                navigate(`/super-admin/edit-admin/${selectedId}`)
+                navigate(`/superadmin/admins/${selectedId}/edit`)
               }
             >
               Edit
@@ -192,9 +198,7 @@ const AdminInfo = () => {
           </Actions>
         </TopBar>
 
-        {/* =========================
-            SEARCH
-        ========================= */}
+        {/* ================= SEARCH ================= */}
         <SearchRow>
           <SearchBox
             placeholder="Search by organization name / org ID..."
@@ -209,9 +213,7 @@ const AdminInfo = () => {
           />
         </SearchRow>
 
-        {/* =========================
-            TABLE
-        ========================= */}
+        {/* ================= TABLE ================= */}
         <Card>
           <Table>
             <thead>
@@ -219,10 +221,10 @@ const AdminInfo = () => {
                 <Th></Th>
                 <Th>Org ID</Th>
                 <Th>Organization</Th>
-                <Th>Username</Th>
+                <Th>Name</Th>
                 <Th>Email</Th>
                 <Th>Phone</Th>
-                <Th>Location</Th>
+                <Th>City</Th>
                 <Th>Role</Th>
               </tr>
             </thead>
@@ -236,7 +238,9 @@ const AdminInfo = () => {
                       checked={selectedId === admin._id}
                       onChange={() =>
                         setSelectedId(
-                          selectedId === admin._id ? null : admin._id
+                          selectedId === admin._id
+                            ? null
+                            : admin._id
                         )
                       }
                     />
@@ -244,10 +248,13 @@ const AdminInfo = () => {
 
                   <Td>{admin.org_id || '-'}</Td>
                   <Td>{admin.organization?.org_name || '-'}</Td>
-                  <Td>{admin.username || '-'}</Td>
+                  <Td>
+                    {admin.user_name?.first_name}{' '}
+                    {admin.user_name?.last_name}
+                  </Td>
                   <Td>{admin.email || '-'}</Td>
-                  <Td>{admin.phoneNo || '-'}</Td>
-                  <Td>{admin.location || '-'}</Td>
+                  <Td>{admin.phone_number || '-'}</Td>
+                  <Td>{admin.address?.city || '-'}</Td>
                   <Td style={{ textTransform: 'capitalize' }}>
                     {admin.role}
                   </Td>

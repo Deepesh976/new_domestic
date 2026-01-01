@@ -169,7 +169,7 @@ export default function Admins() {
           {/* ✅ FIXED ROUTE */}
           <AddButton
             onClick={() =>
-              navigate('/head-admin/admins/create')
+              navigate('/headadmin/admins/create')
             }
           >
             + Create Admin
@@ -211,9 +211,7 @@ export default function Admins() {
                           <ActionBtn
                             className="edit"
                             onClick={() =>
-                              navigate(
-                                `/head-admin/admins/${u._id}/edit`
-                              )
+navigate(`/headadmin/admins/${u._id}/edit`)
                             }
                           >
                             Edit

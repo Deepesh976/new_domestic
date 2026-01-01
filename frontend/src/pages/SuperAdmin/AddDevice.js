@@ -44,7 +44,7 @@ const Input = styled.input`
   padding: 10px;
   border-radius: 6px;
   border: 1px solid #cbd5e1;
-  background: #f8fafc;
+  background: ${(p) => (p.disabled ? '#f8fafc' : 'white')};
 `;
 
 const Select = styled.select`
@@ -68,6 +68,7 @@ const Button = styled.button`
   cursor: pointer;
   color: white;
   background: ${(p) => (p.$cancel ? '#64748b' : '#2563eb')};
+  opacity: ${(p) => (p.disabled ? 0.6 : 1)};
 `;
 
 /* =========================
@@ -80,8 +81,8 @@ const AddDevice = () => {
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
-    organization: '', // org _id (for UI selection)
-    org_id: '',       // auto-filled
+    organization: '', // org _id (UI only)
+    org_id: '',       // actual stored org_id
     mac_id: '',
     serial_number: '',
   });
@@ -97,7 +98,8 @@ const AddDevice = () => {
     try {
       const res = await getOrganizations();
       setOrganizations(res.data || []);
-    } catch {
+    } catch (err) {
+      console.error(err);
       alert('Failed to load organizations');
     }
   };
@@ -129,7 +131,10 @@ const AddDevice = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.org_id || !form.mac_id || !form.serial_number) {
+    const mac = form.mac_id.trim().toUpperCase();
+    const serial = form.serial_number.trim().toUpperCase();
+
+    if (!form.org_id || !mac || !serial) {
       alert('Organization, MAC ID and Serial Number are required');
       return;
     }
@@ -138,16 +143,18 @@ const AddDevice = () => {
       setLoading(true);
 
       await createDevice({
-        org_id: form.org_id, // ✅ only org_id sent
-        mac_id: form.mac_id,
-        serial_number: form.serial_number,
+        org_id: form.org_id,
+        mac_id: mac,
+        serial_number: serial,
       });
 
-      alert('Device added successfully');
-      navigate('/super-admin/device');
+      alert('✅ Device added successfully');
+      navigate('/superadmin/devices'); // ✅ FIXED PATH
     } catch (err) {
+      console.error(err);
       alert(
-        err?.response?.data?.message || 'Failed to add device'
+        err?.response?.data?.message ||
+          'Failed to add device'
       );
     } finally {
       setLoading(false);
@@ -163,12 +170,13 @@ const AddDevice = () => {
           <form onSubmit={handleSubmit}>
             {/* ORGANIZATION */}
             <Field>
-              <Label>Organization</Label>
+              <Label>Organization *</Label>
               <Select
                 name="organization"
                 value={form.organization}
                 onChange={handleChange}
                 required
+                disabled={loading}
               >
                 <option value="">Select Organization</option>
                 {organizations.map((org) => (
@@ -187,25 +195,27 @@ const AddDevice = () => {
 
             {/* MAC ID */}
             <Field>
-              <Label>MAC ID</Label>
+              <Label>MAC ID *</Label>
               <Input
                 name="mac_id"
                 value={form.mac_id}
                 onChange={handleChange}
                 placeholder="AA:BB:CC:DD:EE:FF"
                 required
+                disabled={loading}
               />
             </Field>
 
             {/* SERIAL NUMBER */}
             <Field>
-              <Label>Serial Number</Label>
+              <Label>Serial Number *</Label>
               <Input
                 name="serial_number"
                 value={form.serial_number}
                 onChange={handleChange}
                 placeholder="SN-000123"
                 required
+                disabled={loading}
               />
             </Field>
 
@@ -214,11 +224,12 @@ const AddDevice = () => {
                 type="button"
                 $cancel
                 onClick={() => navigate(-1)}
+                disabled={loading}
               >
                 Cancel
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? 'Saving...' : 'Save'}
+                {loading ? 'Saving…' : 'Save'}
               </Button>
             </ButtonBar>
           </form>

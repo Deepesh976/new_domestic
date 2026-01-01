@@ -9,6 +9,9 @@ import {
   deleteOrganization,
 } from '../../controllers/superadmin/superAdminOrganizationController.js';
 
+// ✅ Multer middleware for logo upload
+import { uploadOrgLogo } from '../../middleware/orgUpload.js';
+
 const router = express.Router();
 
 /* =====================================================
@@ -19,10 +22,28 @@ router.use(auth, roleMiddleware('superadmin')); // ✅ lowercase (matches auth.j
 /* =====================================================
    ROUTES
 ===================================================== */
-router.post('/', createOrganization);
+
+// CREATE organization (with logo upload)
+router.post(
+  '/',
+  uploadOrgLogo.single('logo'),
+  createOrganization
+);
+
+// GET all organizations
 router.get('/', getOrganizations);
+
+// GET organization by ID
 router.get('/:id', getOrganizationById);
-router.put('/:id', updateOrganization);
+
+// UPDATE organization (optional logo replace)
+router.put(
+  '/:id',
+  uploadOrgLogo.single('logo'),
+  updateOrganization
+);
+
+// DELETE organization (also deletes logo file)
 router.delete('/:id', deleteOrganization);
 
 export default router;

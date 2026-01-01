@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import OrgAdmin from '../../models/OrgAdmin.js';
 import OrgHeadAdmin from '../../models/OrgHeadAdmin.js';
+import Organization from '../../models/Organization.js';
 
 /* =====================================================
    ADMIN + HEADADMIN LOGIN (UNIFIED)
@@ -37,7 +38,7 @@ export const login = async (req, res) => {
     if (headAdmin) {
       user = headAdmin;
       role = 'headadmin';
-      organization = headAdmin.organization?.org_id;
+      organization = headAdmin.organization;
     } else {
       /* =========================
          TRY ADMIN
@@ -49,33 +50,26 @@ export const login = async (req, res) => {
       if (admin) {
         user = admin;
         role = 'admin';
-        organization = admin.org_id;
+
+        organization = await Organization.findOne({
+          org_id: admin.org_id,
+        });
       }
     }
 
-    if (!user) {
+    /* =========================
+       USER / ORG VALIDATION
+    ========================= */
+    if (!user || !organization) {
       return res.status(401).json({
         message: 'Invalid email or password',
       });
     }
 
-    if (!organization) {
-      return res.status(400).json({
-        message: 'Organization not linked properly',
-      });
-    }
-
     /* =========================
-       PASSWORD CHECK (SAFE)
+       PASSWORD CHECK
     ========================= */
-    let isMatch = false;
-
-    if (user.password.startsWith('$2')) {
-      isMatch = await bcrypt.compare(password, user.password);
-    } else {
-      // legacy/plain-text support (optional)
-      isMatch = password === user.password;
-    }
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.status(401).json({
@@ -85,21 +79,31 @@ export const login = async (req, res) => {
 
     /* =========================
        SIGN JWT
+       (ONLY org_id INSIDE TOKEN)
     ========================= */
     const token = jwt.sign(
       {
         id: user._id,
         role,
-        organization,
+        org_id: organization.org_id,
       },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
 
+    /* =========================
+       RESPONSE (FRONTEND FRIENDLY)
+    ========================= */
     return res.status(200).json({
       token,
       role,
-      organization,
+
+      organization: {
+        org_id: organization.org_id,
+        org_name: organization.org_name,
+        logo: organization.logo || null,
+      },
+
       user: {
         id: user._id,
         username: user.username,
@@ -155,8 +159,7 @@ export const changePassword = async (req, res) => {
     /* =========================
        HASH & SAVE PASSWORD
     ========================= */
-    const hashedPassword = await bcrypt.hash(password, 10);
-    user.password = hashedPassword;
+    user.password = await bcrypt.hash(password, 10);
     await user.save();
 
     return res.status(200).json({

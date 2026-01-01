@@ -5,14 +5,10 @@ import { getDashboard } from '../../controllers/headadmin/headAdminDashboardCont
 
 const router = express.Router();
 
-/**
- * GET /api/headadmin/dashboard
- * HeadAdmin only
- */
 router.get(
   '/',
   auth,
-  roleMiddleware('headadmin'),
+  roleMiddleware('headadmin', 'admin'),
   getDashboard
 );
 
