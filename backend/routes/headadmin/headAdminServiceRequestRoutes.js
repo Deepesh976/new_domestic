@@ -1,6 +1,7 @@
 import express from 'express';
 import auth from '../../middleware/auth.js';
 import roleMiddleware from '../../middleware/roleMiddleware.js';
+import serviceImageUpload from '../../middleware/serviceImageUpload.js';
 
 import {
   getServiceRequests,
@@ -18,17 +19,15 @@ const router = express.Router();
    - Admin: read-only access
 ===================================================== */
 
-/**
- * GET /api/headadmin/service-requests
- *
- * Access:
- *  - headadmin → full access
- *  - admin     → read-only access
- *
- * Features:
- *  - Search (device_id / customer name)
- *  - Filter by status
- */
+/* =========================
+   GET SERVICE REQUESTS
+   GET /api/headadmin/service-requests
+   - Search (device_id / customer name)
+   - Filter by status
+   Access:
+     - headadmin
+     - admin (read-only)
+========================= */
 router.get(
   '/',
   auth,
@@ -36,12 +35,12 @@ router.get(
   getServiceRequests
 );
 
-/**
- * GET /api/headadmin/service-requests/technicians/available
- *
- * Access:
- *  - headadmin only
- */
+/* =========================
+   GET AVAILABLE TECHNICIANS
+   GET /api/headadmin/service-requests/technicians/available
+   Access:
+     - headadmin only
+========================= */
 router.get(
   '/technicians/available',
   auth,
@@ -49,16 +48,15 @@ router.get(
   getAvailableTechnicians
 );
 
-/**
- * PATCH /api/headadmin/service-requests/:id/assign
- *
- * Access:
- *  - headadmin only
- *
- * Effect:
- *  - Technician status → busy
- *  - Service request → assigned
- */
+/* =========================
+   ASSIGN TECHNICIAN
+   PATCH /api/headadmin/service-requests/:id/assign
+   Access:
+     - headadmin only
+   Effect:
+     - Technician → busy
+     - Request → assigned
+========================= */
 router.patch(
   '/:id/assign',
   auth,
@@ -66,21 +64,21 @@ router.patch(
   assignTechnicianToRequest
 );
 
-/**
- * PATCH /api/headadmin/service-requests/:id/status
- *
- * Access:
- *  - headadmin only
- *
- * Effect:
- *  - Status transitions:
- *      open → assigned → completed → closed
- *  - Frees technician when request is closed
- */
+/* =========================
+   UPDATE SERVICE STATUS
+   PATCH /api/headadmin/service-requests/:id/status
+   Access:
+     - headadmin only
+   Features:
+     - Upload completion images
+     - Save filenames to MongoDB
+     - Free technician on close
+========================= */
 router.patch(
   '/:id/status',
   auth,
   roleMiddleware('headadmin'),
+  serviceImageUpload.array('completion_images', 5), // 🔥 IMPORTANT
   updateServiceStatus
 );
 

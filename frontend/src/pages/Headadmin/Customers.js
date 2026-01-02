@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from '../../utils/axiosConfig';
 import HeadAdminNavbar from '../../components/Navbar/HeadAdminNavbar';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
 /* =========================
@@ -40,7 +41,7 @@ const Td = styled.td`
   padding: 10px;
   font-size: 0.8rem;
   border-top: 1px solid #e5e7eb;
-  white-space: nowrap;
+  vertical-align: top;
 `;
 
 const Select = styled.select`
@@ -70,10 +71,22 @@ const Empty = styled.div`
   color: #64748b;
 `;
 
+const KycLink = styled.span`
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+
+  &:hover {
+    color: #1d4ed8;
+  }
+`;
+
 /* =========================
    COMPONENT
 ========================= */
 export default function Customers() {
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -159,6 +172,28 @@ export default function Customers() {
   };
 
   /* =========================
+     ADDRESS FORMATTER
+  ========================= */
+  const formatAddress = (address = {}) => {
+    return (
+      [
+        address.flat_no,
+        address.area,
+        address.city,
+        address.state,
+        address.country &&
+          `${address.country}${
+            address.postal_code
+              ? ' - ' + address.postal_code
+              : ''
+          }`,
+      ]
+        .filter(Boolean)
+        .join(', ') || '—'
+    );
+  };
+
+  /* =========================
      RENDER
   ========================= */
   return (
@@ -179,12 +214,8 @@ export default function Customers() {
                   <Th>Last Name</Th>
                   <Th>Email</Th>
                   <Th>Phone</Th>
-                  <Th>Flat No</Th>
-                  <Th>Area</Th>
-                  <Th>City</Th>
-                  <Th>State</Th>
-                  <Th>Postal Code</Th>
-                  <Th>Country</Th>
+                  <Th>Address</Th>
+                  <Th>KYC</Th>
                   <Th>KYC Status</Th>
                   <Th>Device Status</Th>
                   <Th>Action</Th>
@@ -198,13 +229,31 @@ export default function Customers() {
                     <Td>{c.user_name?.last_name || '—'}</Td>
                     <Td>{c.email_address || '—'}</Td>
                     <Td>{c.phone_number || '—'}</Td>
-                    <Td>{c.address?.flat_no || '—'}</Td>
-                    <Td>{c.address?.area || '—'}</Td>
-                    <Td>{c.address?.city || '—'}</Td>
-                    <Td>{c.address?.state || '—'}</Td>
-                    <Td>{c.address?.postal_code || '—'}</Td>
-                    <Td>{c.address?.country || '—'}</Td>
 
+                    <Td title={formatAddress(c.address)}>
+                      {formatAddress(c.address)}
+                    </Td>
+
+                    {/* ✅ KYC IMAGE COLUMN */}
+                    <Td>
+                      {c.kyc_details?.doc_image ? (
+                        <KycLink
+                          onClick={() =>
+                            navigate(
+                              `/headadmin/customers/${c._id}/kyc`
+                            )
+                          }
+                        >
+                          Click Me
+                        </KycLink>
+                      ) : (
+                        <span style={{ color: '#64748b' }}>
+                          Pending
+                        </span>
+                      )}
+                    </Td>
+
+                    {/* KYC STATUS */}
                     <Td>
                       <Select
                         value={
@@ -224,6 +273,7 @@ export default function Customers() {
                       </Select>
                     </Td>
 
+                    {/* DEVICE STATUS */}
                     <Td>
                       <Select
                         value={c.user_device_status || ''}

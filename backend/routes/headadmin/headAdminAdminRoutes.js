@@ -2,6 +2,7 @@ import express from 'express';
 import auth from '../../middleware/auth.js';
 import roleMiddleware from '../../middleware/roleMiddleware.js';
 import mongoose from 'mongoose';
+import kycUpload from '../../middleware/kycUpload.js';
 
 import {
   getAdmins,
@@ -12,29 +13,18 @@ import {
 
 const router = express.Router();
 
-/* =====================================================
-   ADMIN MANAGEMENT ROUTES
-   - HeadAdmin: full access
-   - Admin: ❌ NO ACCESS
-===================================================== */
-
 /* =========================
-   AUTH + ROLE (HEADADMIN ONLY)
+   AUTH + ROLE
 ========================= */
 router.use(auth, roleMiddleware('headadmin'));
 
 /* =========================
-   VALIDATE ADMIN ID PARAM
+   VALIDATE ADMIN ID
 ========================= */
 const validateAdminId = (req, res, next) => {
-  const { adminId } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(adminId)) {
-    return res.status(400).json({
-      message: 'Invalid admin ID',
-    });
+  if (!mongoose.Types.ObjectId.isValid(req.params.adminId)) {
+    return res.status(400).json({ message: 'Invalid admin ID' });
   }
-
   next();
 };
 
@@ -42,32 +32,21 @@ const validateAdminId = (req, res, next) => {
    ROUTES
 ========================= */
 
-/**
- * GET /api/headadmin/admins
- * Access:
- *  - headadmin only
- */
 router.get('/', getAdmins);
 
-/**
- * POST /api/headadmin/admins
- * Access:
- *  - headadmin only
- */
-router.post('/', createAdmin);
+router.post(
+  '/',
+  kycUpload.single('kyc_image'), // 🔥 IMPORTANT
+  createAdmin
+);
 
-/**
- * PUT /api/headadmin/admins/:adminId
- * Access:
- *  - headadmin only
- */
-router.put('/:adminId', validateAdminId, updateAdmin);
+router.put(
+  '/:adminId',
+  validateAdminId,
+  kycUpload.single('kyc_image'),
+  updateAdmin
+);
 
-/**
- * DELETE /api/headadmin/admins/:adminId
- * Access:
- *  - headadmin only
- */
 router.delete('/:adminId', validateAdminId, deleteAdmin);
 
 export default router;

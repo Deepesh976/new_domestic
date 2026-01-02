@@ -1,15 +1,19 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import SuperAdmin from '../../models/SuperAdmin.js';
+import sendEmail from '../../utils/sendEmail.js';
 
 /* =====================================================
    REGISTER SUPER ADMIN
 ===================================================== */
-const superAdminRegister = async (req, res) => {
+export const superAdminRegister = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
     if (!username || !email || !password) {
-      return res.status(400).json({ message: 'All fields are required' });
+      return res.status(400).json({
+        message: 'All fields are required',
+      });
     }
 
     const existingAdmin = await SuperAdmin.findOne({
@@ -17,10 +21,12 @@ const superAdminRegister = async (req, res) => {
     });
 
     if (existingAdmin) {
-      return res.status(400).json({ message: 'SuperAdmin already exists' });
+      return res.status(400).json({
+        message: 'SuperAdmin already exists',
+      });
     }
 
-    // 🔥 DO NOT HASH HERE (MODEL WILL HANDLE IT)
+    // ✅ MODEL HANDLES HASHING
     const admin = await SuperAdmin.create({
       username,
       email: email.toLowerCase(),
@@ -45,7 +51,7 @@ const superAdminRegister = async (req, res) => {
 /* =====================================================
    LOGIN SUPER ADMIN
 ===================================================== */
-const superAdminLogin = async (req, res) => {
+export const superAdminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -55,7 +61,6 @@ const superAdminLogin = async (req, res) => {
       });
     }
 
-    // 🔥 MUST SELECT PASSWORD
     const admin = await SuperAdmin.findOne({
       email: email.toLowerCase(),
     }).select('+password');
@@ -66,9 +71,7 @@ const superAdminLogin = async (req, res) => {
       });
     }
 
-    // 🔥 USE MODEL METHOD
     const isMatch = await admin.comparePassword(password);
-
     if (!isMatch) {
       return res.status(401).json({
         message: 'Invalid email or password',
@@ -100,7 +103,7 @@ const superAdminLogin = async (req, res) => {
 /* =====================================================
    CHANGE PASSWORD (LOGGED IN)
 ===================================================== */
-const changeSuperAdminPassword = async (req, res) => {
+export const changeSuperAdminPassword = async (req, res) => {
   try {
     const adminId = req.user.id;
     const { password } = req.body;
@@ -111,17 +114,19 @@ const changeSuperAdminPassword = async (req, res) => {
       });
     }
 
-    const admin = await SuperAdmin.findById(adminId);
+    const admin = await SuperAdmin.findById(adminId).select('+password');
 
     if (!admin) {
-      return res.status(404).json({ message: 'SuperAdmin not found' });
+      return res.status(404).json({
+        message: 'SuperAdmin not found',
+      });
     }
 
-    // 🔥 DO NOT HASH HERE
+    // ✅ DO NOT HASH HERE
     admin.password = password;
-    await admin.save();
+    await admin.save(); // model hashes
 
-    return res.json({
+    return res.status(200).json({
       success: true,
       message: 'Password updated successfully',
     });
@@ -132,15 +137,15 @@ const changeSuperAdminPassword = async (req, res) => {
 };
 
 /* =====================================================
-   RESET PASSWORD (FORGOT PASSWORD / POSTMAN)
+   FORGOT PASSWORD (EMAIL + TOKEN)
 ===================================================== */
-const resetSuperAdminPasswordByEmail = async (req, res) => {
+export const forgotSuperAdminPassword = async (req, res) => {
   try {
-    const { email, newPassword } = req.body;
+    const { email } = req.body;
 
-    if (!email || !newPassword) {
+    if (!email) {
       return res.status(400).json({
-        message: 'Email and newPassword are required',
+        message: 'Email is required',
       });
     }
 
@@ -154,23 +159,91 @@ const resetSuperAdminPasswordByEmail = async (req, res) => {
       });
     }
 
-    // 🔥 DO NOT HASH HERE
-    admin.password = newPassword;
-    await admin.save();
+    // 🔥 Clear old tokens
+    admin.resetPasswordToken = undefined;
+    admin.resetPasswordExpire = undefined;
 
-    return res.json({
-      success: true,
-      message: 'Password reset successfully',
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+
+    admin.resetPasswordToken = hashedToken;
+    admin.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
+
+    await admin.save({ validateBeforeSave: false });
+
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+
+    await sendEmail({
+      to: admin.email,
+      subject: 'Reset your Domesticro password',
+      html: `
+        <p>You requested a password reset.</p>
+        <p>
+          <a href="${resetUrl}">Click here to reset your password</a>
+        </p>
+        <p>This link will expire in 15 minutes.</p>
+      `,
+    });
+
+    return res.status(200).json({
+      message: 'Password reset link sent to email',
     });
   } catch (error) {
-    console.error('❌ RESET PASSWORD ERROR:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('❌ FORGOT PASSWORD ERROR:', error);
+    return res.status(500).json({
+      message: 'Failed to send reset email',
+    });
   }
 };
 
-export {
-  superAdminRegister,
-  superAdminLogin,
-  changeSuperAdminPassword,
-  resetSuperAdminPasswordByEmail,
+/* =====================================================
+   RESET PASSWORD (TOKEN)
+===================================================== */
+export const resetSuperAdminPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({
+        message: 'Password must be at least 6 characters',
+      });
+    }
+
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    const admin = await SuperAdmin.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    }).select('+password');
+
+    if (!admin) {
+      return res.status(400).json({
+        message: 'Invalid or expired reset token',
+      });
+    }
+
+    // ✅ DO NOT HASH HERE
+    admin.password = password;
+    admin.resetPasswordToken = undefined;
+    admin.resetPasswordExpire = undefined;
+
+    await admin.save(); // model hashes
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password reset successful',
+    });
+  } catch (error) {
+    console.error('❌ RESET PASSWORD ERROR:', error);
+    return res.status(500).json({
+      message: 'Server error',
+    });
+  }
 };

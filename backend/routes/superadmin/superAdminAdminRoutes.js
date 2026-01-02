@@ -1,6 +1,7 @@
 import express from 'express';
 import auth from '../../middleware/auth.js';
 import roleMiddleware from '../../middleware/roleMiddleware.js';
+import kycUpload from '../../middleware/kycUpload.js';
 
 import {
   createAdmin,
@@ -12,17 +13,24 @@ import {
 
 const router = express.Router();
 
-// 🔐 Protect all routes (SuperAdmin only)
-router.use(
-  auth,
-  roleMiddleware('superadmin') // ✅ lowercase
+router.use(auth, roleMiddleware('superadmin'));
+
+// ✅ CREATE (with image)
+router.post(
+  '/',
+  kycUpload.single('kyc_image'),
+  createAdmin
 );
 
-// CRUD routes
-router.post('/', createAdmin);
+// ✅ UPDATE (with image)
+router.put(
+  '/:id',
+  kycUpload.single('kyc_image'),
+  updateAdmin
+);
+
 router.get('/', getAdmins);
 router.get('/:id', getAdminById);
-router.put('/:id', updateAdmin);
 router.delete('/:id', deleteAdmin);
 
 export default router;

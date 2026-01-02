@@ -148,7 +148,7 @@ const formatDate = (val) => {
 /* =========================
    COMPONENT
 ========================= */
-const HeadAdminServiceRequest = () => {
+const ServiceRequest = () => {
   const [requests, setRequests] = useState([]);
   const [technicians, setTechnicians] = useState([]);
   const [search, setSearch] = useState('');
@@ -196,9 +196,7 @@ const HeadAdminServiceRequest = () => {
   ========================= */
   const handleStatusChange = async (id, newStatus) => {
     if (!newStatus) return;
-
-    const ok = window.confirm(`Change status to "${newStatus}"?`);
-    if (!ok) return;
+    if (!window.confirm(`Change status to "${newStatus}"?`)) return;
 
     await updateServiceRequestStatus(id, newStatus);
     loadRequests();
@@ -209,10 +207,12 @@ const HeadAdminServiceRequest = () => {
     if (!techId) return;
 
     const tech = technicians.find((t) => t._id === techId);
-    const ok = window.confirm(
-      `Assign technician ${tech?.user_name?.first_name || ''} ${tech?.user_name?.last_name || ''}?`
-    );
-    if (!ok) return;
+    if (
+      !window.confirm(
+        `Assign technician ${tech?.user_name?.first_name || ''} ${tech?.user_name?.last_name || ''}?`
+      )
+    )
+      return;
 
     await assignServiceTechnician(requestId, techId);
     loadRequests();
@@ -229,7 +229,6 @@ const HeadAdminServiceRequest = () => {
             <Title>Service Requests</Title>
           </Header>
 
-          {/* SEARCH & FILTER */}
           <Filters>
             <Input
               placeholder="Search Device ID / User Name"
@@ -249,7 +248,6 @@ const HeadAdminServiceRequest = () => {
             </Select>
           </Filters>
 
-          {/* TABLE */}
           <TableWrapper>
             <Table>
               <thead>
@@ -291,7 +289,6 @@ const HeadAdminServiceRequest = () => {
                           .join(', ')}
                       </Td>
 
-                      {/* STATUS */}
                       <Td>
                         <Select
                           value={r.status}
@@ -306,7 +303,6 @@ const HeadAdminServiceRequest = () => {
                         </Select>
                       </Td>
 
-                      {/* ASSIGNED TECH */}
                       <Td>
                         {r.status === 'closed' ? (
                           <span style={{ color: '#64748b' }}>Closed</span>
@@ -331,7 +327,6 @@ const HeadAdminServiceRequest = () => {
                         )}
                       </Td>
 
-                      {/* FIXED BY */}
                       <Td>
                         {r.status === 'closed'
                           ? r.fixed_by_name || '—'
@@ -383,11 +378,17 @@ const HeadAdminServiceRequest = () => {
 
             <p><b>Completion Images:</b></p>
             <ImgGrid>
-              {selected.completion_images?.length
-                ? selected.completion_images.map((img, i) => (
-                    <Img key={i} src={img} alt="completion" />
-                  ))
-                : 'No images'}
+              {selected.completion_images?.length ? (
+                selected.completion_images.map((img, i) => (
+                  <Img
+                    key={i}
+                    src={`http://localhost:5000/uploads/serviceimage/${img}`}
+                    alt="completion"
+                  />
+                ))
+              ) : (
+                'No images'
+              )}
             </ImgGrid>
           </Modal>
         </Overlay>
@@ -396,4 +397,4 @@ const HeadAdminServiceRequest = () => {
   );
 };
 
-export default HeadAdminServiceRequest;
+export default ServiceRequest;

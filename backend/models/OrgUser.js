@@ -41,14 +41,22 @@ const orgUserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+kyc_details: {
+  doc_type: {
+    type: String,
+    default: '',
+  },
+  doc_image: {
+    type: String, // filename only
+    default: null,
+  },
+  kyc_approval_status: {
+    type: String,
+    enum: ['approved', 'rejected', 'pending'],
+    default: 'pending',
+  },
+},
 
-    kyc_details: {
-      kyc_approval_status: {
-        type: String,
-        enum: ['approved', 'rejected', 'pending'],
-        default: 'pending',
-      },
-    },
 
     user_device_status: {
       type: String,

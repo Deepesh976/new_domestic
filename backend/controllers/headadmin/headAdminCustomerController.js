@@ -39,6 +39,55 @@ export const getCustomers = async (req, res) => {
 };
 
 /* =========================
+   UPLOAD CUSTOMER KYC IMAGE
+========================= */
+export const uploadCustomerKyc = async (req, res) => {
+  try {
+    const org_id = req.user.organization;
+    const customer_id = req.params.id;
+    const { doc_type } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({
+        message: 'KYC image is required',
+      });
+    }
+
+    const customer = await OrgUser.findOneAndUpdate(
+      {
+        _id: customer_id,
+        org_id,
+      },
+      {
+        $set: {
+          'kyc_details.doc_type': doc_type || '',
+          'kyc_details.doc_image': req.file.filename,
+          'kyc_details.kyc_approval_status': 'pending',
+        },
+      },
+      { new: true }
+    );
+
+    if (!customer) {
+      return res.status(404).json({
+        message: 'Customer not found or access denied',
+      });
+    }
+
+    return res.status(200).json({
+      message: 'Customer KYC uploaded successfully',
+      customer,
+    });
+  } catch (error) {
+    console.error('❌ Upload Customer KYC Error:', error);
+    return res.status(500).json({
+      message: 'Failed to upload customer KYC',
+    });
+  }
+};
+
+
+/* =========================
    UPDATE KYC STATUS
    allowed: approved | pending | rejected
    🔥 ALSO SYNC TO INSTALLATION ORDERS

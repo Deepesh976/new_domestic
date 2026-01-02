@@ -1,8 +1,10 @@
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+
 import OrgAdmin from '../../models/OrgAdmin.js';
 import OrgHeadAdmin from '../../models/OrgHeadAdmin.js';
 import Organization from '../../models/Organization.js';
+import sendEmail from '../../utils/sendEmail.js';
 
 /* =====================================================
    ADMIN + HEADADMIN LOGIN (UNIFIED)
@@ -11,9 +13,6 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    /* =========================
-       BASIC VALIDATION
-    ========================= */
     if (!email || !password) {
       return res.status(400).json({
         message: 'Email and password are required',
@@ -22,9 +21,9 @@ export const login = async (req, res) => {
 
     const normalizedEmail = email.toLowerCase();
 
-    let user = null;
-    let role = null;
-    let organization = null;
+    let user;
+    let role;
+    let organization;
 
     /* =========================
        TRY HEAD ADMIN FIRST
@@ -57,30 +56,19 @@ export const login = async (req, res) => {
       }
     }
 
-    /* =========================
-       USER / ORG VALIDATION
-    ========================= */
     if (!user || !organization) {
       return res.status(401).json({
         message: 'Invalid email or password',
       });
     }
 
-    /* =========================
-       PASSWORD CHECK
-    ========================= */
-    const isMatch = await bcrypt.compare(password, user.password);
-
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({
         message: 'Invalid email or password',
       });
     }
 
-    /* =========================
-       SIGN JWT
-       (ONLY org_id INSIDE TOKEN)
-    ========================= */
     const token = jwt.sign(
       {
         id: user._id,
@@ -91,19 +79,14 @@ export const login = async (req, res) => {
       { expiresIn: '1d' }
     );
 
-    /* =========================
-       RESPONSE (FRONTEND FRIENDLY)
-    ========================= */
     return res.status(200).json({
       token,
       role,
-
       organization: {
         org_id: organization.org_id,
         org_name: organization.org_name,
         logo: organization.logo || null,
       },
-
       user: {
         id: user._id,
         username: user.username,
@@ -126,20 +109,14 @@ export const changePassword = async (req, res) => {
     const { password } = req.body;
     const { id, role } = req.user;
 
-    /* =========================
-       VALIDATION
-    ========================= */
     if (!password || password.length < 6) {
       return res.status(400).json({
         message: 'Password must be at least 6 characters long',
       });
     }
 
-    let user = null;
+    let user;
 
-    /* =========================
-       FIND USER BY ROLE
-    ========================= */
     if (role === 'headadmin') {
       user = await OrgHeadAdmin.findById(id).select('+password');
     } else if (role === 'admin') {
@@ -156,11 +133,9 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    /* =========================
-       HASH & SAVE PASSWORD
-    ========================= */
-    user.password = await bcrypt.hash(password, 10);
-    await user.save();
+    // ✅ DO NOT HASH HERE
+    user.password = password;
+    await user.save(); // model hashes
 
     return res.status(200).json({
       message: 'Password updated successfully',
@@ -169,6 +144,124 @@ export const changePassword = async (req, res) => {
     console.error('❌ Change Password Error:', error);
     return res.status(500).json({
       message: 'Failed to update password',
+    });
+  }
+};
+
+/* =====================================================
+   FORGOT PASSWORD (ADMIN + HEADADMIN)
+===================================================== */
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const normalizedEmail = email.toLowerCase();
+
+    const user =
+      (await OrgHeadAdmin.findOne({ email: normalizedEmail })) ||
+      (await OrgAdmin.findOne({ email: normalizedEmail }));
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found',
+      });
+    }
+
+    // 🔥 Clear old tokens
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
+
+    await user.save({ validateBeforeSave: false });
+
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+
+    await sendEmail({
+      to: user.email,
+      subject: 'Reset your Domesticro password',
+      html: `
+        <p>You requested a password reset.</p>
+        <p>
+          <a href="${resetUrl}">
+            Click here to reset your password
+          </a>
+        </p>
+        <p>This link will expire in 15 minutes.</p>
+      `,
+    });
+
+    return res.status(200).json({
+      message: 'Password reset link sent to email',
+    });
+  } catch (error) {
+    console.error('❌ Forgot Password Error:', error);
+    return res.status(500).json({
+      message: 'Failed to send reset email',
+    });
+  }
+};
+
+/* =====================================================
+   RESET PASSWORD (ADMIN + HEADADMIN)
+===================================================== */
+export const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({
+        message: 'Password must be at least 6 characters long',
+      });
+    }
+
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    const user =
+      (await OrgHeadAdmin.findOne({
+        resetPasswordToken: hashedToken,
+        resetPasswordExpire: { $gt: Date.now() },
+      })) ||
+      (await OrgAdmin.findOne({
+        resetPasswordToken: hashedToken,
+        resetPasswordExpire: { $gt: Date.now() },
+      }));
+
+    if (!user) {
+      return res.status(400).json({
+        message: 'Invalid or expired reset token',
+      });
+    }
+
+    // ✅ DO NOT HASH HERE
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    await user.save(); // model hashes password
+
+    return res.status(200).json({
+      message: 'Password reset successful',
+    });
+  } catch (error) {
+    console.error('❌ Reset Password Error:', error);
+    return res.status(500).json({
+      message: 'Failed to reset password',
     });
   }
 };

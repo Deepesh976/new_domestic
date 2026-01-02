@@ -11,7 +11,7 @@ import SuperAdminNavbar from '../../components/Navbar/SuperAdminNavbar';
    STYLES
 ========================= */
 const Page = styled.div`
-  max-width: 900px;
+  max-width: 1000px;
   margin: auto;
   padding: 24px;
 `;
@@ -88,15 +88,27 @@ const CreateAdmin = () => {
   const [organizations, setOrganizations] = useState([]);
 
   const [form, setForm] = useState({
-    organization: '', // ObjectId
-    org_id: '',       // ✅ AUTO-FILLED
+    organization: '',
+    org_id: '',
+    role: 'admin',
+
     username: '',
     email: '',
     password: '',
-    phoneNo: '',
-    location: '',
-    role: 'admin',
+    phone_number: '',
+
+    flat_no: '',
+    area: '',
+    city: '',
+    state: '',
+    country: '',
+    postal_code: '',
+
+    doc_type: '',
+    doc_detail: '',
   });
+
+  const [kycImage, setKycImage] = useState(null);
 
   /* =========================
      LOAD ORGANIZATIONS
@@ -120,7 +132,6 @@ const CreateAdmin = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // 🔥 Auto-fill org_id when organization changes
     if (name === 'organization') {
       const selectedOrg = organizations.find(
         (org) => org._id === value
@@ -148,7 +159,18 @@ const CreateAdmin = () => {
     }
 
     try {
-      await createAdmin(form); // org_id ignored by backend (safe)
+      const formData = new FormData();
+
+      Object.entries(form).forEach(([key, value]) => {
+        if (value) formData.append(key, value);
+      });
+
+      if (kycImage) {
+        formData.append('kyc_image', kycImage);
+      }
+
+      await createAdmin(formData);
+
       alert('Admin created successfully');
       navigate('/superadmin/admins');
     } catch (err) {
@@ -164,7 +186,7 @@ const CreateAdmin = () => {
         <Card>
           <Title>Create Admin / Head Admin</Title>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} encType="multipart/form-data">
             <Grid>
               {/* ORGANIZATION */}
               <Field>
@@ -184,14 +206,10 @@ const CreateAdmin = () => {
                 </Select>
               </Field>
 
-              {/* ORG ID (AUTO) */}
+              {/* ORG ID */}
               <Field>
                 <Label>Organization ID</Label>
-                <Input
-                  value={form.org_id}
-                  disabled
-                  placeholder="Auto-filled"
-                />
+                <Input value={form.org_id} disabled />
               </Field>
 
               {/* ROLE */}
@@ -246,19 +264,95 @@ const CreateAdmin = () => {
               <Field>
                 <Label>Phone Number</Label>
                 <Input
-                  name="phoneNo"
-                  value={form.phoneNo}
+                  name="phone_number"
+                  value={form.phone_number}
                   onChange={handleChange}
                 />
               </Field>
 
-              {/* LOCATION */}
+              {/* ADDRESS */}
               <Field>
-                <Label>Location</Label>
+                <Label>Flat No</Label>
                 <Input
-                  name="location"
-                  value={form.location}
+                  name="flat_no"
+                  value={form.flat_no}
                   onChange={handleChange}
+                />
+              </Field>
+
+              <Field>
+                <Label>Area</Label>
+                <Input
+                  name="area"
+                  value={form.area}
+                  onChange={handleChange}
+                />
+              </Field>
+
+              <Field>
+                <Label>City</Label>
+                <Input
+                  name="city"
+                  value={form.city}
+                  onChange={handleChange}
+                />
+              </Field>
+
+              <Field>
+                <Label>State</Label>
+                <Input
+                  name="state"
+                  value={form.state}
+                  onChange={handleChange}
+                />
+              </Field>
+
+              <Field>
+                <Label>Country</Label>
+                <Input
+                  name="country"
+                  value={form.country}
+                  onChange={handleChange}
+                />
+              </Field>
+
+              <Field>
+                <Label>Postal Code</Label>
+                <Input
+                  name="postal_code"
+                  value={form.postal_code}
+                  onChange={handleChange}
+                />
+              </Field>
+
+              {/* KYC */}
+              <Field>
+                <Label>KYC Document Type</Label>
+                <Input
+                  name="doc_type"
+                  value={form.doc_type}
+                  onChange={handleChange}
+                  placeholder="Aadhar / PAN / Passport"
+                />
+              </Field>
+
+              <Field>
+                <Label>KYC Document Detail</Label>
+                <Input
+                  name="doc_detail"
+                  value={form.doc_detail}
+                  onChange={handleChange}
+                />
+              </Field>
+
+              <Field>
+                <Label>KYC Image</Label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    setKycImage(e.target.files[0])
+                  }
                 />
               </Field>
             </Grid>

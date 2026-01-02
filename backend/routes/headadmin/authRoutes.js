@@ -5,6 +5,8 @@ import roleMiddleware from '../../middleware/roleMiddleware.js';
 import {
   login,
   changePassword,
+  forgotPassword,
+  resetPassword,
 } from '../../controllers/headadmin/authController.js';
 
 const router = express.Router();
@@ -18,6 +20,20 @@ const router = express.Router();
    POST /api/headadmin/auth/login
 ========================= */
 router.post('/login', login);
+
+/* =========================
+   FORGOT PASSWORD
+   POST /api/headadmin/auth/forgot-password
+   - Public
+========================= */
+router.post('/forgot-password', forgotPassword);
+
+/* =========================
+   RESET PASSWORD
+   POST /api/headadmin/auth/reset-password/:token
+   - Public (token based)
+========================= */
+router.post('/reset-password/:token', resetPassword);
 
 /* =========================
    CHANGE PASSWORD

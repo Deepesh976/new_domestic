@@ -41,7 +41,7 @@ const Card = styled.div`
   background: white;
   border-radius: 14px;
   border: 1px solid #e5e7eb;
-  overflow: hidden;
+  overflow-x: auto;
 `;
 
 const Table = styled.table`
@@ -52,15 +52,17 @@ const Table = styled.table`
 const Th = styled.th`
   padding: 14px;
   background: #f8fafc;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   text-align: left;
   color: #475569;
+  white-space: nowrap;
 `;
 
 const Td = styled.td`
   padding: 14px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   border-top: 1px solid #e5e7eb;
+  white-space: nowrap;
 `;
 
 const Row = styled.tr`
@@ -77,6 +79,29 @@ const Badge = styled.span`
   color: white;
   background: ${(p) =>
     p.role === 'headadmin' ? '#7c3aed' : '#2563eb'};
+`;
+
+const KycBadge = styled.span`
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  background: #f59e0b;
+`;
+
+const KycLink = styled.button`
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
 const ActionGroup = styled.div`
@@ -117,20 +142,20 @@ const Empty = styled.div`
 ========================= */
 export default function Admins() {
   const navigate = useNavigate();
-  const [users, setUsers] = useState([]);
+  const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
 
   /* =========================
-     FETCH USERS
+     FETCH ADMINS
   ========================= */
   const fetchAdmins = async () => {
     try {
       setLoading(true);
       const res = await axios.get('/api/headadmin/admins');
-      setUsers(res.data.admins || []);
+      setAdmins(res.data.admins || []);
     } catch (error) {
       console.error(error);
-      alert('Failed to load users');
+      alert('Failed to load admins');
     } finally {
       setLoading(false);
     }
@@ -141,18 +166,13 @@ export default function Admins() {
   }, []);
 
   /* =========================
-     DELETE USER
+     DELETE ADMIN
   ========================= */
-  const deleteUser = async (u) => {
-    if (u.role === 'headadmin') {
-      alert('Head Admin cannot be deleted');
-      return;
-    }
-
+  const deleteAdmin = async (admin) => {
     if (!window.confirm('Delete this admin?')) return;
 
     try {
-      await axios.delete(`/api/headadmin/admins/${u._id}`);
+      await axios.delete(`/api/headadmin/admins/${admin._id}`);
       fetchAdmins();
     } catch (error) {
       console.error(error);
@@ -160,26 +180,38 @@ export default function Admins() {
     }
   };
 
+  /* =========================
+     HELPERS
+  ========================= */
+  const formatAddress = (a) =>
+    [
+      a.flat_no,
+      a.area,
+      a.city,
+      a.state,
+      a.country,
+      a.postal_code && `- ${a.postal_code}`,
+    ]
+      .filter(Boolean)
+      .join(', ');
+
   return (
     <HeadAdminNavbar>
       <Page>
         <Header>
-          <Title>Organization Users</Title>
+          <Title>Organization Admins</Title>
 
-          {/* ✅ FIXED ROUTE */}
           <AddButton
-            onClick={() =>
-              navigate('/headadmin/admins/create')
-            }
+            onClick={() => navigate('/headadmin/admins/create')}
           >
             + Create Admin
           </AddButton>
         </Header>
 
         {loading ? (
-          <Empty>Loading users...</Empty>
-        ) : users.length === 0 ? (
-          <Empty>No users found for this organization</Empty>
+          <Empty>Loading admins...</Empty>
+        ) : admins.length === 0 ? (
+          <Empty>No admins found</Empty>
         ) : (
           <Card>
             <Table>
@@ -189,29 +221,54 @@ export default function Admins() {
                   <Th>Email</Th>
                   <Th>Role</Th>
                   <Th>Phone</Th>
-                  <Th>Location</Th>
+                  <Th>Address</Th>
+                  <Th>KYC</Th>
                   <Th>Actions</Th>
                 </tr>
               </thead>
 
               <tbody>
-                {users.map((u) => (
-                  <Row key={u._id}>
-                    <Td>{u.username}</Td>
-                    <Td>{u.email}</Td>
-                    <Td>
-                      <Badge role={u.role}>{u.role}</Badge>
-                    </Td>
-                    <Td>{u.phoneNo || '—'}</Td>
-                    <Td>{u.location || '—'}</Td>
-                    <Td>
-                      {u.role === 'admin' ? (
+                {admins.map((a) => {
+                  const hasKycImage = !!a.kyc_details?.kyc_image;
+
+                  return (
+                    <Row key={a._id}>
+                      <Td>{a.username}</Td>
+                      <Td>{a.email}</Td>
+
+                      <Td>
+                        <Badge role={a.role}>{a.role}</Badge>
+                      </Td>
+
+                      <Td>{a.phone_number || '—'}</Td>
+
+                      <Td>{formatAddress(a) || '—'}</Td>
+
+                      {/* ✅ FINAL KYC LOGIC */}
+                      <Td>
+                        {hasKycImage ? (
+                          <KycLink
+                            onClick={() =>
+                              navigate(
+                                `/headadmin/admins/${a._id}/kyc`
+                              )
+                            }
+                          >
+                            View KYC
+                          </KycLink>
+                        ) : (
+                          <KycBadge>pending</KycBadge>
+                        )}
+                      </Td>
+
+                      <Td>
                         <ActionGroup>
-                          {/* ✅ FIXED ROUTE */}
                           <ActionBtn
                             className="edit"
                             onClick={() =>
-navigate(`/headadmin/admins/${u._id}/edit`)
+                              navigate(
+                                `/headadmin/admins/${a._id}/edit`
+                              )
                             }
                           >
                             Edit
@@ -219,17 +276,15 @@ navigate(`/headadmin/admins/${u._id}/edit`)
 
                           <ActionBtn
                             className="delete"
-                            onClick={() => deleteUser(u)}
+                            onClick={() => deleteAdmin(a)}
                           >
                             Delete
                           </ActionBtn>
                         </ActionGroup>
-                      ) : (
-                        '—'
-                      )}
-                    </Td>
-                  </Row>
-                ))}
+                      </Td>
+                    </Row>
+                  );
+                })}
               </tbody>
             </Table>
           </Card>

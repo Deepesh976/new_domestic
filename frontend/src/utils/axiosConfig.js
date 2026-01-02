@@ -4,9 +4,7 @@ import { logout } from '../redux/authSlice';
 
 const instance = axios.create({
   baseURL: 'http://localhost:5000',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  // ❌ DO NOT set Content-Type here
 });
 
 /* =========================
@@ -33,7 +31,7 @@ instance.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       store.dispatch(logout());
-      window.location.href = '/'; // ✅ correct route
+      window.location.href = '/';
     }
     return Promise.reject(error);
   }

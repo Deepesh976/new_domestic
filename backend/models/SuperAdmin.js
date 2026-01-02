@@ -3,6 +3,9 @@ import bcrypt from 'bcryptjs';
 
 const superAdminSchema = new mongoose.Schema(
   {
+    /* =========================
+       BASIC INFO
+    ========================= */
     username: {
       type: String,
       required: true,
@@ -15,16 +18,34 @@ const superAdminSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      index: true,
     },
 
+    /* =========================
+       AUTH
+    ========================= */
     password: {
       type: String,
       required: true,
       minlength: 6,
       select: false, // 🔐 never return password by default
     },
+
+    /* =========================
+       FORGOT PASSWORD
+    ========================= */
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+
+    resetPasswordExpire: {
+      type: Date,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 /* =========================

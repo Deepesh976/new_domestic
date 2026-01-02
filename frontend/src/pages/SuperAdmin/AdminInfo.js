@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -25,6 +25,7 @@ const TopBar = styled.div`
 
 const Title = styled.h2`
   font-weight: 700;
+  color: #0f172a;
 `;
 
 const Actions = styled.div`
@@ -52,6 +53,7 @@ const Button = styled.button`
 const SearchRow = styled.div`
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
 `;
 
 const SearchBox = styled.input`
@@ -77,19 +79,44 @@ const Th = styled.th`
   text-align: left;
   padding: 12px;
   background: #f8fafc;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #475569;
+  white-space: nowrap;
 `;
 
 const Td = styled.td`
   padding: 12px;
   border-top: 1px solid #e5e7eb;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  color: #0f172a;
 `;
 
 const Tr = styled.tr`
   &:hover {
     background: #f1f5f9;
+  }
+`;
+
+const RoleBadge = styled.span`
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: ${(p) =>
+    p.role === 'headadmin' ? '#fee2e2' : '#e0f2fe'};
+  color: ${(p) =>
+    p.role === 'headadmin' ? '#991b1b' : '#075985'};
+`;
+
+const KycLink = styled.span`
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+
+  &:hover {
+    color: #1d4ed8;
   }
 `;
 
@@ -99,7 +126,7 @@ const Tr = styled.tr`
 const AdminInfo = () => {
   const navigate = useNavigate();
 
-  const [admins, setAdmins] = useState([]); // ✅ always array
+  const [admins, setAdmins] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
 
   const [orgSearch, setOrgSearch] = useState('');
@@ -115,47 +142,43 @@ const AdminInfo = () => {
   const fetchAdmins = async () => {
     try {
       const res = await getAdmins();
-
-      // ✅ BACKEND RETURNS { admins, headadmins }
-      const adminsList = res.data?.admins || [];
-      const headAdminsList = res.data?.headadmins || [];
-
-      setAdmins([...adminsList, ...headAdminsList]);
+      setAdmins(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error(err);
-      alert('Failed to load admins');
+      console.error('Failed to load admins:', err);
       setAdmins([]);
     }
   };
 
   /* =========================
-     FILTER LOGIC
+     FILTERING
   ========================= */
-  const filteredAdmins = admins.filter((admin) => {
-    const orgName =
-      admin.organization?.org_name?.toLowerCase() || '';
-    const orgId = admin.org_id?.toLowerCase() || '';
+  const filteredAdmins = useMemo(() => {
+    return admins.filter((admin) => {
+      const orgText = `
+        ${admin.organization?.org_name || ''}
+        ${admin.org_id || ''}
+      `.toLowerCase();
 
-    const adminText = `
-      ${admin.user_name?.first_name || ''}
-      ${admin.user_name?.last_name || ''}
-      ${admin.email || ''}
-      ${admin.role || ''}
-    `.toLowerCase();
+      const adminText = `
+        ${admin.username || ''}
+        ${admin.email || ''}
+        ${admin.phone_number || ''}
+        ${admin.role || ''}
+      `.toLowerCase();
 
-    return (
-      (orgName.includes(orgSearch.toLowerCase()) ||
-        orgId.includes(orgSearch.toLowerCase())) &&
-      adminText.includes(adminSearch.toLowerCase())
-    );
-  });
+      return (
+        orgText.includes(orgSearch.toLowerCase()) &&
+        adminText.includes(adminSearch.toLowerCase())
+      );
+    });
+  }, [admins, orgSearch, adminSearch]);
 
   /* =========================
      ACTIONS
   ========================= */
   const handleDelete = async () => {
     if (!selectedId) return;
-    if (!window.confirm('Delete this user?')) return;
+    if (!window.confirm('Delete this admin?')) return;
 
     try {
       await deleteAdmin(selectedId);
@@ -174,7 +197,9 @@ const AdminInfo = () => {
           <Title>Admins / Head Admins</Title>
 
           <Actions>
-            <Button onClick={() => navigate('/superadmin/admins/create')}>
+            <Button
+              onClick={() => navigate('/superadmin/admins/create')}
+            >
               Create
             </Button>
 
@@ -201,13 +226,13 @@ const AdminInfo = () => {
         {/* ================= SEARCH ================= */}
         <SearchRow>
           <SearchBox
-            placeholder="Search by organization name / org ID..."
+            placeholder="Search by org name / org ID"
             value={orgSearch}
             onChange={(e) => setOrgSearch(e.target.value)}
           />
 
           <SearchBox
-            placeholder="Search admin / head admin..."
+            placeholder="Search by name / email / phone / role"
             value={adminSearch}
             onChange={(e) => setAdminSearch(e.target.value)}
           />
@@ -221,11 +246,12 @@ const AdminInfo = () => {
                 <Th></Th>
                 <Th>Org ID</Th>
                 <Th>Organization</Th>
-                <Th>Name</Th>
+                <Th>Username</Th>
                 <Th>Email</Th>
                 <Th>Phone</Th>
-                <Th>City</Th>
+                <Th>Address</Th>
                 <Th>Role</Th>
+                <Th>KYC</Th>
               </tr>
             </thead>
 
@@ -248,22 +274,53 @@ const AdminInfo = () => {
 
                   <Td>{admin.org_id || '-'}</Td>
                   <Td>{admin.organization?.org_name || '-'}</Td>
-                  <Td>
-                    {admin.user_name?.first_name}{' '}
-                    {admin.user_name?.last_name}
-                  </Td>
+                  <Td>{admin.username || '-'}</Td>
                   <Td>{admin.email || '-'}</Td>
                   <Td>{admin.phone_number || '-'}</Td>
-                  <Td>{admin.address?.city || '-'}</Td>
-                  <Td style={{ textTransform: 'capitalize' }}>
-                    {admin.role}
+                  <Td>
+  {[
+    admin.flat_no,
+    admin.area,
+    admin.city,
+    admin.state,
+    admin.country &&
+      `${admin.country}${admin.postal_code ? ' - ' + admin.postal_code : ''}`,
+  ]
+    .filter(Boolean)
+    .join(', ') || '-'}
+</Td>
+
+
+                  <Td>
+                    <RoleBadge role={admin.role}>
+                      {admin.role}
+                    </RoleBadge>
+                  </Td>
+
+                  {/* ✅ KYC LOGIC */}
+                  <Td>
+                    {admin.kyc_details?.kyc_image ? (
+                      <KycLink
+                        onClick={() =>
+                          navigate(
+                            `/superadmin/admins/${admin._id}/kyc`
+                          )
+                        }
+                      >
+                        Click Me
+                      </KycLink>
+                    ) : (
+                      <span style={{ color: '#64748b' }}>
+                        Pending
+                      </span>
+                    )}
                   </Td>
                 </Tr>
               ))}
 
               {filteredAdmins.length === 0 && (
                 <Tr>
-                  <Td colSpan="8">No admins found</Td>
+                  <Td colSpan="9">No admins found</Td>
                 </Tr>
               )}
             </tbody>

@@ -4,18 +4,25 @@ import OrgHeadAdmin from '../../models/OrgHeadAdmin.js';
 import Organization from '../../models/Organization.js';
 
 /* =====================================================
-   CREATE ADMIN / HEAD ADMIN
+   CREATE ADMIN / HEAD ADMIN (WITH KYC)
 ===================================================== */
-const createAdmin = async (req, res) => {
+export const createAdmin = async (req, res) => {
   try {
     const {
-      organization, // Organization ObjectId
+      organization,
       username,
       email,
       password,
-      phoneNo,
-      location,
-      role, // "admin" | "headadmin"
+      phone_number,
+      flat_no,
+      area,
+      city,
+      state,
+      country,
+      postal_code,
+      role, // admin | headadmin
+      doc_type,
+      doc_detail,
     } = req.body;
 
     /* -------------------------
@@ -38,15 +45,15 @@ const createAdmin = async (req, res) => {
     }
 
     /* -------------------------
-       SELECT MODEL BY ROLE
+       SELECT MODEL
     ------------------------- */
     const Model = role === 'headadmin' ? OrgHeadAdmin : OrgAdmin;
 
     /* -------------------------
        DUPLICATE EMAIL CHECK
     ------------------------- */
-    const existing = await Model.findOne({ email });
-    if (existing) {
+    const exists = await Model.findOne({ email });
+    if (exists) {
       return res.status(409).json({
         message: 'Admin already exists with this email',
       });
@@ -55,20 +62,31 @@ const createAdmin = async (req, res) => {
     /* -------------------------
        HASH PASSWORD
     ------------------------- */
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashed_password = await bcrypt.hash(password, 10);
 
     /* -------------------------
-       CREATE ADMIN
+       CREATE DOCUMENT
     ------------------------- */
     const admin = await Model.create({
       organization: org._id,
-      org_id: org.org_id, // ✅ AUTO-FILLED
+      org_id: org.org_id,
       username,
       email,
-      password: hashedPassword,
-      phoneNo,
-      location,
+      password: hashed_password,
+      phone_number,
+      flat_no,
+      area,
+      city,
+      state,
+      country,
+      postal_code,
       role,
+      kyc_details: {
+        doc_type,
+        doc_detail,
+        kyc_approval_status: 'pending',
+        kyc_image: req.file ? req.file.filename : null, // ✅ filename only
+      },
     });
 
     return res.status(201).json({
@@ -76,35 +94,42 @@ const createAdmin = async (req, res) => {
       admin,
     });
   } catch (error) {
-    console.error('Create admin error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('❌ Create admin error:', error);
+    return res.status(500).json({
+      message: 'Server error',
+    });
   }
 };
 
 /* =====================================================
    GET ALL ADMINS + HEAD ADMINS
 ===================================================== */
-const getAdmins = async (req, res) => {
+export const getAdmins = async (req, res) => {
   try {
     const admins = await OrgAdmin.find()
       .populate('organization', 'org_id org_name')
       .sort({ createdAt: -1 });
 
-    const headAdmins = await OrgHeadAdmin.find()
+    const headadmins = await OrgHeadAdmin.find()
       .populate('organization', 'org_id org_name')
       .sort({ createdAt: -1 });
 
-    return res.status(200).json([...admins, ...headAdmins]);
+    return res.status(200).json([
+      ...headadmins,
+      ...admins,
+    ]);
   } catch (error) {
-    console.error('Get admins error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('❌ Get admins error:', error);
+    return res.status(500).json({
+      message: 'Server error',
+    });
   }
 };
 
 /* =====================================================
    GET ADMIN BY ID
 ===================================================== */
-const getAdminById = async (req, res) => {
+export const getAdminById = async (req, res) => {
   try {
     let admin = await OrgAdmin.findById(req.params.id)
       .populate('organization', 'org_id org_name');
@@ -115,27 +140,39 @@ const getAdminById = async (req, res) => {
     }
 
     if (!admin) {
-      return res.status(404).json({ message: 'Admin not found' });
+      return res.status(404).json({
+        message: 'Admin not found',
+      });
     }
 
     return res.status(200).json(admin);
   } catch (error) {
-    console.error('Get admin error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('❌ Get admin error:', error);
+    return res.status(500).json({
+      message: 'Server error',
+    });
   }
 };
 
 /* =====================================================
    UPDATE ADMIN / HEAD ADMIN
 ===================================================== */
-const updateAdmin = async (req, res) => {
+export const updateAdmin = async (req, res) => {
   try {
-    const { role, password, organization, ...rest } = req.body;
+    const {
+      role,
+      password,
+      organization,
+      doc_type,
+      doc_detail,
+      kyc_approval_status,
+      ...rest
+    } = req.body;
 
     const Model = role === 'headadmin' ? OrgHeadAdmin : OrgAdmin;
 
     /* -------------------------
-       HANDLE ORG CHANGE
+       HANDLE ORGANIZATION CHANGE
     ------------------------- */
     if (organization) {
       const org = await Organization.findById(organization);
@@ -146,14 +183,34 @@ const updateAdmin = async (req, res) => {
       }
 
       rest.organization = org._id;
-      rest.org_id = org.org_id; // ✅ SYNC org_id
+      rest.org_id = org.org_id;
     }
 
     /* -------------------------
-       HASH PASSWORD (IF UPDATED)
+       PASSWORD UPDATE
     ------------------------- */
     if (password) {
       rest.password = await bcrypt.hash(password, 10);
+    }
+
+    /* -------------------------
+       KYC UPDATE
+    ------------------------- */
+    if (
+      doc_type ||
+      doc_detail ||
+      kyc_approval_status ||
+      req.file
+    ) {
+      rest.kyc_details = {
+        doc_type,
+        doc_detail,
+        kyc_approval_status,
+      };
+
+      if (req.file) {
+        rest.kyc_details.kyc_image = req.file.filename;
+      }
     }
 
     const admin = await Model.findByIdAndUpdate(
@@ -163,7 +220,9 @@ const updateAdmin = async (req, res) => {
     ).populate('organization', 'org_id org_name');
 
     if (!admin) {
-      return res.status(404).json({ message: 'Admin not found' });
+      return res.status(404).json({
+        message: 'Admin not found',
+      });
     }
 
     return res.status(200).json({
@@ -171,39 +230,35 @@ const updateAdmin = async (req, res) => {
       admin,
     });
   } catch (error) {
-    console.error('Update admin error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('❌ Update admin error:', error);
+    return res.status(500).json({
+      message: 'Server error',
+    });
   }
 };
 
 /* =====================================================
    DELETE ADMIN / HEAD ADMIN
 ===================================================== */
-const deleteAdmin = async (req, res) => {
+export const deleteAdmin = async (req, res) => {
   try {
-    const adminDeleted = await OrgAdmin.findByIdAndDelete(req.params.id);
-    const headAdminDeleted = await OrgHeadAdmin.findByIdAndDelete(req.params.id);
+    const admin =
+      (await OrgAdmin.findByIdAndDelete(req.params.id)) ||
+      (await OrgHeadAdmin.findByIdAndDelete(req.params.id));
 
-    if (!adminDeleted && !headAdminDeleted) {
-      return res.status(404).json({ message: 'Admin not found' });
+    if (!admin) {
+      return res.status(404).json({
+        message: 'Admin not found',
+      });
     }
 
     return res.status(200).json({
       message: 'Admin deleted successfully',
     });
   } catch (error) {
-    console.error('Delete admin error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('❌ Delete admin error:', error);
+    return res.status(500).json({
+      message: 'Server error',
+    });
   }
-};
-
-/* =====================================================
-   EXPORTS
-===================================================== */
-export {
-  createAdmin,
-  getAdmins,
-  getAdminById,
-  updateAdmin,
-  deleteAdmin,
 };

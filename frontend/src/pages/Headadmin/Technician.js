@@ -135,7 +135,7 @@ const Select = styled.select`
 `;
 
 const Button = styled.button`
-  padding: 6px 14px;
+  padding: 6px 16px;
   background: #2563eb;
   color: white;
   border: none;
@@ -167,7 +167,7 @@ const getTechStatusLabel = (tech) => {
    COMPONENT
 ========================= */
 
-const HeadAdminTechnicians = () => {
+const Technicians = () => {
   const [technicians, setTechnicians] = useState([]);
   const [changes, setChanges] = useState({});
   const [loading, setLoading] = useState(false);
@@ -184,7 +184,7 @@ const HeadAdminTechnicians = () => {
     try {
       const res = await getTechnicians();
       setTechnicians(res.data || []);
-    } catch (err) {
+    } catch {
       alert('Failed to load technicians');
     } finally {
       setLoading(false);
@@ -228,8 +228,6 @@ const HeadAdminTechnicians = () => {
 
     try {
       await updateTechnician(tech._id, {
-        is_active:
-          changes[tech._id]?.is_active ?? tech.is_active,
         kyc_approval_status:
           changes[tech._id]?.kyc_approval_status ??
           tech.kyc_details?.kyc_approval_status,
@@ -238,7 +236,7 @@ const HeadAdminTechnicians = () => {
       alert('Technician updated successfully ✅');
       setChanges({});
       loadTechnicians();
-    } catch (err) {
+    } catch {
       alert('Failed to update technician');
     }
   };
@@ -258,7 +256,8 @@ const HeadAdminTechnicians = () => {
                   <Th>Name</Th>
                   <Th>Phone</Th>
                   <Th>Address</Th>
-                  <Th>KYC</Th>
+                  <Th>KYC Image</Th>
+                  <Th>KYC Status</Th>
                   <Th>Status</Th>
                   <Th>Action</Th>
                 </tr>
@@ -267,6 +266,9 @@ const HeadAdminTechnicians = () => {
               <tbody>
                 {technicians.map((tech) => {
                   const status = getTechStatusLabel(tech);
+                  const hasKycImage = Boolean(
+                    tech.kyc_details?.doc_image
+                  );
 
                   return (
                     <tr key={tech._id}>
@@ -297,18 +299,31 @@ const HeadAdminTechnicians = () => {
                       <Td>
                         {tech.address?.flat_no}
                         <div style={{ fontSize: 12, color: '#64748b' }}>
-                          {tech.address?.area},{' '}
-                          {tech.address?.city},{' '}
+                          {tech.address?.area}, {tech.address?.city},{' '}
                           {tech.address?.state}
                         </div>
                       </Td>
 
-                      {/* KYC */}
+                      {/* KYC IMAGE */}
+                      <Td>
+                        {hasKycImage ? (
+                          <span style={{ color: '#16a34a', fontWeight: 600 }}>
+                            Uploaded
+                          </span>
+                        ) : (
+                          <span style={{ color: '#f59e0b', fontWeight: 600 }}>
+                            Not Uploaded
+                          </span>
+                        )}
+                      </Td>
+
+                      {/* KYC STATUS */}
                       <Td>
                         <Select
                           disabled={status === 'ON DUTY'}
-                          defaultValue={
-                            tech.kyc_details?.kyc_approval_status ||
+                          value={
+                            changes[tech._id]?.kyc_approval_status ??
+                            tech.kyc_details?.kyc_approval_status ??
                             'pending'
                           }
                           onChange={(e) =>
@@ -347,7 +362,7 @@ const HeadAdminTechnicians = () => {
 
                 {!loading && technicians.length === 0 && (
                   <tr>
-                    <Td colSpan="6" style={{ textAlign: 'center' }}>
+                    <Td colSpan="7" style={{ textAlign: 'center' }}>
                       No technicians found
                     </Td>
                   </tr>
@@ -355,7 +370,7 @@ const HeadAdminTechnicians = () => {
 
                 {loading && (
                   <tr>
-                    <Td colSpan="6" style={{ textAlign: 'center' }}>
+                    <Td colSpan="7" style={{ textAlign: 'center' }}>
                       Loading technicians...
                     </Td>
                   </tr>
@@ -369,4 +384,4 @@ const HeadAdminTechnicians = () => {
   );
 };
 
-export default HeadAdminTechnicians;
+export default Technicians;

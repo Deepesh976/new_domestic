@@ -10,7 +10,7 @@ import OrgUser from '../../models/OrgUser.js';
    - Maps:
      - user_name
      - assigned_technician_name
-     - fixed_by_name ✅
+     - fixed_by_name
 ===================================================== */
 export const getServiceRequests = async (req, res) => {
   try {
@@ -138,7 +138,6 @@ export const getAvailableTechnicians = async (req, res) => {
 
 /* =====================================================
    ASSIGN TECHNICIAN TO SERVICE REQUEST
-   - ❌ Block if CLOSED
 ===================================================== */
 export const assignTechnicianToRequest = async (req, res) => {
   try {
@@ -198,13 +197,14 @@ export const assignTechnicianToRequest = async (req, res) => {
 
 /* =====================================================
    UPDATE SERVICE STATUS
-   - ❌ Closed requests are immutable
-   - ✅ Store Fixed By on close
+   ✅ Handles completion image upload
+   ✅ Stores images in uploads/serviceimage
+   ✅ Saves filenames in MongoDB
 ===================================================== */
 export const updateServiceStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, observations } = req.body;
     const org_id = req.user.organization;
 
     const allowedStatuses = ['open', 'assigned', 'closed'];
@@ -226,6 +226,21 @@ export const updateServiceStatus = async (req, res) => {
       return res.status(400).json({
         message: 'Closed service request cannot be modified',
       });
+    }
+
+    /* =========================
+       STORE COMPLETION IMAGES
+    ========================= */
+    if (req.files && req.files.length > 0) {
+      const imageNames = req.files.map((file) => file.filename);
+      request.completion_images.push(...imageNames);
+    }
+
+    /* =========================
+       UPDATE OBSERVATIONS
+    ========================= */
+    if (observations) {
+      request.observations = observations;
     }
 
     /* =========================
@@ -256,6 +271,7 @@ export const updateServiceStatus = async (req, res) => {
 
     return res.status(200).json({
       message: 'Service status updated successfully',
+      request,
     });
   } catch (error) {
     console.error('🔥 updateServiceStatus:', error);

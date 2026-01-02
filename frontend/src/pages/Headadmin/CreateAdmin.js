@@ -8,7 +8,7 @@ import styled from 'styled-components';
    STYLES
 ========================= */
 const Page = styled.div`
-  max-width: 520px;
+  max-width: 720px;
   margin: 0 auto;
   padding: 24px;
 `;
@@ -18,33 +18,49 @@ const Title = styled.h2`
   margin-bottom: 20px;
 `;
 
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
 const Field = styled.div`
-  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
 `;
 
 const Label = styled.label`
   font-size: 0.8rem;
   font-weight: 600;
-  display: block;
   margin-bottom: 6px;
 `;
 
 const Input = styled.input`
-  width: 100%;
+  padding: 9px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+`;
+
+const Select = styled.select`
   padding: 9px;
   border-radius: 6px;
   border: 1px solid #cbd5e1;
 `;
 
 const Button = styled.button`
-  margin-top: 10px;
-  padding: 10px;
+  margin-top: 20px;
+  padding: 12px;
   width: 100%;
   background: #2563eb;
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
+  font-weight: 600;
 
   &:hover {
     background: #1d4ed8;
@@ -54,6 +70,12 @@ const Button = styled.button`
     background: #94a3b8;
     cursor: not-allowed;
   }
+`;
+
+const Divider = styled.hr`
+  margin: 24px 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
 `;
 
 /* =========================
@@ -67,15 +89,25 @@ export default function CreateAdmin() {
     username: '',
     email: '',
     password: '',
-    phone_no: '',
-    location: '',
+    phone_number: '',
+    flat_no: '',
+    area: '',
+    city: '',
+    state: '',
+    country: '',
+    postal_code: '',
+    doc_type: '',
+    doc_detail: '',
   });
 
+  const [kycImage, setKycImage] = useState(null);
+
+  /* =========================
+     HANDLERS
+  ========================= */
   const handleChange = (e) => {
-    setForm((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -89,19 +121,32 @@ export default function CreateAdmin() {
     try {
       setLoading(true);
 
-      await axios.post('/api/headadmin/admins', {
-        username: form.username,
-        email: form.email,
-        password: form.password,
-        phone_no: form.phone_no,
-        location: form.location,
+      const formData = new FormData();
+
+      // 🔹 BASIC + ADDRESS FIELDS
+      Object.entries(form).forEach(([key, value]) => {
+        if (value) {
+          formData.append(key, value);
+        }
+      });
+
+      // 🔹 KYC IMAGE
+      if (kycImage) {
+        formData.append('kyc_image', kycImage);
+      }
+
+      await axios.post('/api/headadmin/admins', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
       alert('Admin created successfully');
-      navigate('/head-admin/admins');
-    } catch (err) {
+      navigate('/headadmin/admins');
+    } catch (error) {
+      console.error(error);
       alert(
-        err.response?.data?.message ||
+        error.response?.data?.message ||
           'Failed to create admin'
       );
     } finally {
@@ -115,55 +160,147 @@ export default function CreateAdmin() {
         <Title>Create Admin</Title>
 
         <form onSubmit={handleSubmit}>
-          <Field>
-            <Label>Username</Label>
-            <Input
-              name="username"
-              value={form.username}
-              onChange={handleChange}
-              required
-            />
-          </Field>
+          {/* ================= BASIC INFO ================= */}
+          <Grid>
+            <Field>
+              <Label>Username *</Label>
+              <Input
+                name="username"
+                value={form.username}
+                onChange={handleChange}
+                required
+              />
+            </Field>
 
-          <Field>
-            <Label>Email</Label>
-            <Input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              required
-            />
-          </Field>
+            <Field>
+              <Label>Email *</Label>
+              <Input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                required
+              />
+            </Field>
 
-          <Field>
-            <Label>Password</Label>
-            <Input
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              required
-            />
-          </Field>
+            <Field>
+              <Label>Password *</Label>
+              <Input
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                required
+              />
+            </Field>
 
-          <Field>
-            <Label>Phone No</Label>
-            <Input
-              name="phone_no"
-              value={form.phone_no}
-              onChange={handleChange}
-            />
-          </Field>
+            <Field>
+              <Label>Phone Number</Label>
+              <Input
+                name="phone_number"
+                value={form.phone_number}
+                onChange={handleChange}
+              />
+            </Field>
+          </Grid>
 
-          <Field>
-            <Label>Location</Label>
-            <Input
-              name="location"
-              value={form.location}
-              onChange={handleChange}
-            />
-          </Field>
+          <Divider />
+
+          {/* ================= ADDRESS ================= */}
+          <Grid>
+            <Field>
+              <Label>Flat No</Label>
+              <Input
+                name="flat_no"
+                value={form.flat_no}
+                onChange={handleChange}
+              />
+            </Field>
+
+            <Field>
+              <Label>Area</Label>
+              <Input
+                name="area"
+                value={form.area}
+                onChange={handleChange}
+              />
+            </Field>
+
+            <Field>
+              <Label>City</Label>
+              <Input
+                name="city"
+                value={form.city}
+                onChange={handleChange}
+              />
+            </Field>
+
+            <Field>
+              <Label>State</Label>
+              <Input
+                name="state"
+                value={form.state}
+                onChange={handleChange}
+              />
+            </Field>
+
+            <Field>
+              <Label>Country</Label>
+              <Input
+                name="country"
+                value={form.country}
+                onChange={handleChange}
+              />
+            </Field>
+
+            <Field>
+              <Label>Postal Code</Label>
+              <Input
+                name="postal_code"
+                value={form.postal_code}
+                onChange={handleChange}
+              />
+            </Field>
+          </Grid>
+
+          <Divider />
+
+          {/* ================= KYC ================= */}
+          <Grid>
+            <Field>
+              <Label>KYC Document Type</Label>
+              <Select
+                name="doc_type"
+                value={form.doc_type}
+                onChange={handleChange}
+              >
+                <option value="">Select</option>
+                <option value="Aadhaar">Aadhaar</option>
+                <option value="PAN">PAN</option>
+                <option value="Passport">Passport</option>
+              </Select>
+            </Field>
+
+            <Field>
+              <Label>Document Detail</Label>
+              <Input
+                name="doc_detail"
+                value={form.doc_detail}
+                onChange={handleChange}
+              />
+            </Field>
+
+            <Field>
+              <Label>KYC Image</Label>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  setKycImage(e.target.files[0])
+                }
+              />
+            </Field>
+          </Grid>
 
           <Button type="submit" disabled={loading}>
             {loading ? 'Creating...' : 'Create Admin'}

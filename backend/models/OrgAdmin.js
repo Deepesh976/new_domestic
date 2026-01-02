@@ -1,13 +1,34 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
+/* =========================
+   KYC SUB-SCHEMA
+========================= */
+const kycSchema = new mongoose.Schema(
+  {
+    doc_type: String,
+    doc_detail: String,
+    kyc_approval_status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending',
+    },
+    kyc_image: String, // filename only
+  },
+  { _id: false }
+);
+
+/* =========================
+   ORG ADMIN SCHEMA
+========================= */
 const orgAdminSchema = new mongoose.Schema(
   {
     /* =========================
-       ORGANIZATION LINK
+       ORGANIZATION
     ========================= */
     organization: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Organization', // ✅ matches Organization model
+      ref: 'Organization',
       required: true,
       index: true,
     },
@@ -16,7 +37,7 @@ const orgAdminSchema = new mongoose.Schema(
       type: String,
       required: true,
       index: true,
-   },
+    },
 
     /* =========================
        BASIC INFO
@@ -33,36 +54,59 @@ const orgAdminSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
       index: true,
-      match: [/^\S+@\S+\.\S+$/, 'Invalid email address'],
     },
 
+    phone_number: String,
+
+    /* =========================
+       ADDRESS
+    ========================= */
+    flat_no: String,
+    area: String,
+    city: String,
+    state: String,
+    country: String,
+    postal_code: String,
+
+    /* =========================
+       AUTH
+    ========================= */
     password: {
       type: String,
       required: true,
-    },
-
-    phoneNo: {
-      type: String,
-      trim: true,
-    },
-
-    location: {
-      type: String,
-      trim: true,
+      minlength: 6,
+      select: false, // 🔐 never return password by default
     },
 
     /* =========================
-       ROLE (RBAC SAFE)
+       FORGOT PASSWORD
+    ========================= */
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+
+    resetPasswordExpire: {
+      type: Date,
+    },
+
+    /* =========================
+       KYC
+    ========================= */
+    kyc_details: kycSchema,
+
+    /* =========================
+       ROLE
     ========================= */
     role: {
       type: String,
-      enum: ['admin'], // ✅ OrgAdmin can ONLY be admin
+      enum: ['admin'],
       default: 'admin',
     },
   },
   {
     timestamps: true,
-    collection: 'org_admins', // 🔥 explicit collection name
+    collection: 'org_admins',
   }
 );
 
@@ -71,6 +115,21 @@ const orgAdminSchema = new mongoose.Schema(
 ========================= */
 orgAdminSchema.index({ email: 1 }, { unique: true });
 
-const OrgAdmin = mongoose.model('OrgAdmin', orgAdminSchema);
+/* =========================
+   HASH PASSWORD BEFORE SAVE
+========================= */
+orgAdminSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
 
-export default OrgAdmin;
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
+
+/* =========================
+   PASSWORD COMPARE METHOD
+========================= */
+orgAdminSchema.methods.comparePassword = function (enteredPassword) {
+  return bcrypt.compare(enteredPassword, this.password);
+};
+
+export default mongoose.model('OrgAdmin', orgAdminSchema);
