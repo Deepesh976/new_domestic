@@ -4,6 +4,7 @@
   "private": true,
   "proxy": "http://localhost:5000",
   "dependencies": {
+    "@builder.io/react": "^9.1.0",
     "@reduxjs/toolkit": "^2.2.7",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
@@ -12,7 +13,7 @@
     "chart.js": "^4.4.6",
     "chartjs-adapter-date-fns": "^3.0.0",
     "date-fns": "^4.1.0",
-    "domesticro": "file:..",
+    "domestic": "file:..",
     "file-saver": "^2.0.5",
     "jwt-decode": "^4.0.0",
     "moment": "^2.30.1",

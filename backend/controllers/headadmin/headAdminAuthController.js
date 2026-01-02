@@ -45,9 +45,24 @@ export const login = async (req, res) => {
     /* =========================
        ORG VALIDATION
     ========================= */
-    if (!headAdmin.organization || !headAdmin.organization.org_id) {
+    if (!headAdmin.organization) {
+      console.error(
+        '❌ HeadAdmin organization reference missing:',
+        { headAdminId: headAdmin._id, email: headAdmin.email }
+      );
       return res.status(400).json({
-        message: 'Organization not linked properly',
+        message:
+          'HeadAdmin is not linked to an organization. Contact administrator.',
+      });
+    }
+
+    if (!headAdmin.organization.org_id) {
+      console.error(
+        '❌ Organization missing org_id:',
+        { headAdminId: headAdmin._id, organizationId: headAdmin.organization._id }
+      );
+      return res.status(400).json({
+        message: 'Organization is not properly configured.',
       });
     }
 
@@ -67,7 +82,11 @@ export const login = async (req, res) => {
     return res.status(200).json({
       token,
       role: 'headadmin',
-      organization: headAdmin.organization.org_id,
+      organization: {
+        org_id: headAdmin.organization.org_id,
+        org_name: headAdmin.organization.org_name,
+        logo: headAdmin.organization.logo,
+      },
       user: {
         id: headAdmin._id,
         username: headAdmin.username,

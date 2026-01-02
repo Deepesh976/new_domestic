@@ -2,19 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../redux/authSlice';
+import { handleBuilderAuth } from '../utils/builderAuth'; // ✅ ADDED
 import './UnifiedLoginPage.css';
 
 /* =====================================================
-   UNIFIED LOGIN PAGE
-   Roles:
-   - superadmin
-   - headadmin
-   - admin
+  UNIFIED LOGIN PAGE
+  Roles:
+  - superadmin
+  - headadmin
+  - admin
 ===================================================== */
 
 const UnifiedLoginPage = () => {
   /* =========================
-     STATE
+    STATE
   ========================= */
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,7 +30,7 @@ const UnifiedLoginPage = () => {
   const navigate = useNavigate();
 
   /* =========================
-     AUTO REDIRECT IF LOGGED IN
+    AUTO REDIRECT IF LOGGED IN
   ========================= */
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -45,10 +46,14 @@ const UnifiedLoginPage = () => {
   }, [navigate]);
 
   /* =========================
-     LOGIN HANDLER
+    LOGIN HANDLER
   ========================= */
   const handleLogin = async (e) => {
     e.preventDefault();
+
+    // ✅ BUILDER VISUAL EDITOR MODE
+    if (handleBuilderAuth(navigate)) return;
+
     setError('');
     setMessage('');
     setLoading(true);
@@ -57,7 +62,7 @@ const UnifiedLoginPage = () => {
 
     try {
       /* =========================
-         1️⃣ SUPER ADMIN LOGIN
+        1️⃣ SUPER ADMIN LOGIN
       ========================= */
       const superAdminRes = await fetch(
         'http://localhost:5000/api/superadmin/auth/login',
@@ -77,7 +82,7 @@ const UnifiedLoginPage = () => {
       }
 
       /* =========================
-         2️⃣ HEADADMIN / ADMIN LOGIN
+        2️⃣ HEADADMIN / ADMIN LOGIN
       ========================= */
       const orgUserRes = await fetch(
         'http://localhost:5000/api/headadmin/auth/login',
@@ -95,9 +100,14 @@ const UnifiedLoginPage = () => {
         (orgUserData.role === 'headadmin' ||
           orgUserData.role === 'admin')
       ) {
+        console.log('✅ HeadAdmin Login Response:', orgUserData);
         saveSession(orgUserData);
         navigate('/headadmin', { replace: true });
         return;
+      }
+
+      if (!orgUserRes.ok) {
+        console.error('❌ HeadAdmin Login Error:', orgUserData);
       }
 
       setError('Invalid email or password');
@@ -110,7 +120,7 @@ const UnifiedLoginPage = () => {
   };
 
   /* =========================
-     FORGOT PASSWORD HANDLER
+    FORGOT PASSWORD HANDLER
   ========================= */
   const handleForgotPassword = async (e) => {
     e.preventDefault();
@@ -119,7 +129,6 @@ const UnifiedLoginPage = () => {
     setLoading(true);
 
     try {
-      // 🔁 Try SuperAdmin first
       let res = await fetch(
         'http://localhost:5000/api/superadmin/auth/forgot-password',
         {
@@ -129,7 +138,6 @@ const UnifiedLoginPage = () => {
         }
       );
 
-      // 🔁 Fallback to HeadAdmin/Admin
       if (!res.ok) {
         res = await fetch(
           'http://localhost:5000/api/headadmin/auth/forgot-password',
@@ -159,15 +167,30 @@ const UnifiedLoginPage = () => {
   };
 
   /* =========================
-     SAVE SESSION
+    SAVE SESSION
   ========================= */
   const saveSession = (data) => {
+    // Validate organization for headadmin/admin roles
+    if (
+      (data.role === 'headadmin' || data.role === 'admin') &&
+      (!data.organization || !data.organization.org_id)
+    ) {
+      console.error(
+        '❌ CRITICAL: Organization not linked to headadmin/admin',
+        { role: data.role, organization: data.organization }
+      );
+      setError(
+        'Organization not properly configured. Contact your administrator.'
+      );
+      return;
+    }
+
     localStorage.setItem('token', data.token);
     localStorage.setItem('role', data.role);
 
     if (data.organization) {
       localStorage.setItem('org_id', data.organization.org_id);
-      localStorage.setItem('org_name', data.organization.org_name);
+      localStorage.setItem('org_name', data.organization.org_name || '');
       localStorage.setItem('org_logo', data.organization.logo || '');
     }
 
@@ -202,7 +225,7 @@ const UnifiedLoginPage = () => {
   };
 
   /* =========================
-     UI
+    UI
   ========================= */
   return (
     <div className="login-container">
@@ -254,10 +277,7 @@ const UnifiedLoginPage = () => {
               </form>
 
               <div className="forgot-link">
-                <button
-                  type="button"
-                  onClick={() => setShowForgot(true)}
-                >
+                <button type="button" onClick={() => setShowForgot(true)}>
                   Forgot password?
                 </button>
               </div>
@@ -292,10 +312,7 @@ const UnifiedLoginPage = () => {
               </form>
 
               <div className="forgot-link">
-                <button
-                  type="button"
-                  onClick={() => setShowForgot(false)}
-                >
+                <button type="button" onClick={() => setShowForgot(false)}>
                   Back to login
                 </button>
               </div>

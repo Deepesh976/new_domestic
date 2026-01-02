@@ -252,63 +252,67 @@ const SuperAdminOrg = () => {
 
         {/* TABLE */}
         <div className="org-card">
-          <table className="org-table">
-            <thead className="org-table-header">
-              <tr>
-                <th style={{ width: 40 }}></th>
-                <th>Logo</th>
-                <th>Org ID</th>
-                <th>Organization Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>State</th>
-              </tr>
-            </thead>
+<table className="org-table">
+  <thead className="org-table-header">
+    <tr>
+      <th className="org-table-header-cell" style={{ width: 40 }}></th>
+      <th className="org-table-header-cell">Logo</th>
+      <th className="org-table-header-cell">Org ID</th>
+      <th className="org-table-header-cell">Organization Name</th>
+      <th className="org-table-header-cell">Email</th>
+      <th className="org-table-header-cell">Phone</th>
+      <th className="org-table-header-cell">State</th>
+    </tr>
+  </thead>
 
-            <tbody>
-              {paginated.map((org) => (
-                <tr
-                  key={org._id}
-                  className={selectedId === org._id ? 'selected' : ''}
-                  onClick={() => setSelectedId(org._id)}
-                >
-                  <td>
-                    <input
-                      type="radio"
-                      checked={selectedId === org._id}
-                      readOnly
-                    />
-                  </td>
+  <tbody>
+    {paginated.map((org) => (
+      <tr
+        key={org._id}
+        className={`org-table-body-row ${
+          selectedId === org._id ? 'selected' : ''
+        }`}
+        onClick={() => setSelectedId(org._id)}
+      >
+        <td className="org-table-body-cell">
+          <input
+            type="radio"
+            className="org-checkbox"
+            checked={selectedId === org._id}
+            readOnly
+          />
+        </td>
 
-                  <td>
-                    {org.logo ? (
-                      <img
-                        src={`${API_BASE}/uploads/organizations/${org.logo}`}
-                        alt="logo"
-                        style={{ height: 32 }}
-                      />
-                    ) : (
-                      '—'
-                    )}
-                  </td>
+        <td className="org-table-body-cell">
+          {org.logo ? (
+            <img
+              src={`${API_BASE}/uploads/organizations/${org.logo}`}
+              alt="logo"
+              style={{ height: 32 }}
+            />
+          ) : (
+            '—'
+          )}
+        </td>
 
-                  <td>{org.org_id}</td>
-                  <td>{org.org_name}</td>
-                  <td>{org.email_id || '—'}</td>
-                  <td>{org.phone_number || '—'}</td>
-                  <td>{org.state || '—'}</td>
-                </tr>
-              ))}
+        <td className="org-table-body-cell">{org.org_id}</td>
+        <td className="org-table-body-cell">{org.org_name}</td>
+        <td className="org-table-body-cell">{org.email_id || '—'}</td>
+        <td className="org-table-body-cell">{org.phone_number || '—'}</td>
+        <td className="org-table-body-cell">{org.state || '—'}</td>
+      </tr>
+    ))}
 
-              {paginated.length === 0 && (
-                <tr>
-                  <td colSpan="7" className="org-empty">
-                    No organizations found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+    {paginated.length === 0 && (
+      <tr>
+        <td colSpan="7" className="org-empty">
+          No organizations found
+        </td>
+      </tr>
+    )}
+  </tbody>
+</table>
+
 
           {totalPages > 1 && (
             <div className="org-pagination">

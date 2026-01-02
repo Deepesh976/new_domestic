@@ -13,22 +13,24 @@ import {
 ========================= */
 
 const Page = styled.div`
-  min-height: calc(100vh - 70px);
   background: #f8fafc;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 24px;
 `;
 
+const Container = styled.div`
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 24px 40px;
+`;
+
+/* =========================
+   CARD
+========================= */
+
 const Card = styled.div`
-  width: 100%;
-  max-width: 560px;
-  background: #ffffff;
+  background: white;
   padding: 28px;
   border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
-  margin-top: -30px;
+  border: 1px solid #e5e7eb;
 `;
 
 /* =========================
@@ -37,7 +39,8 @@ const Card = styled.div`
 
 const Title = styled.h3`
   margin-bottom: 24px;
-  font-weight: 700;
+  font-weight: 800;
+  color: #0f172a;
 `;
 
 const Field = styled.div`
@@ -45,9 +48,15 @@ const Field = styled.div`
 `;
 
 const Label = styled.div`
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
   margin-bottom: 6px;
   color: #475569;
+`;
+
+const Value = styled.div`
+  font-weight: 600;
+  color: #0f172a;
 `;
 
 const Error = styled.div`
@@ -56,17 +65,19 @@ const Error = styled.div`
   margin-top: 4px;
 `;
 
-const Value = styled.div`
-  font-weight: 600;
-  color: #0f172a;
-`;
-
 const Input = styled.input`
   width: 100%;
-  padding: 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
   font-size: 14px;
+
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
 `;
 
 const Actions = styled.div`
@@ -78,12 +89,17 @@ const Actions = styled.div`
 const Button = styled.button`
   padding: 10px 18px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   background: ${(p) => (p.danger ? '#dc2626' : '#2563eb')};
   color: white;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
   opacity: ${(p) => (p.disabled ? 0.6 : 1)};
+
+  &:disabled {
+    cursor: not-allowed;
+  }
 `;
 
 /* =========================
@@ -92,7 +108,7 @@ const Button = styled.button`
 
 const role = localStorage.getItem('role');
 
-const HeadAdminSupport = () => {
+export default function HeadAdminSupport() {
   const [support, setSupport] = useState(null);
   const [editing, setEditing] = useState(false);
 
@@ -123,25 +139,18 @@ const HeadAdminSupport = () => {
      VALIDATION
   ========================= */
 
-  const validateEmail = (email) =>
-    email.includes('@');
-
-  const validatePhone = (phone) =>
-    /^[0-9]*$/.test(phone);
+  const validateEmail = (email) => email.includes('@');
+  const validatePhone = (phone) => /^[0-9]*$/.test(phone);
 
   const handleChange = (field, value) => {
-    if (field === 'phoneNo') {
-      if (!validatePhone(value)) return; // ❌ block non-numbers
-    }
+    if (field === 'phoneNo' && !validatePhone(value)) return;
 
     setForm({ ...form, [field]: value });
 
     if (field === 'email') {
       setErrors({
         ...errors,
-        email: validateEmail(value)
-          ? ''
-          : 'Email must contain @',
+        email: validateEmail(value) ? '' : 'Email must contain @',
       });
     }
 
@@ -149,9 +158,7 @@ const HeadAdminSupport = () => {
       setErrors({
         ...errors,
         phoneNo:
-          value.length < 10
-            ? 'Phone must be at least 10 digits'
-            : '',
+          value.length < 10 ? 'Phone must be at least 10 digits' : '',
       });
     }
   };
@@ -179,95 +186,98 @@ const HeadAdminSupport = () => {
   };
 
   const handleDelete = async () => {
+    if (!window.confirm('Delete support details?')) return;
     await deleteSupport();
     setSupport(null);
     setForm({ email: '', phoneNo: '', address: '' });
   };
 
   return (
-    <>
-      <HeadAdminNavbar />
-
+    <HeadAdminNavbar>
       <Page>
-        <Card>
-          <Title>Organization Support Details</Title>
+        <Container>
+          <Card>
+            <Title>Organization Support Details</Title>
 
-          {editing || !support ? (
-            <>
-              <Field>
-                <Label>Email</Label>
-                <Input
-                  value={form.email}
-                  onChange={(e) =>
-                    handleChange('email', e.target.value)
-                  }
-                />
-                {errors.email && <Error>{errors.email}</Error>}
-              </Field>
+            {editing || !support ? (
+              <>
+                <Field>
+                  <Label>Email</Label>
+                  <Input
+                    value={form.email}
+                    onChange={(e) =>
+                      handleChange('email', e.target.value)
+                    }
+                  />
+                  {errors.email && <Error>{errors.email}</Error>}
+                </Field>
 
-              <Field>
-                <Label>Phone</Label>
-                <Input
-                  value={form.phoneNo}
-                  onChange={(e) =>
-                    handleChange('phoneNo', e.target.value)
-                  }
-                />
-                {errors.phoneNo && <Error>{errors.phoneNo}</Error>}
-              </Field>
+                <Field>
+                  <Label>Phone</Label>
+                  <Input
+                    value={form.phoneNo}
+                    onChange={(e) =>
+                      handleChange('phoneNo', e.target.value)
+                    }
+                  />
+                  {errors.phoneNo && (
+                    <Error>{errors.phoneNo}</Error>
+                  )}
+                </Field>
 
-              <Field>
-                <Label>Address</Label>
-                <Input
-                  value={form.address}
-                  onChange={(e) =>
-                    handleChange('address', e.target.value)
-                  }
-                />
-              </Field>
+                <Field>
+                  <Label>Address</Label>
+                  <Input
+                    value={form.address}
+                    onChange={(e) =>
+                      handleChange('address', e.target.value)
+                    }
+                  />
+                </Field>
 
-              {role === 'headadmin' && (
-                <Actions>
-                  <Button
-                    onClick={handleSave}
-                    disabled={!isFormValid}
-                  >
-                    Save
-                  </Button>
-                </Actions>
-              )}
-            </>
-          ) : (
-            <>
-              <Field>
-                <Label>Email</Label>
-                <Value>{support.email}</Value>
-              </Field>
+                {role === 'headadmin' && (
+                  <Actions>
+                    <Button
+                      onClick={handleSave}
+                      disabled={!isFormValid}
+                    >
+                      Save
+                    </Button>
+                  </Actions>
+                )}
+              </>
+            ) : (
+              <>
+                <Field>
+                  <Label>Email</Label>
+                  <Value>{support.email}</Value>
+                </Field>
 
-              <Field>
-                <Label>Phone</Label>
-                <Value>{support.phoneNo}</Value>
-              </Field>
+                <Field>
+                  <Label>Phone</Label>
+                  <Value>{support.phoneNo}</Value>
+                </Field>
 
-              <Field>
-                <Label>Address</Label>
-                <Value>{support.address}</Value>
-              </Field>
+                <Field>
+                  <Label>Address</Label>
+                  <Value>{support.address}</Value>
+                </Field>
 
-              {role === 'headadmin' && (
-                <Actions>
-                  <Button onClick={() => setEditing(true)}>Edit</Button>
-                  <Button danger onClick={handleDelete}>
-                    Delete
-                  </Button>
-                </Actions>
-              )}
-            </>
-          )}
-        </Card>
+                {role === 'headadmin' && (
+                  <Actions>
+                    <Button onClick={() => setEditing(true)}>
+                      Edit
+                    </Button>
+                    <Button danger onClick={handleDelete}>
+                      Delete
+                    </Button>
+                  </Actions>
+                )}
+              </>
+            )}
+          </Card>
+        </Container>
       </Page>
-    </>
+    </HeadAdminNavbar>
   );
-};
-
-export default HeadAdminSupport;
+}

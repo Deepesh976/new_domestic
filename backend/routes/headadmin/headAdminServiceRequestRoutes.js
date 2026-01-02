@@ -14,19 +14,13 @@ const router = express.Router();
 
 /* =====================================================
    SERVICE REQUEST ROUTES
-   Rules:
-   - HeadAdmin: full access
-   - Admin: read-only access
+   Access:
+   - headadmin ✅
+   - admin     ✅
 ===================================================== */
 
 /* =========================
    GET SERVICE REQUESTS
-   GET /api/headadmin/service-requests
-   - Search (device_id / customer name)
-   - Filter by status
-   Access:
-     - headadmin
-     - admin (read-only)
 ========================= */
 router.get(
   '/',
@@ -37,48 +31,35 @@ router.get(
 
 /* =========================
    GET AVAILABLE TECHNICIANS
-   GET /api/headadmin/service-requests/technicians/available
-   Access:
-     - headadmin only
+   🔥 FIXED: ADMIN ALLOWED
 ========================= */
 router.get(
   '/technicians/available',
   auth,
-  roleMiddleware('headadmin'),
+  roleMiddleware('headadmin', 'admin'),
   getAvailableTechnicians
 );
 
 /* =========================
    ASSIGN TECHNICIAN
-   PATCH /api/headadmin/service-requests/:id/assign
-   Access:
-     - headadmin only
-   Effect:
-     - Technician → busy
-     - Request → assigned
+   🔥 FIXED: ADMIN ALLOWED
 ========================= */
 router.patch(
   '/:id/assign',
   auth,
-  roleMiddleware('headadmin'),
+  roleMiddleware('headadmin', 'admin'),
   assignTechnicianToRequest
 );
 
 /* =========================
    UPDATE SERVICE STATUS
-   PATCH /api/headadmin/service-requests/:id/status
-   Access:
-     - headadmin only
-   Features:
-     - Upload completion images
-     - Save filenames to MongoDB
-     - Free technician on close
+   🔥 FIXED: ADMIN ALLOWED
 ========================= */
 router.patch(
   '/:id/status',
   auth,
-  roleMiddleware('headadmin'),
-  serviceImageUpload.array('completion_images', 5), // 🔥 IMPORTANT
+  roleMiddleware('headadmin', 'admin'),
+  serviceImageUpload.array('completion_images', 5),
   updateServiceStatus
 );
 

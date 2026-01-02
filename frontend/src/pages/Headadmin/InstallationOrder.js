@@ -11,15 +11,15 @@ import axios from '../../utils/axiosConfig';
 /* =========================
    PAGE LAYOUT
 ========================= */
+
 const Page = styled.div`
   background: #f8fafc;
-  min-height: calc(100vh - 64px);
 `;
 
 const Container = styled.div`
   max-width: 1500px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 16px 24px 40px;
 `;
 
 const Header = styled.div`
@@ -27,29 +27,39 @@ const Header = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  gap: 16px;
+  flex-wrap: wrap;
 `;
 
 const Title = styled.h2`
-  font-weight: 700;
+  font-weight: 800;
   color: #0f172a;
 `;
 
 const Search = styled.input`
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  width: 340px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
   font-size: 13px;
+  width: 320px;
+
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
 `;
 
 /* =========================
    TABLE
 ========================= */
+
 const TableWrapper = styled.div`
   background: white;
   border-radius: 16px;
   overflow-x: auto;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
 `;
 
 const Table = styled.table`
@@ -59,25 +69,29 @@ const Table = styled.table`
 
 const Th = styled.th`
   padding: 14px;
-  background: #f1f5f9;
+  background: #f8fafc;
   font-size: 12px;
+  font-weight: 700;
   color: #475569;
   text-align: left;
+  text-transform: uppercase;
+  border-bottom: 2px solid #e5e7eb;
 `;
 
 const Td = styled.td`
   padding: 14px;
   font-size: 13px;
-  border-bottom: 1px solid #f1f5f9;
+  border-top: 1px solid #f1f5f9;
   vertical-align: top;
+  color: #0f172a;
 `;
 
 /* =========================
    UI ELEMENTS
 ========================= */
+
 const Name = styled.div`
-  font-weight: 600;
-  color: #0f172a;
+  font-weight: 700;
 `;
 
 const Muted = styled.div`
@@ -94,26 +108,25 @@ const StatusBadge = styled.span`
   padding: 5px 12px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   background: ${(p) =>
-    p.type === 'completed'
-      ? '#dcfce7'
-      : '#fef9c3'};
-  color: #1e293b;
+    p.type === 'completed' ? '#dcfce7' : '#fef9c3'};
+  color: ${(p) =>
+    p.type === 'completed' ? '#166534' : '#854d0e'};
 `;
 
 const YesNoBadge = styled.span`
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   background: ${(p) => (p.yes ? '#dcfce7' : '#fee2e2')};
   color: ${(p) => (p.yes ? '#166534' : '#991b1b')};
 `;
 
 const Select = styled.select`
-  padding: 6px 8px;
-  border-radius: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
   border: 1px solid #cbd5e1;
   font-size: 12px;
   width: 190px;
@@ -121,12 +134,13 @@ const Select = styled.select`
 
 const Button = styled.button`
   padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
   background: ${(p) => (p.danger ? '#dc2626' : '#2563eb')};
   color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
 
   &:disabled {
     background: #cbd5e1;
@@ -137,7 +151,8 @@ const Button = styled.button`
 /* =========================
    COMPONENT
 ========================= */
-const HeadAdminInstallationOrder = () => {
+
+export default function HeadAdminInstallationOrder() {
   const [orders, setOrders] = useState([]);
   const [technicians, setTechnicians] = useState([]);
   const [assignments, setAssignments] = useState({});
@@ -148,9 +163,6 @@ const HeadAdminInstallationOrder = () => {
     loadData();
   }, []);
 
-  /* =========================
-     LOAD DATA
-  ========================= */
   const loadData = async () => {
     setLoading(true);
     try {
@@ -162,20 +174,17 @@ const HeadAdminInstallationOrder = () => {
       setOrders(orderRes.data || []);
 
       const availableTechs = (techRes.data || []).filter(
-        (t) => t.is_active === true && t.work_status === 'free'
+        (t) => t.is_active && t.work_status === 'free'
       );
 
       setTechnicians(availableTechs);
-    } catch (error) {
+    } catch {
       alert('Failed to load installation orders');
     } finally {
       setLoading(false);
     }
   };
 
-  /* =========================
-     SEARCH
-  ========================= */
   const filteredOrders = useMemo(() => {
     return orders.filter((o) =>
       `${o.customer_name} ${o.order_id} ${o.plan_name}`
@@ -184,9 +193,6 @@ const HeadAdminInstallationOrder = () => {
     );
   }, [orders, search]);
 
-  /* =========================
-     ASSIGN TECHNICIAN
-  ========================= */
   const handleAssign = async (order) => {
     const technician_id = assignments[order._id];
     if (!technician_id) return alert('Select a technician');
@@ -199,9 +205,6 @@ const HeadAdminInstallationOrder = () => {
     loadData();
   };
 
-  /* =========================
-     COMPLETE INSTALLATION
-  ========================= */
   const handleComplete = async (order) => {
     if (!window.confirm('Mark installation as completed?')) return;
 
@@ -214,9 +217,7 @@ const HeadAdminInstallationOrder = () => {
   };
 
   return (
-    <>
-      <HeadAdminNavbar />
-
+    <HeadAdminNavbar>
       <Page>
         <Container>
           <Header>
@@ -279,8 +280,7 @@ const HeadAdminInstallationOrder = () => {
                     <Td>
                       <AddressLine>{o.delivery_address?.house_flat_no}</AddressLine>
                       <AddressLine>
-                        {o.delivery_address?.area},{' '}
-                        {o.delivery_address?.district}
+                        {o.delivery_address?.area}, {o.delivery_address?.district}
                       </AddressLine>
                       <AddressLine>
                         {o.delivery_address?.state},{' '}
@@ -333,8 +333,8 @@ const HeadAdminInstallationOrder = () => {
                         </Button>
                       )}
 
-                      {o.stages?.technician_assigned === true &&
-                        o.stages?.installation_completed === false && (
+                      {o.stages?.technician_assigned &&
+                        !o.stages?.installation_completed && (
                           <Button danger onClick={() => handleComplete(o)}>
                             Complete
                           </Button>
@@ -355,8 +355,6 @@ const HeadAdminInstallationOrder = () => {
           </TableWrapper>
         </Container>
       </Page>
-    </>
+    </HeadAdminNavbar>
   );
-};
-
-export default HeadAdminInstallationOrder;
+}

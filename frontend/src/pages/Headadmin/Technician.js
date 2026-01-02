@@ -12,18 +12,17 @@ import {
 
 const Page = styled.div`
   background: #f8fafc;
-  min-height: calc(100vh - 64px);
 `;
 
 const Container = styled.div`
   max-width: 1300px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 16px 24px 40px;
 `;
 
 const Title = styled.h2`
-  font-weight: 700;
-  margin-bottom: 16px;
+  font-weight: 800;
+  margin-bottom: 20px;
   color: #0f172a;
 `;
 
@@ -33,9 +32,9 @@ const Title = styled.h2`
 
 const TableWrapper = styled.div`
   background: #ffffff;
-  border-radius: 14px;
+  border-radius: 16px;
   overflow-x: auto;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
 `;
 
 const Table = styled.table`
@@ -45,17 +44,19 @@ const Table = styled.table`
 
 const Th = styled.th`
   padding: 14px 16px;
-  background: #f1f5f9;
-  font-size: 13px;
-  font-weight: 600;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 700;
   text-align: left;
   color: #475569;
+  text-transform: uppercase;
+  border-bottom: 2px solid #e5e7eb;
 `;
 
 const Td = styled.td`
   padding: 14px 16px;
   font-size: 14px;
-  border-bottom: 1px solid #f1f5f9;
+  border-top: 1px solid #f1f5f9;
   vertical-align: middle;
   color: #334155;
 `;
@@ -67,7 +68,7 @@ const Td = styled.td`
 const NameWrapper = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 `;
 
 const Avatar = styled.div`
@@ -129,7 +130,7 @@ const StatusBadge = styled.span`
 
 const Select = styled.select`
   padding: 6px 10px;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid #cbd5e1;
   font-size: 13px;
 `;
@@ -139,8 +140,9 @@ const Button = styled.button`
   background: #2563eb;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
 
   &:hover {
@@ -167,7 +169,7 @@ const getTechStatusLabel = (tech) => {
    COMPONENT
 ========================= */
 
-const Technicians = () => {
+export default function Technicians() {
   const [technicians, setTechnicians] = useState([]);
   const [changes, setChanges] = useState({});
   const [loading, setLoading] = useState(false);
@@ -176,9 +178,6 @@ const Technicians = () => {
     loadTechnicians();
   }, []);
 
-  /* =========================
-     LOAD TECHNICIANS
-  ========================= */
   const loadTechnicians = async () => {
     setLoading(true);
     try {
@@ -191,9 +190,6 @@ const Technicians = () => {
     }
   };
 
-  /* =========================
-     TRACK CHANGES
-  ========================= */
   const handleChange = (id, field, value) => {
     setChanges((prev) => ({
       ...prev,
@@ -204,9 +200,6 @@ const Technicians = () => {
     }));
   };
 
-  /* =========================
-     SUBMIT UPDATE
-  ========================= */
   const handleSubmit = async (tech) => {
     const status = getTechStatusLabel(tech);
 
@@ -242,9 +235,7 @@ const Technicians = () => {
   };
 
   return (
-    <>
-      <HeadAdminNavbar />
-
+    <HeadAdminNavbar>
       <Page>
         <Container>
           <Title>Technicians</Title>
@@ -272,7 +263,6 @@ const Technicians = () => {
 
                   return (
                     <tr key={tech._id}>
-                      {/* NAME */}
                       <Td>
                         <NameWrapper>
                           <Avatar>
@@ -292,10 +282,8 @@ const Technicians = () => {
                         </NameWrapper>
                       </Td>
 
-                      {/* PHONE */}
                       <Td>{tech.phone_number}</Td>
 
-                      {/* ADDRESS */}
                       <Td>
                         {tech.address?.flat_no}
                         <div style={{ fontSize: 12, color: '#64748b' }}>
@@ -304,20 +292,18 @@ const Technicians = () => {
                         </div>
                       </Td>
 
-                      {/* KYC IMAGE */}
                       <Td>
                         {hasKycImage ? (
-                          <span style={{ color: '#16a34a', fontWeight: 600 }}>
+                          <span style={{ color: '#16a34a', fontWeight: 700 }}>
                             Uploaded
                           </span>
                         ) : (
-                          <span style={{ color: '#f59e0b', fontWeight: 600 }}>
+                          <span style={{ color: '#f59e0b', fontWeight: 700 }}>
                             Not Uploaded
                           </span>
                         )}
                       </Td>
 
-                      {/* KYC STATUS */}
                       <Td>
                         <Select
                           disabled={status === 'ON DUTY'}
@@ -340,14 +326,12 @@ const Technicians = () => {
                         </Select>
                       </Td>
 
-                      {/* STATUS */}
                       <Td>
                         <StatusBadge status={status}>
                           {status}
                         </StatusBadge>
                       </Td>
 
-                      {/* ACTION */}
                       <Td>
                         <Button
                           disabled={status === 'ON DUTY'}
@@ -380,8 +364,6 @@ const Technicians = () => {
           </TableWrapper>
         </Container>
       </Page>
-    </>
+    </HeadAdminNavbar>
   );
-};
-
-export default Technicians;
+}

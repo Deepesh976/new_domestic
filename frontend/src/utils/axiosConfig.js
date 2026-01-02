@@ -3,7 +3,7 @@ import store from '../redux/store';
 import { logout } from '../redux/authSlice';
 
 const instance = axios.create({
-  baseURL: 'http://localhost:5000',
+  baseURL: '',
   // ❌ DO NOT set Content-Type here
 });
 

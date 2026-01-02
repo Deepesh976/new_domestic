@@ -5,12 +5,12 @@ import { createSlice } from '@reduxjs/toolkit';
 ========================= */
 const token = localStorage.getItem('token');
 const role = localStorage.getItem('role');
-const organization = localStorage.getItem('organization');
+const org_id = localStorage.getItem('org_id');
 
 const initialState = {
   token: token || null,
   role: role || null,
-  organization: organization || null, // ✅ REQUIRED FOR HEADADMIN
+  org_id: org_id || null, // ✅ REQUIRED FOR HEADADMIN
   isAuthenticated: !!token,
   loading: false,
   error: null,
@@ -27,11 +27,11 @@ const authSlice = createSlice({
        LOGIN SUCCESS
     ========================= */
     loginSuccess: (state, action) => {
-      const { token, role, organization } = action.payload;
+      const { token, role, org_id } = action.payload;
 
       state.token = token;
       state.role = role;
-      state.organization = organization || null;
+      state.org_id = org_id || null;
       state.isAuthenticated = true;
       state.loading = false;
       state.error = null;
@@ -40,10 +40,10 @@ const authSlice = createSlice({
       localStorage.setItem('token', token);
       localStorage.setItem('role', role);
 
-      if (organization) {
-        localStorage.setItem('organization', organization);
+      if (org_id) {
+        localStorage.setItem('org_id', org_id);
       } else {
-        localStorage.removeItem('organization');
+        localStorage.removeItem('org_id');
       }
     },
 
@@ -53,14 +53,14 @@ const authSlice = createSlice({
     logout: (state) => {
       state.token = null;
       state.role = null;
-      state.organization = null;
+      state.org_id = null;
       state.isAuthenticated = false;
       state.loading = false;
       state.error = null;
 
       localStorage.removeItem('token');
       localStorage.removeItem('role');
-      localStorage.removeItem('organization');
+      localStorage.removeItem('org_id');
     },
 
     /* =========================

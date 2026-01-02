@@ -1,30 +1,35 @@
 import express from 'express';
 import auth from '../../middleware/auth.js';
 import roleMiddleware from '../../middleware/roleMiddleware.js';
+
 import {
   getPurifiers,
 } from '../../controllers/headadmin/headAdminPurifierController.js';
 
+import {
+  getPurifierHistory,
+} from '../../controllers/headadmin/headAdminPurifierHistoryController.js';
+
 const router = express.Router();
 
-/* =====================================================
-   PURIFIER ROUTES
-   - HeadAdmin: full access
-   - Admin: read-only access
-===================================================== */
-
-/**
- * GET /api/headadmin/purifiers
- *
- * Access:
- *  - headadmin → full access
- *  - admin     → read-only access
- */
+/* =========================
+   PURIFIERS LIST
+========================= */
 router.get(
   '/',
   auth,
   roleMiddleware('headadmin', 'admin'),
   getPurifiers
+);
+
+/* =========================
+   PURIFIER HISTORY
+========================= */
+router.get(
+  '/:deviceId/history',
+  auth,
+  roleMiddleware('headadmin', 'admin'),
+  getPurifierHistory
 );
 
 export default router;

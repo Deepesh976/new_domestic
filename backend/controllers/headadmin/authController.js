@@ -56,9 +56,20 @@ export const login = async (req, res) => {
       }
     }
 
-    if (!user || !organization) {
+    if (!user) {
       return res.status(401).json({
         message: 'Invalid email or password',
+      });
+    }
+
+    if (!organization) {
+      console.error(
+        `❌ Organization not found for ${role}:`,
+        { userId: user._id, email: user.email, org_id: user.org_id }
+      );
+      return res.status(400).json({
+        message:
+          'Your account is not linked to an organization. Contact administrator.',
       });
     }
 

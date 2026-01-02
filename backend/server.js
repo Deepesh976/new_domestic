@@ -4,22 +4,20 @@
  *************************************************/
 
 import dotenv from 'dotenv';
-dotenv.config(); // 🔥 MUST be first
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '.env') }); // 🔥 MUST be first
 
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import multer from 'multer';
 
 import connectDB from './config/db.js';
-
-/* =========================
-   PATH FIX (ES MODULE)
-========================= */
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -32,19 +30,46 @@ if (!process.env.JWT_SECRET) {
 }
 
 /* =========================
-   GLOBAL MIDDLEWARE
+   CORS CONFIG (BUILDER + DEV + PROD SAFE)
 ========================= */
+
+// Explicit allowed origins (prod / fixed ports)
+const allowedOrigins = [
+  'http://localhost:3000', // normal React dev
+  process.env.CLIENT_URL,  // production frontend
+].filter(Boolean);
+
+// Builder runs on random localhost ports
+const isLocalhost = (origin) =>
+  origin && origin.startsWith('http://localhost');
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || '*', // 🔒 lock in prod
+    origin: function (origin, callback) {
+      // Allow requests with no origin (Postman, mobile apps)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin) || isLocalhost(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(
+        new Error(`CORS blocked for origin: ${origin}`)
+      );
+    },
     credentials: true,
   })
 );
 
+/* =========================
+   BODY PARSERS
+========================= */
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Logger (dev only)
+/* =========================
+   LOGGER (DEV ONLY)
+========================= */
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
@@ -108,7 +133,7 @@ app.use('/api/headadmin/auth', headAdminAuthRoutes);
 app.use('/api/headadmin/customers', headAdminCustomerRoutes);
 app.use('/api/headadmin/admins', headAdminAdminRoutes);
 app.use('/api/headadmin/purifiers', headAdminPurifierRoutes);
-app.use('/api/headadmin/purifiers/history', headAdminPurifierHistoryRoutes);
+// app.use('/api/headadmin/purifiers/history', headAdminPurifierHistoryRoutes);
 app.use('/api/headadmin/transactions', headAdminTransactionRoutes);
 app.use('/api/headadmin/dashboard', headAdminDashboardRoutes);
 app.use('/api/headadmin/plans', headAdminPlanRoutes);

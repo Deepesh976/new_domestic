@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { FiMenu, FiUser, FiLogOut } from 'react-icons/fi';
 import {
@@ -26,8 +26,7 @@ export default function HeadAdminNavbar({ children }) {
   const role = localStorage.getItem('role'); // headadmin | admin
   const email = localStorage.getItem('email') || 'User';
 
-  const orgName =
-    localStorage.getItem('org_name') || 'Organization';
+  const orgName = localStorage.getItem('org_name') || 'Organization';
   const orgLogo = localStorage.getItem('org_logo');
 
   const API_BASE =
@@ -54,59 +53,56 @@ export default function HeadAdminNavbar({ children }) {
   return (
     <div className="layout">
       {/* ================= TOP BAR ================= */}
-<header className="topbar">
-  {/* LEFT */}
-  <div className="topbar-left">
-    <button
-      className="hamburger"
-      onClick={() => setMenuOpen((v) => !v)}
-    >
-      <FiMenu size={22} />
-    </button>
-  </div>
+      <header className="topbar">
+        {/* LEFT */}
+        <div className="topbar-left">
+          <button
+            className="hamburger"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Toggle menu"
+          >
+            <FiMenu size={22} />
+          </button>
+        </div>
 
-  {/* CENTER (LOGO + ORG NAME) */}
-  <div className="topbar-center">
-    {orgLogo ? (
-      <img
-        src={`${API_BASE}/uploads/organizations/${orgLogo}`}
-        alt="Organization Logo"
-        className="org-logo"
-      />
-    ) : (
-      <div className="org-fallback">
-        {orgName?.charAt(0)?.toUpperCase() || 'O'}
-      </div>
-    )}
+        {/* CENTER */}
+        <div className="topbar-center">
+          {orgLogo ? (
+            <img
+              src={`${API_BASE}/uploads/organizations/${orgLogo}`}
+              alt="Organization Logo"
+              className="org-logo"
+            />
+          ) : (
+            <div className="org-fallback">
+              {orgName.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <span className="org-name">{orgName}</span>
+        </div>
 
-    <span className="org-name">
-      {orgName || 'Organization'}
-    </span>
-  </div>
+        {/* RIGHT */}
+        <div className="topbar-right profile">
+          <button
+            className="profile-btn"
+            onClick={() => setProfileOpen((v) => !v)}
+          >
+            <FiUser />
+            <span>{email.split('@')[0]}</span>
+          </button>
 
-  {/* RIGHT */}
-  <div className="topbar-right profile">
-    <button
-      className="profile-btn"
-      onClick={() => setProfileOpen((v) => !v)}
-    >
-      <FiUser />
-      <span>{email.split('@')[0]}</span>
-    </button>
-
-    {profileOpen && (
-      <div className="profile-menu">
-        <button onClick={() => navigate('/profile')}>
-          <FiUser /> Profile
-        </button>
-        <button className="logout" onClick={logout}>
-          <FiLogOut /> Logout
-        </button>
-      </div>
-    )}
-  </div>
-</header>
-
+          {profileOpen && (
+            <div className="profile-menu">
+              <button onClick={() => navigate('/profile')}>
+                <FiUser /> Profile
+              </button>
+              <button className="logout" onClick={logout}>
+                <FiLogOut /> Logout
+              </button>
+            </div>
+          )}
+        </div>
+      </header>
 
       {/* ================= OVERLAY (MOBILE) ================= */}
       {menuOpen && (
@@ -119,19 +115,13 @@ export default function HeadAdminNavbar({ children }) {
       {/* ================= SIDEBAR ================= */}
       <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
         <nav className="menu">
-          <NavItem
-            to="/headadmin"
-            icon={<MdDashboard />}
-            label="Dashboard"
-          />
-
+          <NavItem to="/headadmin" icon={<MdDashboard />} label="Dashboard" />
           <NavItem
             to="/headadmin/customers"
             icon={<MdPeople />}
             label="Customers"
           />
 
-          {/* HEADADMIN ONLY */}
           {isHeadAdmin && (
             <NavItem
               to="/headadmin/admins"
@@ -145,37 +135,31 @@ export default function HeadAdminNavbar({ children }) {
             icon={<MdDevices />}
             label="Purifiers"
           />
-
           <NavItem
             to="/headadmin/transactions"
             icon={<MdPayments />}
             label="Transactions"
           />
-
           <NavItem
             to="/headadmin/plans"
             icon={<MdListAlt />}
             label="Plans"
           />
-
           <NavItem
             to="/headadmin/technicians"
             icon={<MdEngineering />}
             label="Technicians"
           />
-
           <NavItem
             to="/headadmin/installations"
             icon={<MdEngineering />}
             label="Installations"
           />
-
           <NavItem
             to="/headadmin/service-requests"
             icon={<MdSupportAgent />}
             label="Service Requests"
           />
-
           <NavItem
             to="/headadmin/support"
             icon={<MdSupportAgent />}
@@ -185,7 +169,9 @@ export default function HeadAdminNavbar({ children }) {
       </aside>
 
       {/* ================= MAIN CONTENT ================= */}
-      <main className="content">{children}</main>
+      <main className="content">
+        {children}
+      </main>
     </div>
   );
 }

@@ -28,30 +28,30 @@ import Transaction from './pages/SuperAdmin/Transaction';
 
 /* ================= HEAD ADMIN / ADMIN ================= */
 import HeadAdminDashboard from './components/Dashboard/HeadAdminDashboard';
-import HeadAdminCustomers from './pages/HeadAdmin/Customers';
-import CustomerKycView from './pages/HeadAdmin/CustomerKycView';
+import HeadAdminCustomers from './pages/Headadmin/Customers';
+import CustomerKycView from './pages/Headadmin/CustomerKycView';
 
-import HeadAdminAdmins from './pages/HeadAdmin/Admins';
-import HeadAdminCreateAdmin from './pages/HeadAdmin/CreateAdmin';
-import HeadAdminEditAdmin from './pages/HeadAdmin/EditAdmin';
-import HeadAdminAdminKycView from './pages/HeadAdmin/AdminKycView';
+import HeadAdminAdmins from './pages/Headadmin/Admins';
+import HeadAdminCreateAdmin from './pages/Headadmin/CreateAdmin';
+import HeadAdminEditAdmin from './pages/Headadmin/EditAdmin';
+import HeadAdminAdminKycView from './pages/Headadmin/AdminKycView';
 
-import HeadAdminPurifiers from './pages/HeadAdmin/Purifiers';
-import HeadAdminPurifierHistory from './pages/HeadAdmin/PurifierHistory';
-import HeadAdminRechargedPlan from './pages/HeadAdmin/RechargedPlan';
+import HeadAdminPurifiers from './pages/Headadmin/Purifiers';
+import HeadAdminPurifierHistory from './pages/Headadmin/PurifierHistory';
+import HeadAdminRechargedPlan from './pages/Headadmin/RechargedPlan';
 
-import HeadAdminAnalysis from './pages/HeadAdmin/Analysis';
-import HeadAdminTransactions from './pages/HeadAdmin/Transactions';
+import HeadAdminAnalysis from './pages/Headadmin/Analysis';
+import HeadAdminTransactions from './pages/Headadmin/Transactions';
 
-import HeadAdminPlans from './pages/HeadAdmin/Plan';
-import HeadAdminCreatePlan from './pages/HeadAdmin/CreatePlan';
-import HeadAdminEditPlan from './pages/HeadAdmin/EditPlan';
+import HeadAdminPlans from './pages/Headadmin/Plan';
+import HeadAdminCreatePlan from './pages/Headadmin/CreatePlan';
+import HeadAdminEditPlan from './pages/Headadmin/EditPlan';
 
-import HeadAdminOrders from './pages/HeadAdmin/Order';
-import HeadAdminTechnicians from './pages/HeadAdmin/Technician';
-import HeadAdminInstallationOrder from './pages/HeadAdmin/InstallationOrder';
-import HeadAdminServiceRequest from './pages/HeadAdmin/ServiceRequest';
-import HeadAdminSupport from './pages/HeadAdmin/Support';
+import HeadAdminOrders from './pages/Headadmin/Order';
+import HeadAdminTechnicians from './pages/Headadmin/Technician';
+import HeadAdminInstallationOrder from './pages/Headadmin/InstallationOrder';
+import HeadAdminServiceRequest from './pages/Headadmin/ServiceRequest';
+import HeadAdminSupport from './pages/Headadmin/Support';
 
 function App() {
   return (
