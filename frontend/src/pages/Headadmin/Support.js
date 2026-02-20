@@ -9,97 +9,256 @@ import {
 } from '../../services/headAdminService';
 
 /* =========================
-   LAYOUT
+   PAGE LAYOUT
 ========================= */
 
 const Page = styled.div`
-  background: #f8fafc;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  min-height: 100vh;
 `;
 
 const Container = styled.div`
-  max-width: 640px;
+  max-width: 800px;
   margin: 0 auto;
-  padding: 16px 24px 40px;
+  padding: 32px 24px 40px;
 `;
 
-/* =========================
-   CARD
-========================= */
-
-const Card = styled.div`
-  background: white;
-  padding: 28px;
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
+const HeaderSection = styled.div`
+  margin-bottom: 32px;
 `;
 
-/* =========================
-   UI
-========================= */
-
-const Title = styled.h3`
-  margin-bottom: 24px;
-  font-weight: 800;
+const PageTitle = styled.h1`
+  font-size: 32px;
+  font-weight: 900;
   color: #0f172a;
+  margin-bottom: 8px;
+`;
+
+const PageDescription = styled.p`
+  font-size: 14px;
+  color: #64748b;
+`;
+
+/* =========================
+   STATS GRID
+========================= */
+
+const StatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+`;
+
+const StatCard = styled.div`
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  text-align: center;
+`;
+
+const StatIcon = styled.div`
+  font-size: 24px;
+  margin-bottom: 8px;
+`;
+
+const StatLabel = styled.div`
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+`;
+
+const StatValue = styled.div`
+  font-size: 20px;
+  font-weight: 900;
+  color: #2563eb;
+`;
+
+/* =========================
+   MAIN CARD
+========================= */
+
+const FormCard = styled.div`
+  background: white;
+  padding: 32px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+`;
+
+const CardTitle = styled.h2`
+  font-size: 20px;
+  font-weight: 900;
+  color: #0f172a;
+  margin-bottom: 8px;
+`;
+
+const CardDescription = styled.p`
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 24px;
+`;
+
+/* =========================
+   FORM FIELDS
+========================= */
+
+const FormSection = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const AddressSection = styled.div`
+  grid-column: 1 / -1;
+  margin-bottom: 20px;
 `;
 
 const Field = styled.div`
-  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
 `;
 
-const Label = styled.div`
+const Label = styled.label`
   font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 6px;
-  color: #475569;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 `;
 
 const Value = styled.div`
   font-weight: 600;
+  font-size: 15px;
   color: #0f172a;
-`;
-
-const Error = styled.div`
-  font-size: 12px;
-  color: #dc2626;
-  margin-top: 4px;
+  padding: 12px 0;
 `;
 
 const Input = styled.input`
-  width: 100%;
-  height: 42px;
-  padding: 0 12px;
-  border-radius: 10px;
-  border: 2px solid #e5e7eb;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
   font-size: 14px;
+  background: white;
+  transition: all 0.3s ease;
 
   &:focus {
     outline: none;
     border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    background: #f8fafc;
+  }
+
+  &::placeholder {
+    color: #94a3b8;
   }
 `;
 
-const Actions = styled.div`
+const ErrorMessage = styled.div`
+  font-size: 12px;
+  color: #dc2626;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+const ViewCard = styled.div`
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+`;
+
+const ViewLabel = styled.div`
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+`;
+
+const ViewValue = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  word-break: break-all;
+`;
+
+/* =========================
+   ACTIONS
+========================= */
+
+const ActionsSection = styled.div`
   display: flex;
   gap: 12px;
-  margin-top: 24px;
+  margin-top: 32px;
+  flex-wrap: wrap;
 `;
 
 const Button = styled.button`
-  padding: 10px 18px;
+  padding: 12px 24px;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.3s ease;
   background: ${(p) => (p.danger ? '#dc2626' : '#2563eb')};
   color: white;
-  font-weight: 600;
-  font-size: 14px;
-  opacity: ${(p) => (p.disabled ? 0.6 : 1)};
+
+  &:hover:not(:disabled) {
+    background: ${(p) => (p.danger ? '#b91c1c' : '#1d4ed8')};
+    box-shadow: ${(p) =>
+      p.danger
+        ? '0 4px 12px rgba(220, 38, 38, 0.4)'
+        : '0 4px 12px rgba(37, 99, 235, 0.4)'};
+  }
 
   &:disabled {
+    background: #cbd5e1;
     cursor: not-allowed;
+    opacity: 0.6;
   }
+`;
+
+const SecondaryButton = styled(Button)`
+  background: white;
+  color: #2563eb;
+  border: 1px solid #cbd5e1;
+
+  &:hover:not(:disabled) {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+  }
+`;
+
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 40px 24px;
+`;
+
+const EmptyIcon = styled.div`
+  font-size: 48px;
+  margin-bottom: 16px;
+`;
+
+const EmptyText = styled.p`
+  font-size: 16px;
+  color: #64748b;
+  margin: 0;
 `;
 
 /* =========================
@@ -111,6 +270,7 @@ const role = localStorage.getItem('role');
 export default function HeadAdminSupport() {
   const [support, setSupport] = useState(null);
   const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
     email: '',
@@ -121,6 +281,7 @@ export default function HeadAdminSupport() {
   const [errors, setErrors] = useState({
     email: '',
     phoneNo: '',
+    address: '',
   });
 
   useEffect(() => {
@@ -128,10 +289,17 @@ export default function HeadAdminSupport() {
   }, []);
 
   const loadSupport = async () => {
-    const res = await getSupport();
-    if (res.data) {
-      setSupport(res.data);
-      setForm(res.data);
+    setLoading(true);
+    try {
+      const res = await getSupport();
+      if (res.data) {
+        setSupport(res.data);
+        setForm(res.data);
+      }
+    } catch (error) {
+      console.error('Failed to load support details', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -140,33 +308,45 @@ export default function HeadAdminSupport() {
   ========================= */
 
   const validateEmail = (email) => email.includes('@');
-  const validatePhone = (phone) => /^[0-9]*$/.test(phone);
+  const validatePhone = (phone) => /^[0-9]{10,}$/.test(phone);
+  const validateAddress = (address) => address.trim().length > 0;
 
   const handleChange = (field, value) => {
-    if (field === 'phoneNo' && !validatePhone(value)) return;
+    // Phone validation - only digits
+    if (field === 'phoneNo' && !/^[0-9]*$/.test(value)) return;
 
     setForm({ ...form, [field]: value });
 
+    // Real-time validation
     if (field === 'email') {
       setErrors({
         ...errors,
-        email: validateEmail(value) ? '' : 'Email must contain @',
+        email: validateEmail(value) ? '' : 'Invalid email format',
       });
     }
 
     if (field === 'phoneNo') {
       setErrors({
         ...errors,
-        phoneNo:
-          value.length < 10 ? 'Phone must be at least 10 digits' : '',
+        phoneNo: validatePhone(value) ? '' : 'Phone must be at least 10 digits',
+      });
+    }
+
+    if (field === 'address') {
+      setErrors({
+        ...errors,
+        address: validateAddress(value) ? '' : 'Address is required',
       });
     }
   };
 
   const isFormValid =
     validateEmail(form.email) &&
-    form.phoneNo.length >= 10 &&
-    form.address.trim().length > 0;
+    validatePhone(form.phoneNo) &&
+    validateAddress(form.address) &&
+    !errors.email &&
+    !errors.phoneNo &&
+    !errors.address;
 
   /* =========================
      ACTIONS
@@ -175,107 +355,198 @@ export default function HeadAdminSupport() {
   const handleSave = async () => {
     if (!isFormValid) return;
 
-    if (support) {
-      await updateSupport(form);
-    } else {
-      await createSupport(form);
+    try {
+      if (support) {
+        await updateSupport(form);
+        alert('Support details updated successfully ✅');
+      } else {
+        await createSupport(form);
+        alert('Support details created successfully ✅');
+      }
+      setEditing(false);
+      loadSupport();
+    } catch (error) {
+      alert('Failed to save support details');
+      console.error(error);
     }
-
-    setEditing(false);
-    loadSupport();
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Delete support details?')) return;
-    await deleteSupport();
-    setSupport(null);
-    setForm({ email: '', phoneNo: '', address: '' });
+    if (!window.confirm('Are you sure you want to delete support details?')) return;
+    try {
+      await deleteSupport();
+      alert('Support details deleted successfully ✅');
+      setSupport(null);
+      setForm({ email: '', phoneNo: '', address: '' });
+      setErrors({ email: '', phoneNo: '', address: '' });
+    } catch (error) {
+      alert('Failed to delete support details');
+      console.error(error);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditing(false);
+    if (support) {
+      setForm(support);
+    } else {
+      setForm({ email: '', phoneNo: '', address: '' });
+    }
+    setErrors({ email: '', phoneNo: '', address: '' });
   };
 
   return (
     <HeadAdminNavbar>
       <Page>
         <Container>
-          <Card>
-            <Title>Organization Support Details</Title>
+          <HeaderSection>
+            <PageTitle>Support Details</PageTitle>
+            <PageDescription>
+              Manage your organization's support contact information
+            </PageDescription>
+          </HeaderSection>
 
-            {editing || !support ? (
+          {/* Stats Cards */}
+          <StatsGrid>
+            <StatCard>
+              <StatIcon>✉️</StatIcon>
+              <StatLabel>Email</StatLabel>
+              <StatValue>{support ? '✓' : '○'}</StatValue>
+            </StatCard>
+            <StatCard>
+              <StatIcon>📞</StatIcon>
+              <StatLabel>Phone</StatLabel>
+              <StatValue>{support ? '✓' : '○'}</StatValue>
+            </StatCard>
+            <StatCard>
+              <StatIcon>📍</StatIcon>
+              <StatLabel>Address</StatLabel>
+              <StatValue>{support ? '✓' : '○'}</StatValue>
+            </StatCard>
+            <StatCard>
+              <StatIcon>📋</StatIcon>
+              <StatLabel>Status</StatLabel>
+              <StatValue>{support ? 'Active' : 'Empty'}</StatValue>
+            </StatCard>
+          </StatsGrid>
+
+          {/* Form Card */}
+          <FormCard>
+            {loading ? (
+              <EmptyState>
+                <EmptyIcon>⏳</EmptyIcon>
+                <EmptyText>Loading support details...</EmptyText>
+              </EmptyState>
+            ) : editing || !support ? (
               <>
-                <Field>
-                  <Label>Email</Label>
-                  <Input
-                    value={form.email}
-                    onChange={(e) =>
-                      handleChange('email', e.target.value)
-                    }
-                  />
-                  {errors.email && <Error>{errors.email}</Error>}
-                </Field>
+                <CardTitle>
+                  {support ? 'Edit Support Details' : 'Create Support Details'}
+                </CardTitle>
+                <CardDescription>
+                  {support
+                    ? 'Update your organization support contact information'
+                    : 'Add your organization support contact information'}
+                </CardDescription>
 
-                <Field>
-                  <Label>Phone</Label>
-                  <Input
-                    value={form.phoneNo}
-                    onChange={(e) =>
-                      handleChange('phoneNo', e.target.value)
-                    }
-                  />
-                  {errors.phoneNo && (
-                    <Error>{errors.phoneNo}</Error>
-                  )}
-                </Field>
+                <FormSection>
+                  <Field>
+                    <Label>Email Address</Label>
+                    <Input
+                      type="email"
+                      placeholder="support@example.com"
+                      value={form.email}
+                      onChange={(e) =>
+                        handleChange('email', e.target.value)
+                      }
+                    />
+                    {errors.email && (
+                      <ErrorMessage>⚠️ {errors.email}</ErrorMessage>
+                    )}
+                  </Field>
 
-                <Field>
-                  <Label>Address</Label>
-                  <Input
-                    value={form.address}
-                    onChange={(e) =>
-                      handleChange('address', e.target.value)
-                    }
-                  />
-                </Field>
+                  <Field>
+                    <Label>Phone Number</Label>
+                    <Input
+                      type="tel"
+                      placeholder="1234567890"
+                      value={form.phoneNo}
+                      onChange={(e) =>
+                        handleChange('phoneNo', e.target.value)
+                      }
+                    />
+                    {errors.phoneNo && (
+                      <ErrorMessage>⚠️ {errors.phoneNo}</ErrorMessage>
+                    )}
+                  </Field>
+                </FormSection>
+
+                <AddressSection>
+                  <Field>
+                    <Label>Address</Label>
+                    <Input
+                      placeholder="Enter your organization address..."
+                      value={form.address}
+                      onChange={(e) =>
+                        handleChange('address', e.target.value)
+                      }
+                    />
+                    {errors.address && (
+                      <ErrorMessage>⚠️ {errors.address}</ErrorMessage>
+                    )}
+                  </Field>
+                </AddressSection>
 
                 {role === 'headadmin' && (
-                  <Actions>
+                  <ActionsSection>
                     <Button
                       onClick={handleSave}
                       disabled={!isFormValid}
                     >
-                      Save
+                      Save Changes
                     </Button>
-                  </Actions>
+                    <SecondaryButton onClick={handleCancel}>
+                      Cancel
+                    </SecondaryButton>
+                  </ActionsSection>
                 )}
               </>
             ) : (
               <>
-                <Field>
-                  <Label>Email</Label>
-                  <Value>{support.email}</Value>
-                </Field>
+                <CardTitle>Support Details</CardTitle>
+                <CardDescription>
+                  Your organization support contact information
+                </CardDescription>
 
-                <Field>
-                  <Label>Phone</Label>
-                  <Value>{support.phoneNo}</Value>
-                </Field>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                  <ViewCard>
+                    <ViewLabel>Email Address</ViewLabel>
+                    <ViewValue>{support.email}</ViewValue>
+                  </ViewCard>
 
-                <Field>
-                  <Label>Address</Label>
-                  <Value>{support.address}</Value>
-                </Field>
+                  <ViewCard>
+                    <ViewLabel>Phone Number</ViewLabel>
+                    <ViewValue>{support.phoneNo}</ViewValue>
+                  </ViewCard>
+                </div>
+
+                <ViewCard style={{ marginBottom: '24px' }}>
+                  <ViewLabel>Address</ViewLabel>
+                  <ViewValue>{support.address}</ViewValue>
+                </ViewCard>
 
                 {role === 'headadmin' && (
-                  <Actions>
+                  <ActionsSection>
                     <Button onClick={() => setEditing(true)}>
-                      Edit
+                      Edit Details
                     </Button>
                     <Button danger onClick={handleDelete}>
-                      Delete
+                      Delete Details
                     </Button>
-                  </Actions>
+                  </ActionsSection>
                 )}
               </>
             )}
-          </Card>
+          </FormCard>
         </Container>
       </Page>
     </HeadAdminNavbar>

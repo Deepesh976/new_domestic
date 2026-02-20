@@ -22,6 +22,12 @@ export const getAdmins = async (req, res) => {
       orgId = headAdmin.org_id;
     }
 
+    if (!orgId) {
+      return res.status(401).json({
+        message: 'Organization not found for user',
+      });
+    }
+
     /* =========================
        FETCH HEAD ADMINS
     ========================= */
@@ -121,14 +127,14 @@ export const createAdmin = async (req, res) => {
     let organization;
 
     if (!orgId) {
-      const headAdmin = await OrgHeadAdmin.findById(req.user.id);
+      const headAdmin = await OrgHeadAdmin.findById(req.user.id).populate('organization');
       if (!headAdmin) {
         return res.status(401).json({ message: 'Invalid head admin' });
       }
       orgId = headAdmin.org_id;
       organization = headAdmin.organization;
     } else {
-      const headAdmin = await OrgHeadAdmin.findOne({ org_id: orgId });
+      const headAdmin = await OrgHeadAdmin.findOne({ org_id: orgId }).populate('organization');
       organization = headAdmin?.organization;
     }
 
@@ -161,7 +167,7 @@ export const createAdmin = async (req, res) => {
       postal_code,
       role: 'admin',
       org_id: orgId,
-      organization,
+      organization: organization?._id || organization,
 
       kyc_details: {
         doc_type,

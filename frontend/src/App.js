@@ -51,6 +51,7 @@ import HeadAdminOrders from './pages/Headadmin/Order';
 import HeadAdminTechnicians from './pages/Headadmin/Technician';
 import HeadAdminInstallationOrder from './pages/Headadmin/InstallationOrder';
 import HeadAdminServiceRequest from './pages/Headadmin/ServiceRequest';
+import HeadAdminServiceRequestDetail from './pages/Headadmin/ServiceRequestDetail';
 import HeadAdminSupport from './pages/Headadmin/Support';
 
 function App() {
@@ -105,6 +106,7 @@ function App() {
           <Route path="purifiers" element={<HeadAdminPurifiers />} />
           <Route path="purifiers/:deviceId/history" element={<HeadAdminPurifierHistory />} />
           <Route path="purifiers/:deviceId/recharged-plan" element={<HeadAdminRechargedPlan />} />
+          <Route path="purifiers/:deviceId/analysis" element={<HeadAdminAnalysis />} />
 
           <Route path="plans" element={<HeadAdminPlans />} />
           <Route path="plans/create" element={<HeadAdminCreatePlan />} />
@@ -115,7 +117,11 @@ function App() {
           <Route path="orders" element={<HeadAdminOrders />} />
           <Route path="technicians" element={<HeadAdminTechnicians />} />
           <Route path="installations" element={<HeadAdminInstallationOrder />} />
-          <Route path="service-requests" element={<HeadAdminServiceRequest />} />
+          <Route path="service-requests">
+  <Route index element={<HeadAdminServiceRequest />} />
+  <Route path=":id" element={<HeadAdminServiceRequestDetail />} />
+</Route>
+
           <Route path="support" element={<HeadAdminSupport />} />
 
           <Route path="analysis" element={<HeadAdminAnalysis />} />

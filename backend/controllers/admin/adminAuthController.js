@@ -10,7 +10,7 @@ export const adminLogin = async (req, res) => {
       return res.status(400).json({ message: 'Email & password required' });
     }
 
-    const admin = await OrgAdmin.findOne({ email }).select('+password');
+    const admin = await OrgAdmin.findOne({ email }).select('+password').populate('organization');
 
     if (!admin) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -21,27 +21,56 @@ export const adminLogin = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    /* =========================
+       ORG VALIDATION
+    ========================= */
+    if (!admin.organization) {
+      console.error(
+        '❌ Admin organization reference missing:',
+        { adminId: admin._id, email: admin.email }
+      );
+      return res.status(400).json({
+        message:
+          'Admin is not linked to an organization. Contact administrator.',
+      });
+    }
+
+    if (!admin.organization.org_id) {
+      console.error(
+        '❌ Organization missing org_id:',
+        { adminId: admin._id, organizationId: admin.organization._id }
+      );
+      return res.status(400).json({
+        message: 'Organization is not properly configured.',
+      });
+    }
+
     const token = jwt.sign(
       {
         id: admin._id,
         role: 'admin',
-        org_id: admin.org_id,
+        org_id: admin.organization.org_id,
       },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
 
-    res.json({
+    return res.status(200).json({
       token,
+      role: 'admin',
+      organization: {
+        org_id: admin.organization.org_id,
+        org_name: admin.organization.org_name,
+        logo: admin.organization.logo,
+      },
       user: {
         id: admin._id,
         username: admin.username,
         email: admin.email,
-        role: admin.role,
-        org_id: admin.org_id,
       },
     });
   } catch (err) {
+    console.error('❌ Admin Login Error:', err);
     res.status(500).json({ message: 'Login failed' });
   }
 };

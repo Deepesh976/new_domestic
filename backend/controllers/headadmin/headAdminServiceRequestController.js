@@ -65,44 +65,53 @@ export const getServiceRequests = async (req, res) => {
         `${u.user_name?.first_name || ''} ${u.user_name?.last_name || ''}`.trim();
     });
 
-    /* =========================
-       MAP TECHNICIAN NAMES
-    ========================= */
-    const technicianIds = [
-      ...new Set(
-        requests
-          .map((r) => r.assigned_to || r.fixed_by?.technician_id)
-          .filter(Boolean)
-      ),
-    ];
+/* =========================
+   MAP TECHNICIAN NAMES
+========================= */
 
-    const technicians = await OrgTechnician.find({
-      _id: { $in: technicianIds },
-    }).select('_id user_name');
+const technicianIds = [
+  ...new Set(
+    requests
+      .map((r) => r.assigned_to)
+      .filter(Boolean)
+  ),
+];
 
-    const technicianMap = {};
-    technicians.forEach((t) => {
-      technicianMap[t._id.toString()] =
-        `${t.user_name?.first_name || ''} ${t.user_name?.last_name || ''}`.trim();
-    });
+const technicians = await OrgTechnician.find({
+  org_id,
+  is_active: true,
+}).select('user_id user_name');
 
+const technicianMap = {};
+technicians.forEach((t) => {
+  technicianMap[t.user_id] =
+    `${t.user_name?.first_name || ''} ${t.user_name?.last_name || ''}`.trim();
+});
     /* =========================
        FINAL RESPONSE
     ========================= */
-    const finalData = requests.map((r) => ({
-      ...r,
-      user_name: userMap[r.user_id] || 'Unknown',
+const finalData = requests.map((r) => {
+  const serviceType =
+    r.request_type ||
+    (typeof r.service_type !== 'undefined' ? r.service_type : null) ||
+    'SERVICE';
 
-      assigned_technician_name:
-        r.assigned_to
-          ? technicianMap[r.assigned_to?.toString()] || null
-          : null,
+  return {
+    ...r,
+    request_type: serviceType,
+    user_name: userMap[r.user_id] || 'Unknown',
 
-      fixed_by_name:
-        r.status === 'closed'
-          ? r.fixed_by?.technician_name || '—'
-          : '—',
-    }));
+    assigned_technician_name:
+      r.assigned_to
+        ? technicianMap[r.assigned_to?.toString()] || null
+        : null,
+
+    fixed_by_name:
+      r.status === 'closed'
+        ? r.fixed_by?.technician_name || '—'
+        : '—',
+  };
+});
 
     return res.status(200).json(finalData);
   } catch (error) {
@@ -115,7 +124,6 @@ export const getServiceRequests = async (req, res) => {
 
 /* =====================================================
    GET AVAILABLE TECHNICIANS
-   - Only FREE + APPROVED technicians
 ===================================================== */
 export const getAvailableTechnicians = async (req, res) => {
   try {
@@ -123,9 +131,9 @@ export const getAvailableTechnicians = async (req, res) => {
 
     const technicians = await OrgTechnician.find({
       org_id,
-      work_status: 'free',
+      is_active: true,
       'kyc_details.kyc_approval_status': 'approved',
-    }).select('_id user_name work_status');
+    }).select('user_id user_name');
 
     return res.status(200).json(technicians);
   } catch (error) {
@@ -166,9 +174,10 @@ export const assignTechnicianToRequest = async (req, res) => {
     }
 
     const technician = await OrgTechnician.findOne({
-      _id: technician_id,
+      user_id: technician_id,
       org_id,
-      work_status: 'free',
+      is_active: true,
+      'kyc_details.kyc_approval_status': 'approved',
     });
 
     if (!technician) {
@@ -177,12 +186,11 @@ export const assignTechnicianToRequest = async (req, res) => {
       });
     }
 
-    request.assigned_to = technician_id;
-    request.status = 'assigned';
-    await request.save();
+    request.assigned_to = technician.user_id;
+    request.technician_approval_status = 'pending';
+    request.status = 'open';
 
-    technician.work_status = 'busy';
-    await technician.save();
+    await request.save();
 
     return res.status(200).json({
       message: 'Technician assigned successfully',
@@ -207,7 +215,7 @@ export const updateServiceStatus = async (req, res) => {
     const { status, observations } = req.body;
     const org_id = req.user.organization;
 
-    const allowedStatuses = ['open', 'assigned', 'closed'];
+    const allowedStatuses = ['open', 'closed'];
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
         message: 'Invalid status value',
@@ -243,36 +251,47 @@ export const updateServiceStatus = async (req, res) => {
       request.observations = observations;
     }
 
-    /* =========================
-       CLOSE SERVICE REQUEST
-    ========================= */
-    if (status === 'closed') {
-      if (request.assigned_to) {
-        const technician = await OrgTechnician.findById(
-          request.assigned_to
-        );
+/* =========================
+   CLOSE SERVICE REQUEST
+========================= */
+if (status === 'closed') {
 
-        if (technician) {
-          request.fixed_by = {
-            technician_id: technician._id.toString(),
-            technician_name: `${technician.user_name?.first_name || ''} ${technician.user_name?.last_name || ''}`.trim(),
-          };
-
-          technician.work_status = 'free';
-          await technician.save();
-        }
-      }
-
-      request.completed_at = new Date();
-    }
-
-    request.status = status;
-    await request.save();
-
-    return res.status(200).json({
-      message: 'Service status updated successfully',
-      request,
+  // ❌ Cannot close if technician has not accepted
+  if (request.technician_approval_status !== 'accepted') {
+    return res.status(400).json({
+      message: 'Cannot close request before technician acceptance',
     });
+  }
+
+  if (request.assigned_to) {
+
+    // 🔥 IMPORTANT: Use user_id (UUID), NOT _id
+    const technician = await OrgTechnician.findOne({
+      user_id: request.assigned_to,
+    });
+
+    if (technician) {
+      // Store immutable fixed_by snapshot
+      request.fixed_by = {
+        technician_id: technician.user_id,
+        technician_name: `${technician.user_name?.first_name || ''} ${technician.user_name?.last_name || ''}`.trim(),
+      };
+    }
+  }
+
+  // Set completion timestamp
+  request.completed_at = new Date();
+}
+
+// Update status after validation
+request.status = status;
+
+await request.save();
+
+return res.status(200).json({
+  message: 'Service status updated successfully',
+  request,
+});
   } catch (error) {
     console.error('🔥 updateServiceStatus:', error);
     return res.status(500).json({

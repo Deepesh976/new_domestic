@@ -15,13 +15,13 @@ export const createSupport = (data) => {
 };
 
 /* Update support ticket */
-export const updateSupport = (id, data) => {
-  return axios.put(`/api/headadmin/support/${id}`, data);
+export const updateSupport = (data) => {
+  return axios.put('/api/headadmin/support', data);
 };
 
 /* Delete support ticket */
-export const deleteSupport = (id) => {
-  return axios.delete(`/api/headadmin/support/${id}`);
+export const deleteSupport = () => {
+  return axios.delete('/api/headadmin/support');
 };
 
 /* =====================================================

@@ -30,18 +30,24 @@ const ServiceRequestSchema = new mongoose.Schema(
     /* =========================
        REQUEST DETAILS
     ========================= */
-    request_type: String,
+    service_type: String,
     device_id: String,
-    description: String,
+    service_description: String,
 
     /* =========================
        TECHNICIAN ASSIGNMENT
     ========================= */
     assigned_to: {
-      type: String, // OrgTechnician _id (current / last assigned)
+      type: String, //OrgTechnician user_id (UUID)
       default: null,
       index: true,
     },
+    technician_approval_status: {
+  type: String,
+  enum: ['pending', 'accepted', 'rejected'],
+  default: null,
+  index: true,
+},
 
     /* =========================
        FIXED BY (IMMUTABLE HISTORY)
@@ -82,7 +88,7 @@ const ServiceRequestSchema = new mongoose.Schema(
     ========================= */
     status: {
       type: String,
-      enum: ['open', 'assigned', 'closed'],
+      enum: ['open', 'closed'],
       default: 'open',
       index: true,
     },

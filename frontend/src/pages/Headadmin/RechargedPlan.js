@@ -1,112 +1,322 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import axios from '../../utils/axiosConfig';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import HeadAdminNavbar from '../../components/Navbar/HeadAdminNavbar';
+import { 
+  MdArrowBack, 
+  MdSearch, 
+  MdReceipt, 
+  MdHistory, 
+  MdInfoOutline,
+  MdCheckCircle,
+  MdError,
+  MdLayers
+} from 'react-icons/md';
 
 /* =========================
-   LAYOUT CONSTANTS
+   STYLES - LAYOUT & CONTAINERS
 ========================= */
-const NAVBAR_HEIGHT = 64;
-const SIDEBAR_WIDTH = 260;
-
-/* =========================
-   STYLES
-========================= */
-const PageWrapper = styled.div`
-  position: fixed;
-  top: ${NAVBAR_HEIGHT}px;
-  left: ${SIDEBAR_WIDTH}px;
-  right: 0;
-  bottom: 0;
-  background: #f8fafc;
-  overflow-y: auto;
+const PageContainer = styled.div`
+  padding: 2rem;
+  background-color: #f8fafc;
+  min-height: calc(100vh - 64px);
+  font-family: 'Inter', -apple-system, sans-serif;
 `;
 
-const Content = styled.div`
-  padding: 28px;
-`;
-
-const Header = styled.div`
+const HeaderSection = styled.div`
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+`;
+
+const TitleGroup = styled.div`
+  display: flex;
   align-items: center;
-  margin-bottom: 24px;
-  gap: 16px;
+  gap: 1rem;
+
+  .back-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    border: 1px solid #e2e8f0;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #64748b;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #f1f5f9;
+      color: #2563eb;
+      border-color: #2563eb;
+    }
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    span {
+      color: #64748b;
+      font-weight: 500;
+      font-family: 'JetBrains Mono', monospace;
+    }
+  }
 `;
 
-const Title = styled.h2`
-  font-size: 22px;
-  font-weight: 700;
-  color: #0f172a;
+const StatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
 `;
 
-const Search = styled.input`
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  font-size: 14px;
-  width: 280px;
-`;
-
-const Card = styled.div`
+const StatCard = styled.div`
   background: white;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  padding: 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  .icon-box {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    background: ${(p) => p.bg || '#eff6ff'};
+    color: ${(p) => p.color || '#2563eb'};
+  }
+
+  .info {
+    display: flex;
+    flex-direction: column;
+    
+    .label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+    
+    .value {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+  }
+`;
+
+/* =========================
+   STYLES - CONTROLS
+========================= */
+const ControlsWrapper = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  background: white;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+`;
+
+const SearchBox = styled.div`
+  position: relative;
+  flex: 1;
+  min-width: 300px;
+
+  svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 1.25rem;
+  }
+
+  input {
+    width: 100%;
+    padding: 10px 10px 10px 40px;
+    border-radius: 0.75rem;
+    border: 1.5px solid #e2e8f0;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    outline: none;
+
+    &:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+  }
+`;
+
+/* =========================
+   STYLES - TABLE
+========================= */
+const TableContainer = styled.div`
+  background: white;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+`;
+
+const TableScroll = styled.div`
   overflow-x: auto;
 `;
 
-const Table = styled.table`
+const StyledTable = styled.table`
   width: 100%;
-  min-width: 1100px;
   border-collapse: collapse;
+  text-align: left;
 `;
 
 const Th = styled.th`
-  padding: 14px;
-  background: #f1f5f9;
-  text-align: left;
-  font-size: 13px;
-  font-weight: 600;
-  color: #334155;
+  padding: 0.875rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
 `;
 
 const Td = styled.td`
-  padding: 14px;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 14px;
-  color: #0f172a;
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
 `;
 
-const Status = styled.span`
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
+const IndexTd = styled(Td)`
+  color: #94a3b8;
   font-weight: 600;
-  background: ${({ status }) =>
-    status === 'active'
-      ? '#dcfce7'
-      : status === 'consumed'
-      ? '#e0e7ff'
-      : '#fee2e2'};
-  color: ${({ status }) =>
-    status === 'active'
-      ? '#166534'
-      : status === 'consumed'
-      ? '#3730a3'
-      : '#991b1b'};
-  text-transform: capitalize;
 `;
 
-const Empty = styled.div`
-  padding: 60px;
+const LimitTd = styled(Td)`
+  font-weight: 700;
+  color: #2563eb;
+`;
+
+const CreatedOnTd = styled(Td)`
+  white-space: nowrap;
+  font-weight: 500;
+`;
+
+const StatusBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  
+  background: ${(p) => {
+    switch (p.status) {
+      case 'active': return '#dcfce7';
+      case 'consumed': return '#f1f5f9';
+      default: return '#fef2f2';
+    }
+  }};
+  color: ${(p) => {
+    switch (p.status) {
+      case 'active': return '#166534';
+      case 'consumed': return '#475569';
+      default: return '#991b1b';
+    }
+  }};
+`;
+
+const TxnId = styled.span`
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8125rem;
+  color: #64748b;
+  background: #f8fafc;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid #e2e8f0;
+`;
+
+const PlanName = styled.div`
+  display: flex;
+  flex-direction: column;
+  
+  .name {
+    font-weight: 700;
+    color: #1e293b;
+  }
+  .id {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-family: 'JetBrains Mono', monospace;
+  }
+`;
+
+const EmptyState = styled.div`
+  padding: 4rem 2rem;
   text-align: center;
   color: #64748b;
-  font-size: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+
+  .icon {
+    font-size: 4rem;
+    color: #e2e8f0;
+  }
+
+  h3 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 1.25rem;
+  }
 `;
 
-const ErrorText = styled(Empty)`
-  color: #dc2626;
+const LoadingSkeleton = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+
+  .row {
+    height: 3.5rem;
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 0.5rem;
+  }
+
+  @keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
 `;
 
 /* =========================
@@ -130,15 +340,13 @@ const formatIST = (date) => {
 ========================= */
 export default function RechargedPlan() {
   const { deviceId } = useParams();
+  const navigate = useNavigate();
 
   const [recharges, setRecharges] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  /* =========================
-     FETCH DATA
-  ========================= */
   useEffect(() => {
     const fetchRecharges = async () => {
       try {
@@ -155,7 +363,7 @@ export default function RechargedPlan() {
         setRecharges(res.data || []);
       } catch (err) {
         console.error('RECHARGE FETCH ERROR:', err);
-        setError('Failed to load recharged plans');
+        setError('Failed to load recharged plans. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -164,9 +372,6 @@ export default function RechargedPlan() {
     if (deviceId) fetchRecharges();
   }, [deviceId]);
 
-  /* =========================
-     FILTERING (PLAN NAME INCLUDED)
-  ========================= */
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
 
@@ -179,90 +384,137 @@ export default function RechargedPlan() {
     );
   }, [recharges, search]);
 
-  /* =========================
-     RENDER
-  ========================= */
+  const stats = useMemo(() => {
+    return {
+      total: recharges.length,
+      active: recharges.filter(r => r.status === 'active').length,
+      totalLimit: recharges.reduce((sum, r) => sum + (r.limit || 0), 0)
+    };
+  }, [recharges]);
+
   return (
-    <>
-      <HeadAdminNavbar />
+    <HeadAdminNavbar>
+      <PageContainer>
+        <HeaderSection>
+          <TitleGroup>
+            <button className="back-btn" onClick={() => navigate('/headadmin/purifiers')}>
+              <MdArrowBack />
+            </button>
+            <h1>Plan History <span>#{deviceId}</span></h1>
+          </TitleGroup>
+        </HeaderSection>
 
-      <PageWrapper>
-        <Content>
-          <Header>
-            <Title>Recharged Plans — {deviceId}</Title>
+        <StatsGrid>
+          <StatCard bg="#eff6ff" color="#2563eb">
+            <div className="icon-box">
+              <MdHistory />
+            </div>
+            <div className="info">
+              <span className="label">Total Recharges</span>
+              <span className="value">{loading ? '...' : stats.total}</span>
+            </div>
+          </StatCard>
+          <StatCard bg="#dcfce7" color="#16a34a">
+            <div className="icon-box">
+              <MdCheckCircle />
+            </div>
+            <div className="info">
+              <span className="label">Active Plan</span>
+              <span className="value">{loading ? '...' : stats.active}</span>
+            </div>
+          </StatCard>
+          <StatCard bg="#f5f3ff" color="#7c3aed">
+            <div className="icon-box">
+              <MdLayers />
+            </div>
+            <div className="info">
+              <span className="label">Total Volume Limit</span>
+              <span className="value">{loading ? '...' : stats.totalLimit} L</span>
+            </div>
+          </StatCard>
+        </StatsGrid>
 
-            <Search
-              placeholder="Search Device / Plan / Txn"
+        <ControlsWrapper>
+          <SearchBox>
+            <MdSearch />
+            <input
+              placeholder="Search by Plan Name, Transaction ID or Plan ID..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-          </Header>
+          </SearchBox>
+        </ControlsWrapper>
 
-          <Card>
-            {loading && <Empty>Loading recharged plans…</Empty>}
-
-            {!loading && error && <ErrorText>{error}</ErrorText>}
-
-            {!loading && !error && filtered.length === 0 && (
-              <Empty>No recharged plans found</Empty>
-            )}
-
-            {!loading && !error && filtered.length > 0 && (
-              <Table>
+        {loading ? (
+          <TableContainer>
+            <LoadingSkeleton>
+              {[1, 2, 3, 4, 5].map(i => <div key={i} className="row" />)}
+            </LoadingSkeleton>
+          </TableContainer>
+        ) : error ? (
+          <EmptyState>
+            <MdError className="icon" />
+            <h3>Oops! Something went wrong</h3>
+            <p>{error}</p>
+            <button onClick={() => window.location.reload()} style={{ padding: '0.5rem 1rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}>
+              Retry
+            </button>
+          </EmptyState>
+        ) : filtered.length === 0 ? (
+          <EmptyState>
+            <MdReceipt className="icon" />
+            <h3>No records found</h3>
+            <p>We couldn't find any plan recharges for this device.</p>
+          </EmptyState>
+        ) : (
+          <TableContainer>
+            <TableScroll>
+              <StyledTable>
                 <thead>
                   <tr>
-                    <Th>#</Th>
-                    <Th>Device ID</Th>
-                    <Th>Plan</Th>
-                    <Th>Txn ID</Th>
-                    <Th>Limit</Th>
+                    <Th style={{ width: '60px' }}>#</Th>
+                    <Th>Plan Details</Th>
+                    <Th>Transaction ID</Th>
+                    <Th>Limit (L)</Th>
                     <Th>Validity</Th>
                     <Th>Status</Th>
                     <Th>Created On</Th>
                   </tr>
                 </thead>
-
                 <tbody>
                   {filtered.map((r, i) => (
                     <tr key={r._id}>
-                      <Td>{i + 1}</Td>
-
-                      <Td>{r.device_id || '—'}</Td>
-
-                      {/* ✅ PLAN NAME FROM active_plan */}
+                      <IndexTd>{i + 1}</IndexTd>
                       <Td>
-                        <div style={{ fontWeight: 600 }}>
-                          {r.plan_name || 'Unknown Plan'}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: '12px',
-                            color: '#64748b',
-                          }}
-                        >
-                          {r.plan_id}
+                        <PlanName>
+                          <span className="name">{r.plan_name || 'Unknown Plan'}</span>
+                          <span className="id">#{r.plan_id || 'N/A'}</span>
+                        </PlanName>
+                      </Td>
+                      <Td>
+                        <TxnId>{r.txn_id || '—'}</TxnId>
+                      </Td>
+                      <LimitTd>{r.limit ?? '—'} L</LimitTd>
+                      <Td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                          <MdHistory style={{ color: '#64748b' }} />
+                          {r.validity || '—'}
                         </div>
                       </Td>
-
-                      <Td>{r.txn_id || '—'}</Td>
-                      <Td>{r.limit ?? '—'}</Td>
-                      <Td>{r.validity || '—'}</Td>
-
                       <Td>
-                        <Status status={r.status}>
+                        <StatusBadge status={r.status || 'unknown'}>
                           {r.status || 'unknown'}
-                        </Status>
+                        </StatusBadge>
                       </Td>
-
-                      <Td>{formatIST(r.createdAt)}</Td>
+                      <CreatedOnTd>{formatIST(r.createdAt)}</CreatedOnTd>
                     </tr>
                   ))}
                 </tbody>
-              </Table>
-            )}
-          </Card>
-        </Content>
-      </PageWrapper>
-    </>
+              </StyledTable>
+            </TableScroll>
+          </TableContainer>
+        )}
+      </PageContainer>
+    </HeadAdminNavbar>
   );
 }

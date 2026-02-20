@@ -13,7 +13,10 @@ import {
   Cell,
   Legend,
   CartesianGrid,
+  LineChart,
+  Line,
 } from 'recharts';
+import { MdPeople, MdBusiness, MdTrendingUp, MdCheckCircle } from 'react-icons/md';
 import './HeadAdminDashboard.css';
 
 /* =========================
@@ -127,37 +130,92 @@ export default function HeadAdminDashboard() {
   return (
     <HeadAdminNavbar>
       <div className="head-admin-dashboard-page">
-        <h1 className="head-admin-dashboard-title">Dashboard</h1>
+        {/* ================= HEADER ================= */}
+        <div className="dashboard-header">
+          <div>
+            <h1 className="head-admin-dashboard-title">Dashboard</h1>
+            <p className="dashboard-subtitle">Welcome back! Here's an overview of your organization</p>
+          </div>
+          <div className="header-actions">
+            <span className="dashboard-date">
+              {new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </span>
+          </div>
+        </div>
 
         {/* ================= STATS ================= */}
         <div className="head-admin-dashboard-stats">
-          <div className="head-admin-stat-card">
+          <div className="head-admin-stat-card stat-customers">
+            <div className="stat-card-header">
+              <MdPeople className="stat-icon" />
+              <span className="stat-badge">Active</span>
+            </div>
             <div className="head-admin-stat-value">
               {stats.totalCustomers}
             </div>
-            <p>Total Customers</p>
+            <p className="stat-label">Total Customers</p>
+            <div className="stat-footer">Increase of 12% this month</div>
           </div>
 
-          <div className="head-admin-stat-card">
+          <div className="head-admin-stat-card stat-technicians">
+            <div className="stat-card-header">
+              <MdBusiness className="stat-icon" />
+              <span className="stat-badge">Active</span>
+            </div>
             <div className="head-admin-stat-value">
               {stats.totalTechnicians}
             </div>
-            <p>Total Technicians</p>
+            <p className="stat-label">Total Technicians</p>
+            <div className="stat-footer">Ready to serve</div>
+          </div>
+
+          <div className="head-admin-stat-card stat-plans">
+            <div className="stat-card-header">
+              <MdCheckCircle className="stat-icon" />
+              <span className="stat-badge">Updated</span>
+            </div>
+            <div className="head-admin-stat-value">
+              {trendingPlans.length > 0 ? trendingPlans.length : '—'}
+            </div>
+            <p className="stat-label">Active Plans</p>
+            <div className="stat-footer">Across all regions</div>
+          </div>
+
+          <div className="head-admin-stat-card stat-growth">
+            <div className="stat-card-header">
+              <MdTrendingUp className="stat-icon" />
+              <span className="stat-badge">Growing</span>
+            </div>
+            <div className="head-admin-stat-value">
+              {purifierGrowth.length > 0
+                ? purifierGrowth.reduce((sum, m) => sum + (m.purifiers || 0), 0)
+                : '0'}
+            </div>
+            <p className="stat-label">Total Purifiers</p>
+            <div className="stat-footer">Year to date</div>
           </div>
         </div>
 
         {/* ================= ERROR ================= */}
-        {error && <p className="chart-empty">{error}</p>}
+        {error && <div className="dashboard-error">{error}</div>}
 
         {/* ================= CHARTS ================= */}
         <div className="head-admin-dashboard-charts">
 
           {/* ===== PURIFIER CREATION GROWTH ===== */}
-          <div className="head-admin-chart-card">
+          <div className="head-admin-chart-card chart-card-large">
             <div className="chart-header">
-              <h3>Purifier Creation Growth</h3>
+              <div>
+                <h3 className="chart-title">Purifier Creation Growth</h3>
+                <p className="chart-subtitle">Monthly purifier installations tracking</p>
+              </div>
 
               <select
+                className="year-select"
                 value={purifierYear}
                 onChange={(e) =>
                   setPurifierYear(Number(e.target.value))
@@ -169,33 +227,45 @@ export default function HeadAdminDashboard() {
               </select>
             </div>
 
-            {!hasPurifierData ? (
-              <p className="chart-empty">
-                No purifier data available for {purifierYear}
-              </p>
-            ) : (
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={purifierGrowth}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
-                  <Bar
-                    dataKey="purifiers"
-                    fill="#2563eb"
-                    radius={[6, 6, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+            <div className="chart-content">
+              {!hasPurifierData ? (
+                <p className="chart-empty">
+                  No purifier data available for {purifierYear}
+                </p>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={purifierGrowth}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="month" stroke="#94a3b8" />
+                    <YAxis allowDecimals={false} stroke="#94a3b8" />
+                    <Tooltip
+                      contentStyle={{
+                        background: '#ffffff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar
+                      dataKey="purifiers"
+                      fill="#3b82f6"
+                      radius={[8, 8, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
 
           {/* ===== TRENDING PLANS (PIE) ===== */}
-          <div className="head-admin-chart-card">
+          <div className="head-admin-chart-card chart-card-large">
             <div className="chart-header">
-              <h3>Trending Plans</h3>
+              <div>
+                <h3 className="chart-title">Trending Plans Distribution</h3>
+                <p className="chart-subtitle">Plan recharges breakdown by type</p>
+              </div>
 
               <select
+                className="year-select"
                 value={planYear}
                 onChange={(e) =>
                   setPlanYear(Number(e.target.value))
@@ -207,49 +277,51 @@ export default function HeadAdminDashboard() {
               </select>
             </div>
 
-            {loading ? (
-              <p className="chart-empty">Loading plan data…</p>
-            ) : !hasTrendingPlans ? (
-              <p className="chart-empty">
-                No plan data available for {planYear}
-              </p>
-            ) : (
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={trendingPlans}
-                    dataKey="count"
-                    nameKey="plan"
-                    outerRadius={90}
-                    label={({ name, percent }) =>
-                      `${name} ${(percent * 100).toFixed(0)}%`
-                    }
-                  >
-                    {trendingPlans.map((_, i) => (
-                      <Cell
-                        key={i}
-                        fill={COLORS[i % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
+            <div className="chart-content">
+              {loading ? (
+                <p className="chart-empty">Loading plan data…</p>
+              ) : !hasTrendingPlans ? (
+                <p className="chart-empty">
+                  No plan data available for {planYear}
+                </p>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={trendingPlans}
+                      dataKey="count"
+                      nameKey="plan"
+                      outerRadius={100}
+                      label={({ name, percent }) =>
+                        `${name} ${(percent * 100).toFixed(0)}%`
+                      }
+                    >
+                      {trendingPlans.map((_, i) => (
+                        <Cell
+                          key={i}
+                          fill={COLORS[i % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
 
-                  {/* ✅ SAFE TOOLTIP */}
-                  <Tooltip
-                    formatter={(value, name, props) => {
-                      const p = props?.payload || {};
-                      return [
-                        `${value} recharges`,
-                        `${p.plan || 'Plan'}
+                    {/* ✅ SAFE TOOLTIP */}
+                    <Tooltip
+                      formatter={(value, name, props) => {
+                        const p = props?.payload || {};
+                        return [
+                          `${value} recharges`,
+                          `${p.plan || 'Plan'}
 First: ${formatIST(p.firstUsedOn)}
 Last: ${formatIST(p.lastUsedOn)}`,
-                      ];
-                    }}
-                  />
+                        ];
+                      }}
+                    />
 
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
 
         </div>

@@ -73,7 +73,7 @@ export const login = async (req, res) => {
       {
         id: headAdmin._id,
         role: 'headadmin',
-        organization: headAdmin.organization.org_id,
+        org_id: headAdmin.organization.org_id,
       },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }

@@ -4,7 +4,9 @@ import roleMiddleware from '../../middleware/roleMiddleware.js';
 
 import {
   getInstallationOrders,
+  updateInstallationKycStatus,
   assignInstallationTechnician,
+  removeTechnicianAssignment,
   completeInstallation,
 } from '../../controllers/headadmin/headAdminInstallationOrderController.js';
 
@@ -12,9 +14,11 @@ const router = express.Router();
 
 /* =====================================================
    INSTALLATION ORDER ROUTES
-   Rules:
-   - HeadAdmin: full access
-   - Admin: read-only access
+   WORKFLOW:
+   - Status: OPEN → CLOSED
+   - Assign → technician_approval_status = PENDING
+   - Technician approves → technician_assigned = true
+   - Admin can remove pending assignment
 ===================================================== */
 
 /**
@@ -22,11 +26,7 @@ const router = express.Router();
  *
  * Access:
  *  - headadmin → full access
- *  - admin     → read-only access
- *
- * Conditions handled in controller:
- *  - payment_received === true
- *  - kyc_verified === true
+ *  - admin     → read-only
  */
 router.get(
   '/',
@@ -36,10 +36,37 @@ router.get(
 );
 
 /**
+ * PATCH /api/headadmin/installations/:id/kyc
+ *
+ * Access:
+ *  - headadmin only
+ *
+ * Body:
+ *  {
+ *    status: "approved" | "rejected" | "pending"
+ *  }
+ */
+router.patch(
+  '/:id/kyc',
+  auth,
+  roleMiddleware('headadmin'),
+  updateInstallationKycStatus
+);
+
+/**
  * PUT /api/headadmin/installations/:id/assign
  *
  * Access:
  *  - headadmin only
+ *
+ * Conditions:
+ *  - Order must be OPEN
+ *  - Payment must be received
+ *  - KYC must be APPROVED
+ *
+ * Effect:
+ *  - assigned_to set
+ *  - technician_approval_status = PENDING
  */
 router.put(
   '/:id/assign',
@@ -49,13 +76,36 @@ router.put(
 );
 
 /**
+ * PATCH /api/headadmin/installations/:id/remove-assignment
+ *
+ * Access:
+ *  - headadmin only
+ *
+ * Condition:
+ *  - technician_approval_status must be PENDING
+ *
+ * Effect:
+ *  - assigned_to = null
+ *  - technician_approval_status = null
+ *  - technician_assigned = false
+ */
+router.patch(
+  '/:id/remove-assignment',
+  auth,
+  roleMiddleware('headadmin'),
+  removeTechnicianAssignment
+);
+
+/**
  * PUT /api/headadmin/installations/:id/complete
  *
  * Access:
  *  - headadmin only
  *
  * Effect:
- *  - technician status updated (busy → free)
+ *  - installation_completed = true
+ *  - completed_at set
+ *  - status = CLOSED
  */
 router.put(
   '/:id/complete',

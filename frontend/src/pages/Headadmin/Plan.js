@@ -2,196 +2,471 @@ import React, { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import axios from '../../utils/axiosConfig';
 import HeadAdminNavbar from '../../components/Navbar/HeadAdminNavbar';
-import ArchivedPlan from './ArchivedPlan';
-import { useNavigate } from 'react-router-dom';
+import { 
+  MdAdd, 
+  MdEdit, 
+  MdDelete, 
+  MdHistory, 
+  MdSearch, 
+  MdLayers, 
+  MdCheckCircle, 
+  MdArchive,
+  MdClose,
+  MdInfoOutline
+} from 'react-icons/md';
 
 /* =========================
-   CONSTANTS
+   STYLES - LAYOUT & CONTAINERS
 ========================= */
-const PAGE_SIZE = 8;
-
-/* =========================
-   STYLES
-========================= */
-
-const Page = styled.div`
-  background: #f8fafc;
+const PageContainer = styled.div`
+  padding: 2rem;
+  background-color: #f8fafc;
+  min-height: calc(100vh - 64px);
+  font-family: 'Inter', -apple-system, sans-serif;
 `;
 
-const Container = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding-bottom: 40px;
-`;
-
-const Header = styled.div`
+const HeaderSection = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20px;
-  gap: 16px;
-  flex-wrap: wrap;
-`;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
 
-const Title = styled.h2`
-  font-size: 28px;
-  font-weight: 800;
-  color: #0f172a;
-`;
-
-const Tabs = styled.div`
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-`;
-
-const Tab = styled.button`
-  padding: 8px 18px;
-  border-radius: 999px;
-  border: none;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 700;
-  background: ${({ active }) => (active ? '#2563eb' : '#e5e7eb')};
-  color: ${({ active }) => (active ? '#ffffff' : '#0f172a')};
-`;
-
-const Actions = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-`;
-
-const Search = styled.input`
-  height: 42px;
-  padding: 0 14px;
-  border-radius: 10px;
-  border: 2px solid #e5e7eb;
-  font-size: 13px;
-  min-width: 260px;
-
-  &:focus {
-    outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  @media (min-width: 768px) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
 `;
 
-const CreateButton = styled.button`
-  height: 42px;
-  padding: 0 18px;
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
+const TitleGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  svg {
+    font-size: 2rem;
+    color: #2563eb;
+  }
 `;
 
-const Card = styled.div`
+const Title = styled.h1`
+  font-size: 1.875rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+`;
+
+const StatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+`;
+
+const StatCard = styled.div`
   background: white;
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+
+  .icon-box {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    background: ${(p) => p.bg || '#eff6ff'};
+    color: ${(p) => p.color || '#2563eb'};
+  }
+
+  .info {
+    display: flex;
+    flex-direction: column;
+    
+    .label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+    
+    .value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+  }
+`;
+
+/* =========================
+   STYLES - TABS
+========================= */
+const TabsWrapper = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  background: #f1f5f9;
+  padding: 0.25rem;
+  border-radius: 0.75rem;
+  width: fit-content;
+  margin-bottom: 1.5rem;
+`;
+
+const TabButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: ${(p) => (p.active ? 'white' : 'transparent')};
+  color: ${(p) => (p.active ? '#2563eb' : '#64748b')};
+  box-shadow: ${(p) => (p.active ? '0 1px 3px rgba(0,0,0,0.1)' : 'none')};
+
+  &:hover {
+    color: ${(p) => (p.active ? '#2563eb' : '#1e293b')};
+  }
+`;
+
+/* =========================
+   STYLES - CONTROLS
+========================= */
+const ControlsWrapper = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  background: white;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+`;
+
+const SearchBox = styled.div`
+  position: relative;
+  flex: 1;
+  min-width: 300px;
+
+  svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 1.25rem;
+  }
+
+  input {
+    width: 100%;
+    padding: 10px 10px 10px 40px;
+    border-radius: 0.75rem;
+    border: 1.5px solid #e2e8f0;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    outline: none;
+
+    &:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+  }
+`;
+
+const PrimaryButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: #2563eb;
+  color: white;
+
+  &:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+/* =========================
+   STYLES - TABLE
+========================= */
+const TableContainer = styled.div`
+  background: white;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   overflow: hidden;
 `;
 
-const Table = styled.table`
+const TableScroll = styled.div`
+  overflow-x: auto;
+`;
+
+const StyledTable = styled.table`
   width: 100%;
   border-collapse: collapse;
+  text-align: center;
 `;
 
 const Th = styled.th`
-  padding: 14px;
+  padding: 1rem;
   background: #f8fafc;
-  font-size: 12px;
+  color: #64748b;
+  font-size: 0.75rem;
   font-weight: 700;
-  color: #475569;
   text-transform: uppercase;
-  border-bottom: 2px solid #e5e7eb;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e2e8f0;
 `;
 
 const Td = styled.td`
-  padding: 14px;
-  border-top: 1px solid #e5e7eb;
-  font-size: 14px;
-  color: #0f172a;
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
 `;
 
-const Row = styled.tr`
-  &:hover {
-    background: #f8fafc;
-  }
+const PlanName = styled.div`
+  font-weight: 700;
+  color: #1e293b;
+`;
+
+const PlanIdCode = styled.code`
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+`;
+
+const PriceText = styled.span`
+  font-weight: 800;
+  color: #1e293b;
+  font-size: 1rem;
 `;
 
 const Badge = styled.span`
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  background: #e0f2fe;
-  color: #0369a1;
-`;
-
-const ActionGroup = styled.div`
-  display: flex;
-  gap: 8px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: ${(p) => p.bg || '#eff6ff'};
+  color: ${(p) => p.color || '#2563eb'};
 `;
 
 const ActionButton = styled.button`
-  padding: 6px 12px;
-  border-radius: 8px;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
   border: none;
-  font-size: 12px;
   cursor: pointer;
-  font-weight: 600;
-  background: ${({ variant }) =>
-    variant === 'delete' ? '#fee2e2' : '#e0f2fe'};
-  color: ${({ variant }) =>
-    variant === 'delete' ? '#b91c1c' : '#0369a1'};
+  transition: all 0.15s;
+  background: ${(p) => p.bg || '#f1f5f9'};
+  color: ${(p) => p.color || '#475569'};
+
+  &:hover {
+    transform: translateY(-2px);
+    background: ${(p) => p.hoverBg || '#e2e8f0'};
+    color: white;
+  }
 `;
 
-const Price = styled.span`
-  font-weight: 700;
-  white-space: nowrap;
+/* =========================
+   STYLES - MODAL
+========================= */
+const ModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease-out;
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 `;
 
-const PlanId = styled.span`
-  font-family: monospace;
-  font-size: 12px;
-  color: #475569;
-  word-break: break-all;
+const ModalContent = styled.div`
+  background: white;
+  width: 100%;
+  max-width: 550px;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
 `;
 
+const ModalHeader = styled.div`
+  padding: 1.5rem;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    
+    svg {
+      color: #2563eb;
+    }
+  }
+
+  button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: color 0.15s;
+    display: flex;
+    align-items: center;
+
+    &:hover {
+      color: #ef4444;
+    }
+  }
+`;
+
+const ModalBody = styled.form`
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+`;
+
+const ModalFooter = styled.div`
+  padding: 1.25rem 1.5rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+`;
+
+const FormField = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  grid-column: ${(p) => p.full ? 'span 2' : 'span 1'};
+
+  label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+  }
+
+  input, select {
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1.5px solid #e2e8f0;
+    font-size: 0.9375rem;
+    outline: none;
+    transition: all 0.2s;
+
+    &:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+  }
+`;
+
+/* =========================
+   COMPONENTS
+========================= */
 const EmptyState = styled.div`
-  padding: 60px;
+  padding: 4rem 2rem;
   text-align: center;
   color: #64748b;
-`;
-
-const Pagination = styled.div`
   display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding: 20px;
-  border-top: 1px solid #e5e7eb;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+
+  .icon {
+    font-size: 4rem;
+    color: #e2e8f0;
+  }
+
+  h3 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 1.25rem;
+  }
 `;
 
-const PageBtn = styled.button`
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 2px solid #e5e7eb;
-  background: ${({ active }) => (active ? '#2563eb' : '#ffffff')};
-  color: ${({ active }) => (active ? '#ffffff' : '#0f172a')};
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
+const LoadingSkeleton = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+
+  .row {
+    height: 3.5rem;
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 0.5rem;
+  }
+
+  @keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
 `;
 
-const formatDateTime = (date) =>
-  new Date(date).toLocaleString('en-IN', {
+/* =========================
+   HELPERS
+========================= */
+const formatDateTime = (date) => {
+  if (!date) return '—';
+  return new Date(date).toLocaleString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -199,178 +474,367 @@ const formatDateTime = (date) =>
     minute: '2-digit',
     hour12: true,
   });
+};
 
 /* =========================
-   COMPONENT
+   MAIN COMPONENT
 ========================= */
-
 export default function Plan() {
   const [plans, setPlans] = useState([]);
+  const [archivedPlans, setArchivedPlans] = useState([]);
   const [tab, setTab] = useState('active');
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
 
-  const navigate = useNavigate();
+  // Modal states
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState('create'); // 'create' or 'edit'
+  const [currentPlan, setCurrentPlan] = useState(null);
+  const [form, setForm] = useState({
+    name: '',
+    price: '',
+    limit: '',
+    validity: '',
+    type: 'Standard',
+  });
+
   const isHeadAdmin = localStorage.getItem('role') === 'headadmin';
 
   useEffect(() => {
-    loadPlans();
-  }, [tab]);
+    loadAllPlans();
+  }, []);
 
-  const loadPlans = async () => {
-    const url =
-      tab === 'active'
-        ? '/api/headadmin/plans/active'
-        : '/api/headadmin/plans/archived';
+  const loadAllPlans = async () => {
+    try {
+      setLoading(true);
+      const [activeRes, archivedRes] = await Promise.all([
+        axios.get('/api/headadmin/plans/active'),
+        axios.get('/api/headadmin/plans/archived')
+      ]);
+      setPlans(activeRes.data || []);
+      setArchivedPlans(archivedRes.data || []);
+    } catch (err) {
+      console.error('Failed to load plans:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const res = await axios.get(url);
-    setPlans(res.data || []);
-    setPage(1);
+  const handleOpenModal = (mode, plan = null) => {
+    setModalMode(mode);
+    if (mode === 'edit' && plan) {
+      setCurrentPlan(plan);
+      setForm({
+        name: plan.name,
+        price: plan.price,
+        limit: plan.limit,
+        validity: plan.validity || '',
+        type: plan.type,
+      });
+    } else {
+      setCurrentPlan(null);
+      setForm({
+        name: '',
+        price: '',
+        limit: '',
+        validity: '',
+        type: 'Standard',
+      });
+    }
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (modalMode === 'create') {
+        await axios.post('/api/headadmin/plans', {
+          ...form,
+          price: Number(form.price),
+          limit: Number(form.limit),
+        });
+      } else {
+        await axios.put(`/api/headadmin/plans/${currentPlan._id}`, {
+          ...form,
+          price: Number(form.price),
+          limit: Number(form.limit),
+        });
+      }
+      setModalOpen(false);
+      loadAllPlans();
+    } catch (err) {
+      console.error('Failed to save plan:', err);
+      alert('Error saving plan');
+    }
   };
 
   const deletePlan = async (id) => {
-    if (!window.confirm('Delete this plan?')) return;
-    await axios.delete(`/api/headadmin/plans/${id}`);
-    loadPlans();
+    if (!window.confirm('Are you sure you want to archive/delete this plan?')) return;
+    try {
+      await axios.delete(`/api/headadmin/plans/${id}`);
+      loadAllPlans();
+    } catch (err) {
+      console.error('Failed to delete plan:', err);
+    }
   };
 
   const filtered = useMemo(() => {
-    return plans.filter((p) =>
+    const list = tab === 'active' ? plans : archivedPlans;
+    return list.filter((p) =>
       `${p.name} ${p.plan_id} ${p.type}`
         .toLowerCase()
         .includes(search.toLowerCase())
     );
-  }, [plans, search]);
+  }, [plans, archivedPlans, tab, search]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated = filtered.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE
-  );
+  const stats = useMemo(() => {
+    return {
+      active: plans.length,
+      archived: archivedPlans.length,
+      standard: plans.filter(p => p.type === 'Standard').length,
+      premium: plans.filter(p => p.type === 'Premium').length,
+    };
+  }, [plans, archivedPlans]);
 
   return (
     <HeadAdminNavbar>
-      <Page>
-        <Container>
-          <Header>
-            <div>
-              <Title>Plans</Title>
-              <Tabs>
-                <Tab active={tab === 'active'} onClick={() => setTab('active')}>
-                  Active Plans
-                </Tab>
-                <Tab
-                  active={tab === 'archived'}
-                  onClick={() => setTab('archived')}
-                >
-                  Archived Plans
-                </Tab>
-              </Tabs>
+      <PageContainer>
+        <HeaderSection>
+          <TitleGroup>
+            <MdLayers />
+            <Title>Recharge Plans</Title>
+          </TitleGroup>
+          {isHeadAdmin && (
+            <PrimaryButton onClick={() => handleOpenModal('create')}>
+              <MdAdd size={20} /> Create New Plan
+            </PrimaryButton>
+          )}
+        </HeaderSection>
+
+        <StatsGrid>
+          <StatCard bg="#eff6ff" color="#2563eb">
+            <div className="icon-box">
+              <MdCheckCircle />
             </div>
+            <div className="info">
+              <span className="label">Active Plans</span>
+              <span className="value">{loading ? '...' : stats.active}</span>
+            </div>
+          </StatCard>
+          <StatCard bg="#fef3c7" color="#d97706">
+            <div className="icon-box">
+              <MdArchive />
+            </div>
+            <div className="info">
+              <span className="label">Archived Plans</span>
+              <span className="value">{loading ? '...' : stats.archived}</span>
+            </div>
+          </StatCard>
+          <StatCard bg="#f0fdf4" color="#16a34a">
+            <div className="icon-box">
+              <MdLayers />
+            </div>
+            <div className="info">
+              <span className="label">Standard / Premium</span>
+              <span className="value">{loading ? '...' : `${stats.standard} / ${stats.premium}`}</span>
+            </div>
+          </StatCard>
+        </StatsGrid>
 
-            <Actions>
-              <Search
-                placeholder="Search plans..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
-              />
+        <TabsWrapper>
+          <TabButton active={tab === 'active'} onClick={() => setTab('active')}>
+            <MdCheckCircle size={18} /> Active Plans
+          </TabButton>
+          <TabButton active={tab === 'archived'} onClick={() => setTab('archived')}>
+            <MdHistory size={18} /> Archived History
+          </TabButton>
+        </TabsWrapper>
 
-              {isHeadAdmin && tab === 'active' && (
-                <CreateButton
-                  onClick={() => navigate('/head-admin/plans/create')}
-                >
-                  + Create Plan
-                </CreateButton>
-              )}
-            </Actions>
-          </Header>
+        <ControlsWrapper>
+          <SearchBox>
+            <MdSearch />
+            <input
+              placeholder="Search by plan name, type or ID..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </SearchBox>
+        </ControlsWrapper>
 
-          <Card>
-            {tab === 'active' ? (
-              filtered.length === 0 ? (
-                <EmptyState>No active plans found</EmptyState>
-              ) : (
-                <>
-                  <Table>
-                    <thead>
-                      <tr>
-                        <Th>#</Th>
-                        <Th>Name</Th>
-                        <Th>Price</Th>
-                        <Th>Limit</Th>
-                        <Th>Validity</Th>
-                        <Th>Type</Th>
-                        <Th>Created</Th>
-                        <Th>Plan ID</Th>
-                        {isHeadAdmin && <Th>Actions</Th>}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paginated.map((p, i) => (
-                        <Row key={p._id}>
-                          <Td>{(page - 1) * PAGE_SIZE + i + 1}</Td>
-                          <Td>{p.name}</Td>
-                          <Td>
-                            <Price>₹ {p.price}</Price>
-                          </Td>
-                          <Td>{p.limit}</Td>
-                          <Td>{p.validity || 'Unlimited'}</Td>
-                          <Td>
-                            <Badge>{p.type}</Badge>
-                          </Td>
-                          <Td>{formatDateTime(p.created_at)}</Td>
-                          <Td>
-                            <PlanId>{p.plan_id}</PlanId>
-                          </Td>
-
-                          {isHeadAdmin && (
-                            <Td>
-                              <ActionGroup>
-                                <ActionButton
-                                  onClick={() =>
-                                    navigate(`/head-admin/plans/${p._id}/edit`)
-                                  }
-                                >
-                                  Edit
-                                </ActionButton>
-                                <ActionButton
-                                  variant="delete"
-                                  onClick={() => deletePlan(p._id)}
-                                >
-                                  Delete
-                                </ActionButton>
-                              </ActionGroup>
-                            </Td>
+        {loading ? (
+          <TableContainer>
+            <LoadingSkeleton>
+              {[1, 2, 3, 4, 5].map(i => <div key={i} className="row" />)}
+            </LoadingSkeleton>
+          </TableContainer>
+        ) : filtered.length === 0 ? (
+          <EmptyState>
+            <MdLayers className="icon" />
+            <h3>No plans found</h3>
+            <p>Try searching for something else or create a new plan.</p>
+          </EmptyState>
+        ) : (
+          <TableContainer>
+            <TableScroll>
+              <StyledTable>
+                <thead>
+                  <tr>
+                    <Th style={{ width: '60px' }}>#</Th>
+                    <Th>Plan Details</Th>
+                    <Th>Pricing</Th>
+                    <Th>Volume Limit</Th>
+                    <Th>Validity</Th>
+                    <Th>Type</Th>
+                    <Th>{tab === 'active' ? 'Created' : 'Archived'}</Th>
+                    <Th>Actions</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((p, i) => (
+                    <tr key={p._id}>
+                      <Td style={{ color: '#94a3b8', fontWeight: 600 }}>{i + 1}</Td>
+                      <Td>
+                        <div style={{ textAlign: 'left' }}>
+                          <PlanName>{p.name}</PlanName>
+                          <PlanIdCode>{p.plan_id}</PlanIdCode>
+                        </div>
+                      </Td>
+                      <Td>
+                        <PriceText>₹ {p.price.toLocaleString()}</PriceText>
+                      </Td>
+                      <Td>
+                        <Badge bg="#f0fdf4" color="#16a34a">
+                          {p.limit} Litres
+                        </Badge>
+                      </Td>
+                      <Td>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', color: '#64748b' }}>
+                          <MdHistory /> {p.validity || 'Unlimited'}
+                        </div>
+                      </Td>
+                      <Td>
+                        <Badge bg={p.type === 'Premium' ? '#f5f3ff' : '#eff6ff'} color={p.type === 'Premium' ? '#7c3aed' : '#2563eb'}>
+                          {p.type}
+                        </Badge>
+                      </Td>
+                      <Td style={{ whiteSpace: 'nowrap', fontSize: '0.75rem', color: '#64748b' }}>
+                        {formatDateTime(tab === 'active' ? p.created_at : p.modified_at)}
+                      </Td>
+                      <Td>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                          {tab === 'active' && isHeadAdmin ? (
+                            <>
+                              <ActionButton 
+                                title="Edit Plan"
+                                bg="#eff6ff" 
+                                color="#2563eb"
+                                hoverBg="#2563eb"
+                                onClick={() => handleOpenModal('edit', p)}
+                              >
+                                <MdEdit />
+                              </ActionButton>
+                              <ActionButton 
+                                title="Archive Plan"
+                                bg="#fef2f2" 
+                                color="#dc2626"
+                                hoverBg="#dc2626"
+                                onClick={() => deletePlan(p._id)}
+                              >
+                                <MdDelete />
+                              </ActionButton>
+                            </>
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#94a3b8', fontSize: '0.75rem' }}>
+                              <MdInfoOutline /> {tab === 'active' ? 'View Only' : p.action || 'Archived'}
+                            </div>
                           )}
-                        </Row>
-                      ))}
-                    </tbody>
-                  </Table>
+                        </div>
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </StyledTable>
+            </TableScroll>
+          </TableContainer>
+        )}
+      </PageContainer>
 
-                  {totalPages > 1 && (
-                    <Pagination>
-                      {Array.from({ length: totalPages }).map((_, i) => (
-                        <PageBtn
-                          key={i}
-                          active={page === i + 1}
-                          onClick={() => setPage(i + 1)}
-                        >
-                          {i + 1}
-                        </PageBtn>
-                      ))}
-                    </Pagination>
-                  )}
-                </>
-              )
-            ) : (
-              <ArchivedPlan plans={filtered} />
-            )}
-          </Card>
-        </Container>
-      </Page>
+      {/* ================= PLAN MODAL ================= */}
+      {modalOpen && (
+        <ModalOverlay onClick={() => setModalOpen(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <h3>{modalMode === 'create' ? <MdAdd /> : <MdEdit />} {modalMode === 'create' ? 'Create New Plan' : 'Edit Plan Details'}</h3>
+              <button onClick={() => setModalOpen(false)}><MdClose /></button>
+            </ModalHeader>
+            <ModalBody onSubmit={handleSubmit}>
+              <FormField full>
+                <label>Plan Name</label>
+                <input 
+                  required 
+                  placeholder="e.g. Standard Monthly Recharge"
+                  value={form.name}
+                  onChange={(e) => setForm({...form, name: e.target.value})}
+                />
+              </FormField>
+              
+              <FormField>
+                <label>Price (₹)</label>
+                <input 
+                  type="number" 
+                  required 
+                  placeholder="0.00"
+                  value={form.price}
+                  onChange={(e) => setForm({...form, price: e.target.value})}
+                />
+              </FormField>
+
+              <FormField>
+                <label>Limit (Litres)</label>
+                <input 
+                  type="number" 
+                  required 
+                  placeholder="e.g. 1000"
+                  value={form.limit}
+                  onChange={(e) => setForm({...form, limit: e.target.value})}
+                />
+              </FormField>
+
+              <FormField>
+                <label>Validity</label>
+                <input 
+                  placeholder="e.g. 30 days"
+                  value={form.validity}
+                  onChange={(e) => setForm({...form, validity: e.target.value})}
+                />
+              </FormField>
+
+              <FormField>
+                <label>Plan Type</label>
+                <select 
+                  value={form.type}
+                  onChange={(e) => setForm({...form, type: e.target.value})}
+                >
+                  <option value="Standard">Standard</option>
+                  <option value="Premium">Premium</option>
+                </select>
+              </FormField>
+            </ModalBody>
+            <ModalFooter>
+              <PrimaryButton 
+                style={{ background: '#f1f5f9', color: '#475569' }} 
+                type="button"
+                onClick={() => setModalOpen(false)}
+              >
+                Cancel
+              </PrimaryButton>
+              <PrimaryButton onClick={handleSubmit}>
+                {modalMode === 'create' ? 'Create Plan' : 'Update Plan'}
+              </PrimaryButton>
+            </ModalFooter>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </HeadAdminNavbar>
   );
 }

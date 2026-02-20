@@ -332,61 +332,185 @@ const SuperAdminOrg = () => {
 
       {/* MODAL */}
       {modalOpen && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{modalMode === 'create' ? 'Create' : 'Edit'} Organization</h2>
-              <button onClick={closeModal}>
-                <FiX size={22} />
+        <div className="org-modal-overlay" onClick={closeModal}>
+          <div className="org-modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="org-modal-header">
+              <div>
+                <h2 className="org-modal-title">
+                  {modalMode === 'create' ? '✨ Create New Organization' : '✏️ Edit Organization'}
+                </h2>
+                <p className="org-modal-subtitle">
+                  {modalMode === 'create' ? 'Add a new organization to your system' : 'Update organization details'}
+                </p>
+              </div>
+              <button className="org-modal-close" onClick={closeModal} title="Close">
+                <FiX size={24} />
               </button>
             </div>
 
-            {formError && <div className="modal-error">⚠️ {formError}</div>}
+            {formError && (
+              <div className="org-modal-error">
+                <span>⚠️</span>
+                <span>{formError}</span>
+              </div>
+            )}
 
-            <form onSubmit={handleFormSubmit}>
-              <div className="modal-form">
-                {[
-                  ['org_id', 'Organization ID', modalMode === 'edit'],
-                  ['org_name', 'Organization Name'],
-                  ['type', 'Organization Type'],
-                  ['gst_number', 'GST Number'],
-                  ['email_id', 'Email'],
-                  ['phone_number', 'Phone Number'],
-                  ['state', 'State'],
-                  ['pincode', 'Pincode'],
-                  ['country', 'Country'],
-                ].map(([name, label, disabled]) => (
-                  <div className="form-group" key={name}>
-                    <label>{label}</label>
+            <form onSubmit={handleFormSubmit} className="org-modal-form">
+              <div className="org-form-section">
+                <h3 className="org-form-section-title">Basic Information</h3>
+                <div className="org-form-grid">
+                  <div className="org-form-field">
+                    <label className="org-form-label">Organization ID <span className="required">*</span></label>
                     <input
-                      name={name}
-                      value={form[name]}
+                      className="org-form-input"
+                      name="org_id"
+                      placeholder="e.g., ORG001"
+                      value={form.org_id}
                       onChange={handleFormChange}
-                      disabled={disabled}
-                      required={name === 'org_id' || name === 'org_name' || name === 'email_id'}
+                      disabled={modalMode === 'edit'}
+                      required
                     />
                   </div>
-                ))}
 
-                <div className="form-group full">
-                  <label>Organization Logo</label>
-                  <input type="file" accept="image/*" onChange={handleLogoChange} />
-                  {logoPreview && (
-                    <img
-                      src={logoPreview}
-                      alt="preview"
-                      style={{ height: 60, marginTop: 8 }}
+                  <div className="org-form-field">
+                    <label className="org-form-label">Organization Name <span className="required">*</span></label>
+                    <input
+                      className="org-form-input"
+                      name="org_name"
+                      placeholder="e.g., Acme Corporation"
+                      value={form.org_name}
+                      onChange={handleFormChange}
+                      required
                     />
+                  </div>
+
+                  <div className="org-form-field">
+                    <label className="org-form-label">Email <span className="required">*</span></label>
+                    <input
+                      className="org-form-input"
+                      type="email"
+                      name="email_id"
+                      placeholder="e.g., contact@organization.com"
+                      value={form.email_id}
+                      onChange={handleFormChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="org-form-field">
+                    <label className="org-form-label">Phone Number</label>
+                    <input
+                      className="org-form-input"
+                      name="phone_number"
+                      placeholder="e.g., +91 9876543210"
+                      value={form.phone_number}
+                      onChange={handleFormChange}
+                    />
+                  </div>
+
+                  <div className="org-form-field">
+                    <label className="org-form-label">Organization Type</label>
+                    <input
+                      className="org-form-input"
+                      name="type"
+                      placeholder="e.g., Private, Public"
+                      value={form.type}
+                      onChange={handleFormChange}
+                    />
+                  </div>
+
+                  <div className="org-form-field">
+                    <label className="org-form-label">GST Number</label>
+                    <input
+                      className="org-form-input"
+                      name="gst_number"
+                      placeholder="e.g., 27AAPFC0055K1Z5"
+                      value={form.gst_number}
+                      onChange={handleFormChange}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="org-form-section">
+                <h3 className="org-form-section-title">Location Details</h3>
+                <div className="org-form-grid">
+                  <div className="org-form-field">
+                    <label className="org-form-label">State</label>
+                    <input
+                      className="org-form-input"
+                      name="state"
+                      placeholder="e.g., Maharashtra"
+                      value={form.state}
+                      onChange={handleFormChange}
+                    />
+                  </div>
+
+                  <div className="org-form-field">
+                    <label className="org-form-label">Pincode</label>
+                    <input
+                      className="org-form-input"
+                      name="pincode"
+                      placeholder="e.g., 400001"
+                      value={form.pincode}
+                      onChange={handleFormChange}
+                    />
+                  </div>
+
+                  <div className="org-form-field">
+                    <label className="org-form-label">Country</label>
+                    <input
+                      className="org-form-input"
+                      name="country"
+                      placeholder="e.g., India"
+                      value={form.country}
+                      onChange={handleFormChange}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="org-form-section">
+                <h3 className="org-form-section-title">Organization Logo</h3>
+                <div className="org-logo-upload">
+                  <input
+                    className="org-file-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    id="org-logo-file"
+                  />
+                  <label htmlFor="org-logo-file" className="org-file-label">
+                    <div className="org-upload-icon">📤</div>
+                    <div className="org-upload-text">
+                      <p className="org-upload-title">Click to upload or drag and drop</p>
+                      <p className="org-upload-hint">PNG, JPG, GIF up to 5MB</p>
+                    </div>
+                  </label>
+                  {logoPreview && (
+                    <div className="org-logo-preview">
+                      <img src={logoPreview} alt="Organization logo preview" />
+                      <button
+                        type="button"
+                        className="org-logo-remove"
+                        onClick={() => {
+                          setLogo(null);
+                          setLogoPreview(null);
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
 
-              <div className="modal-footer">
-                <button type="button" onClick={closeModal}>
+              <div className="org-modal-footer">
+                <button type="button" className="org-btn-cancel" onClick={closeModal}>
                   Cancel
                 </button>
-                <button type="submit" disabled={formSubmitting}>
-                  {formSubmitting ? 'Saving...' : modalMode === 'create' ? 'Create' : 'Update'}
+                <button type="submit" className="org-btn-submit" disabled={formSubmitting}>
+                  {formSubmitting ? 'Saving...' : modalMode === 'create' ? 'Create Organization' : 'Update Organization'}
                 </button>
               </div>
             </form>

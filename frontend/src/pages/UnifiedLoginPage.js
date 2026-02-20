@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../redux/authSlice';
@@ -28,15 +28,20 @@ const UnifiedLoginPage = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const hasRedirected = useRef(false);
 
   /* =========================
     AUTO REDIRECT IF LOGGED IN
   ========================= */
   useEffect(() => {
+    if (hasRedirected.current) return;
+
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
 
     if (!token || !role) return;
+
+    hasRedirected.current = true;
 
     if (role === 'superadmin') {
       navigate('/superadmin', { replace: true });
@@ -101,13 +106,33 @@ const UnifiedLoginPage = () => {
           orgUserData.role === 'admin')
       ) {
         console.log('✅ HeadAdmin Login Response:', orgUserData);
+        console.log('📦 Organization Data:', {
+          org_id: orgUserData.organization?.org_id,
+          org_name: orgUserData.organization?.org_name,
+          logo: orgUserData.organization?.logo,
+        });
+
+        // Validate organization data
+        if (!orgUserData.organization || !orgUserData.organization.org_id) {
+          console.error('❌ LOGIN ERROR: Response missing organization or org_id', {
+            hasOrganization: !!orgUserData.organization,
+            hasOrgId: !!orgUserData.organization?.org_id,
+            organization: orgUserData.organization,
+          });
+          setError('Organization data missing. Please contact administrator.');
+          return;
+        }
+
         saveSession(orgUserData);
+        console.log('💾 Session saved. localStorage.org_id:', localStorage.getItem('org_id'));
         navigate('/headadmin', { replace: true });
         return;
       }
 
       if (!orgUserRes.ok) {
         console.error('❌ HeadAdmin Login Error:', orgUserData);
+        setError(orgUserData.message || 'Invalid email or password');
+        return;
       }
 
       setError('Invalid email or password');

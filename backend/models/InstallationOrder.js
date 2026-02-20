@@ -29,25 +29,17 @@ const InstallationOrderSchema = new mongoose.Schema(
 
     plan_id: {
       type: String,
+      index: true,
     },
 
     device_id: {
       type: String,
+      default: '',
     },
 
     txn_id: {
       type: String,
-      index: true,
-    },
-
-    /* =========================
-       PAYMENT (FUTURE SAFE)
-       - Not used currently
-       - Kept for migration later
-    ========================= */
-    payment_received: {
-      type: Boolean,
-      default: false,
+      default: '',
       index: true,
     },
 
@@ -55,40 +47,50 @@ const InstallationOrderSchema = new mongoose.Schema(
        DELIVERY / INSTALLATION ADDRESS
     ========================= */
     delivery_address: {
-      house_flat_no: String,
-      street: String,
-      area: String,
-      district: String,
-      state: String,
-      postal_code: String,
-      country: String,
+      house_flat_no: { type: String, default: '' },
+      street: { type: String, default: '' },
+      area: { type: String, default: '' },
+      district: { type: String, default: '' },
+      state: { type: String, default: '' },
+      postal_code: { type: String, default: '' },
+      country: { type: String, default: '' },
     },
 
     /* =========================
-       KYC SNAPSHOT (OPTIONAL)
+       KYC SNAPSHOT
     ========================= */
     kyc_details: {
       type: {
         type: String,
+        default: '',
       },
       document: {
         type: String,
+        default: '',
       },
     },
 
-    /* =========================
-       ORDER STATUS
-    ========================= */
-    status: {
+    kyc_approval_status: {
       type: String,
-      enum: ['open', 'assigned', 'completed', 'cancelled'],
-      default: 'open',
+      enum: ['PENDING', 'APPROVED', 'REJECTED'],
+      default: 'PENDING',
       index: true,
     },
 
     /* =========================
-       STAGES (SYSTEM CONTROLLED)
-       🔥 SOURCE OF TRUTH (CURRENT)
+       ORDER STATUS (LIFECYCLE)
+       Only backend changes this
+    ========================= */
+    status: {
+      type: String,
+      enum: ['OPEN', 'CLOSED', 'CANCELLED'],
+      default: 'OPEN',
+      trim: true,
+      index: true,
+    },
+
+    /* =========================
+       WORKFLOW STAGES
     ========================= */
     stages: {
       payment_received: {
@@ -117,11 +119,25 @@ const InstallationOrderSchema = new mongoose.Schema(
     /* =========================
        TECHNICIAN ASSIGNMENT
     ========================= */
-    technician_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'org_technicians',
+
+    // Stores technician UUID (user_id)
+    assigned_to: {
+      type: String,
       default: null,
       index: true,
+    },
+
+    // Technician response
+    technician_approval_status: {
+      type: String,
+      enum: ['PENDING', 'APPROVED', 'REJECTED'],
+      default: null,
+      index: true,
+    },
+
+    completed_at: {
+      type: Date,
+      default: null,
     },
   },
   {
@@ -130,23 +146,19 @@ const InstallationOrderSchema = new mongoose.Schema(
 );
 
 /* =========================
-   COMPOUND INDEXES
+   INDEXES
 ========================= */
-InstallationOrderSchema.index({
-  org_id: 1,
-  user_id: 1,
-});
 
-InstallationOrderSchema.index({
-  org_id: 1,
-  'stages.payment_received': 1,
-  'stages.kyc_verified': 1,
-});
+InstallationOrderSchema.index({ org_id: 1, user_id: 1 });
+InstallationOrderSchema.index({ org_id: 1, status: 1 });
+InstallationOrderSchema.index({ org_id: 1, 'stages.payment_received': 1 });
+InstallationOrderSchema.index({ org_id: 1, kyc_approval_status: 1 });
+InstallationOrderSchema.index({ org_id: 1, assigned_to: 1 });
 
 /* =========================
-   OPTIONAL VIRTUAL (SAFE)
-   - Frontend can use payment_received
+   VIRTUALS
 ========================= */
+
 InstallationOrderSchema.virtual('payment_received_ui').get(function () {
   return this.stages?.payment_received === true;
 });

@@ -61,13 +61,6 @@ const OrgTechnicianSchema = new mongoose.Schema(
       index: true,
     },
 
-    work_status: {
-      type: String,
-      enum: ['free', 'busy'],
-      default: 'free',
-      index: true,
-    },
-
     /* =========================
        KYC DETAILS
     ========================= */
@@ -102,7 +95,6 @@ const OrgTechnicianSchema = new mongoose.Schema(
 OrgTechnicianSchema.index({
   org_id: 1,
   is_active: 1,
-  work_status: 1,
 });
 
 export default mongoose.model(

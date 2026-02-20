@@ -38,21 +38,46 @@ export const login = async (req, res) => {
       user = headAdmin;
       role = 'headadmin';
       organization = headAdmin.organization;
+
+      console.log('🔍 HeadAdmin found:', {
+        headAdminId: headAdmin._id,
+        email: headAdmin.email,
+        has_organization_ref: !!headAdmin.organization,
+        org_id: headAdmin.org_id,
+        organization_org_id: headAdmin.organization?.org_id,
+      });
     } else {
       /* =========================
          TRY ADMIN
       ========================= */
       const admin = await OrgAdmin.findOne({
         email: normalizedEmail,
-      }).select('+password');
+      })
+        .select('+password')
+        .populate('organization');
 
       if (admin) {
         user = admin;
         role = 'admin';
 
-        organization = await Organization.findOne({
+        console.log('🔍 Admin found:', {
+          adminId: admin._id,
+          email: admin.email,
+          has_organization_ref: !!admin.organization,
           org_id: admin.org_id,
+          organization_org_id: admin.organization?.org_id,
         });
+
+        // Use the populated organization reference if available
+        if (admin.organization) {
+          organization = admin.organization;
+        } else {
+          // Fallback: try to find by org_id field
+          console.log('⚠️ Admin organization reference not populated, trying lookup by org_id:', admin.org_id);
+          organization = await Organization.findOne({
+            org_id: admin.org_id,
+          });
+        }
       }
     }
 
@@ -65,11 +90,32 @@ export const login = async (req, res) => {
     if (!organization) {
       console.error(
         `❌ Organization not found for ${role}:`,
-        { userId: user._id, email: user.email, org_id: user.org_id }
+        {
+          userId: user._id,
+          email: user.email,
+          user_org_id: user.org_id,
+          role,
+          headAdminOrgRef: role === 'headadmin' ? user.organization : null
+        }
       );
       return res.status(400).json({
         message:
           'Your account is not linked to an organization. Contact administrator.',
+      });
+    }
+
+    if (!organization.org_id) {
+      console.error(
+        `❌ Organization exists but org_id is missing:`,
+        {
+          organizationId: organization._id,
+          org_id: organization.org_id,
+          userId: user._id,
+          role
+        }
+      );
+      return res.status(400).json({
+        message: 'Organization configuration error. Contact administrator.',
       });
     }
 
@@ -90,7 +136,7 @@ export const login = async (req, res) => {
       { expiresIn: '1d' }
     );
 
-    return res.status(200).json({
+    const response = {
       token,
       role,
       organization: {
@@ -103,7 +149,16 @@ export const login = async (req, res) => {
         username: user.username,
         email: user.email,
       },
+    };
+
+    console.log('✅ Login successful:', {
+      userId: user._id,
+      role,
+      org_id: organization.org_id,
+      org_name: organization.org_name,
     });
+
+    return res.status(200).json(response);
   } catch (error) {
     console.error('❌ Unified Login Error:', error);
     return res.status(500).json({

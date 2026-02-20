@@ -24,9 +24,34 @@ const ProtectedRoute = ({ allowedRoles = [] }) => {
     auth.role ||
     localStorage.getItem('role');
 
-  const orgId =
+  let orgId =
     auth.org_id ||
     localStorage.getItem('org_id');
+
+  /* =========================
+     EXTRACT ORG_ID FROM JWT IF MISSING
+  ========================= */
+  if (!orgId && token) {
+    try {
+      // Decode JWT (base64 decode the payload)
+      const payload = token.split('.')[1];
+      if (payload) {
+        const decoded = JSON.parse(
+          atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+        );
+        orgId = decoded.org_id;
+
+        if (orgId) {
+          console.log('📌 Extracted org_id from JWT token:', orgId);
+          // Sync to localStorage so it persists for future page loads
+          localStorage.setItem('org_id', orgId);
+        }
+      }
+    } catch (e) {
+      // If JWT parsing fails, just continue without org_id
+      console.warn('⚠️ Failed to decode JWT token:', e.message);
+    }
+  }
 
   /* =========================
      NOT AUTHENTICATED
@@ -68,9 +93,15 @@ const ProtectedRoute = ({ allowedRoles = [] }) => {
     !orgId
   ) {
     console.error(
-      `❌ ${normalizedRole} missing org_id`
+      `❌ ${normalizedRole} missing org_id - redirecting to login`,
+      {
+        role: normalizedRole,
+        hasToken: !!token,
+        hasReduxOrgId: !!auth.org_id,
+        hasStorageOrgId: !!localStorage.getItem('org_id'),
+      }
     );
-    return <Navigate to="/" replace />;
+    return <Navigate to="/" replace state={{ from: location }} />;
   }
 
   /* =========================
