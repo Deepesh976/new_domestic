@@ -80,7 +80,7 @@ const SuperAdminNavbar = ({ children }) => {
 
         {/* CENTER */}
         <div className="topbar-center">
-          <h1 className="brand-title">Domesticro</h1>
+          <h1 className="brand-title">Domestic RO Controller</h1>
         </div>
 
         {/* RIGHT */}

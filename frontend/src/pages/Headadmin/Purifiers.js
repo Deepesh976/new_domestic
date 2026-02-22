@@ -702,9 +702,6 @@ export default function Purifiers() {
                       <Td>
                         {p.user_details ? (
                           <UserName onClick={() => setUserView(p.user_details)} style={{ margin: '0 auto' }}>
-                            <div className="avatar">
-                              {p.user_details.user_name?.first_name?.[0]}
-                            </div>
                             {p.user_details.user_name?.first_name} {p.user_details.user_name?.last_name}
                           </UserName>
                         ) : (

@@ -221,7 +221,7 @@ const SuperAdminDashboard = () => {
                 <div className="stat-footer">Deployed across platform</div>
               </div>
 
-              <div className="stat-card stat-orgs">
+              {/* <div className="stat-card stat-orgs">
                 <div className="stat-card-header">
                   <MdBusiness className="stat-icon" />
                   <span className="stat-badge">Active</span>
@@ -229,7 +229,7 @@ const SuperAdminDashboard = () => {
                 <div className="stat-value">{organizations.length}</div>
                 <p className="stat-label">Organizations</p>
                 <div className="stat-footer">On the platform</div>
-              </div>
+              </div> */}
 
               <div className="stat-card stat-growth">
                 <div className="stat-card-header">

@@ -405,15 +405,20 @@ const FormField = styled.div`
   input, select {
     padding: 0.625rem 0.75rem;
     border-radius: 0.5rem;
-    border: 1.5px solid #e2e8f0;
+    border: 1.5px solid ${(p) => p.error ? '#ef4444' : '#e2e8f0'};
     font-size: 0.9375rem;
     outline: none;
     transition: all 0.2s;
 
     &:focus {
-      border-color: #3b82f6;
+      border-color: ${(p) => p.error ? '#ef4444' : '#3b82f6'};
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
+  }
+
+  span {
+    font-size: 0.75rem;
+    color: #ef4444;
   }
 `;
 
@@ -490,14 +495,16 @@ export default function Plan() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create'); // 'create' or 'edit'
   const [currentPlan, setCurrentPlan] = useState(null);
-  const [form, setForm] = useState({
-    name: '',
-    price: '',
-    limit: '',
-    validity: '',
-    type: 'Standard',
-  });
+  const [errors, setErrors] = useState({});
 
+const [form, setForm] = useState({
+  name: '',
+  price: '',
+  limit: '',
+  validityType: 'Unlimited', // Unlimited | Days
+  validityDays: '',
+  type: 'Standard',
+});
   const isHeadAdmin = localStorage.getItem('role') === 'headadmin';
 
   useEffect(() => {
@@ -524,49 +531,82 @@ export default function Plan() {
     setModalMode(mode);
     if (mode === 'edit' && plan) {
       setCurrentPlan(plan);
-      setForm({
-        name: plan.name,
-        price: plan.price,
-        limit: plan.limit,
-        validity: plan.validity || '',
-        type: plan.type,
-      });
+setForm({
+  name: plan.name,
+  price: plan.price,
+  limit: plan.limit,
+  validityType: plan.validity ? 'Days' : 'Unlimited',
+  validityDays: plan.validity
+    ? plan.validity.replace(' Days', '')
+    : '',
+  type: plan.type,
+});
     } else {
       setCurrentPlan(null);
-      setForm({
-        name: '',
-        price: '',
-        limit: '',
-        validity: '',
-        type: 'Standard',
-      });
+setForm({
+  name: '',
+  price: '',
+  limit: '',
+  validityType: 'Unlimited',
+  validityDays: '',
+  type: 'Standard',
+});
     }
     setModalOpen(true);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (modalMode === 'create') {
-        await axios.post('/api/headadmin/plans', {
-          ...form,
-          price: Number(form.price),
-          limit: Number(form.limit),
-        });
-      } else {
-        await axios.put(`/api/headadmin/plans/${currentPlan._id}`, {
-          ...form,
-          price: Number(form.price),
-          limit: Number(form.limit),
-        });
-      }
-      setModalOpen(false);
-      loadAllPlans();
-    } catch (err) {
-      console.error('Failed to save plan:', err);
-      alert('Error saving plan');
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  const newErrors = {};
+
+  if (!form.name.trim()) newErrors.name = 'Plan name is required';
+  if (!form.price) newErrors.price = 'Price is required';
+  if (!form.limit) newErrors.limit = 'Limit is required';
+  if (!form.type) newErrors.type = 'Plan type is required';
+
+  if (form.validityType === 'Days' && !form.validityDays) {
+    newErrors.validityDays = 'Number of days is required';
+  }
+
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    return;
+  }
+
+  setErrors({});
+
+  const finalValidity =
+    form.validityType === 'Unlimited'
+      ? null
+      : `${form.validityDays} Days`;
+
+  try {
+    if (modalMode === 'create') {
+      await axios.post('/api/headadmin/plans', {
+        name: form.name,
+        price: Number(form.price),
+        limit: Number(form.limit),
+        validity: finalValidity,
+        type: form.type,
+      });
+    } else {
+      await axios.put(`/api/headadmin/plans/${currentPlan._id}`, {
+        name: form.name,
+        price: Number(form.price),
+        limit: Number(form.limit),
+        validity: finalValidity,
+        type: form.type,
+      });
     }
-  };
+
+    setModalOpen(false);
+    loadAllPlans();
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 
   const deletePlan = async (id) => {
     if (!window.confirm('Are you sure you want to archive/delete this plan?')) return;
@@ -767,59 +807,99 @@ export default function Plan() {
               <h3>{modalMode === 'create' ? <MdAdd /> : <MdEdit />} {modalMode === 'create' ? 'Create New Plan' : 'Edit Plan Details'}</h3>
               <button onClick={() => setModalOpen(false)}><MdClose /></button>
             </ModalHeader>
-            <ModalBody onSubmit={handleSubmit}>
-              <FormField full>
-                <label>Plan Name</label>
-                <input 
-                  required 
-                  placeholder="e.g. Standard Monthly Recharge"
-                  value={form.name}
-                  onChange={(e) => setForm({...form, name: e.target.value})}
-                />
-              </FormField>
-              
-              <FormField>
-                <label>Price (₹)</label>
-                <input 
-                  type="number" 
-                  required 
-                  placeholder="0.00"
-                  value={form.price}
-                  onChange={(e) => setForm({...form, price: e.target.value})}
-                />
-              </FormField>
+<ModalBody onSubmit={handleSubmit}>
 
-              <FormField>
-                <label>Limit (Litres)</label>
-                <input 
-                  type="number" 
-                  required 
-                  placeholder="e.g. 1000"
-                  value={form.limit}
-                  onChange={(e) => setForm({...form, limit: e.target.value})}
-                />
-              </FormField>
+  {/* PLAN NAME */}
+  <FormField full error={errors.name}>
+    <label>Plan Name *</label>
+    <input
+      placeholder="e.g. Standard Monthly Recharge"
+      value={form.name}
+      onChange={(e) =>
+        setForm({ ...form, name: e.target.value })
+      }
+    />
+    {errors.name && <span>{errors.name}</span>}
+  </FormField>
 
-              <FormField>
-                <label>Validity</label>
-                <input 
-                  placeholder="e.g. 30 days"
-                  value={form.validity}
-                  onChange={(e) => setForm({...form, validity: e.target.value})}
-                />
-              </FormField>
+  {/* PRICE */}
+  <FormField error={errors.price}>
+    <label>Price (₹) *</label>
+    <input
+      type="number"
+      placeholder="0.00"
+      value={form.price}
+      onChange={(e) =>
+        setForm({ ...form, price: e.target.value })
+      }
+    />
+    {errors.price && <span>{errors.price}</span>}
+  </FormField>
 
-              <FormField>
-                <label>Plan Type</label>
-                <select 
-                  value={form.type}
-                  onChange={(e) => setForm({...form, type: e.target.value})}
-                >
-                  <option value="Standard">Standard</option>
-                  <option value="Premium">Premium</option>
-                </select>
-              </FormField>
-            </ModalBody>
+  {/* LIMIT */}
+  <FormField error={errors.limit}>
+    <label>Limit (Litres) *</label>
+    <input
+      type="number"
+      placeholder="e.g. 1000"
+      value={form.limit}
+      onChange={(e) =>
+        setForm({ ...form, limit: e.target.value })
+      }
+    />
+    {errors.limit && <span>{errors.limit}</span>}
+  </FormField>
+
+  {/* VALIDITY TYPE */}
+  <FormField>
+    <label>Validity *</label>
+    <select
+      value={form.validityType}
+      onChange={(e) =>
+        setForm({ ...form, validityType: e.target.value })
+      }
+    >
+      <option value="Unlimited">Unlimited</option>
+      <option value="Days">Days</option>
+    </select>
+  </FormField>
+
+  {/* VALIDITY DAYS (CONDITIONAL) */}
+  {form.validityType === 'Days' && (
+    <FormField error={errors.validityDays}>
+      <label>Number of Days *</label>
+      <input
+        type="number"
+        min="1"
+        placeholder="Enter total days"
+        value={form.validityDays}
+        onChange={(e) =>
+          setForm({ ...form, validityDays: e.target.value })
+        }
+      />
+      {errors.validityDays && (
+        <span>{errors.validityDays}</span>
+      )}
+    </FormField>
+  )}
+
+  {/* PLAN TYPE */}
+  <FormField error={errors.type}>
+    <label>Plan Type *</label>
+    <select
+      value={form.type}
+      onChange={(e) =>
+        setForm({ ...form, type: e.target.value })
+      }
+    >
+      <option value="">Select Plan Type</option>
+      <option value="Standard">Standard</option>
+      <option value="Premium">Premium</option>
+    </select>
+    {errors.type && <span>{errors.type}</span>}
+  </FormField>
+
+</ModalBody>
             <ModalFooter>
               <PrimaryButton 
                 style={{ background: '#f1f5f9', color: '#475569' }} 

@@ -265,9 +265,8 @@ const EmptyText = styled.p`
    COMPONENT
 ========================= */
 
-const role = localStorage.getItem('role');
-
 export default function HeadAdminSupport() {
+  const role = localStorage.getItem('role')?.toLowerCase();
   const [support, setSupport] = useState(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);

@@ -24,7 +24,7 @@ export default function HeadAdminNavbar({ children }) {
      AUTH / ORG CONTEXT
   ========================= */
   const role = localStorage.getItem('role'); // headadmin | admin
-  const email = localStorage.getItem('email') || 'User';
+  const name = localStorage.getItem('username') || 'User';
 
   const orgName = localStorage.getItem('org_name') || 'Organization';
   const orgLogo = localStorage.getItem('org_logo');
@@ -88,7 +88,7 @@ export default function HeadAdminNavbar({ children }) {
             onClick={() => setProfileOpen((v) => !v)}
           >
             <FiUser />
-            <span>{email.split('@')[0]}</span>
+            <span>{name}</span>
           </button>
 
           {profileOpen && (

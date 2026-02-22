@@ -83,7 +83,7 @@ const InstallationOrderSchema = new mongoose.Schema(
     ========================= */
     status: {
       type: String,
-      enum: ['OPEN', 'CLOSED', 'CANCELLED'],
+      enum: ['OPEN', 'PENDING', 'CLOSED', 'EXPIRED', 'CANCELLED'],
       default: 'OPEN',
       trim: true,
       index: true,

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../redux/authSlice';
 import { handleBuilderAuth } from '../utils/builderAuth'; // ✅ ADDED
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import './UnifiedLoginPage.css';
 
 /* =====================================================
@@ -19,6 +20,7 @@ const UnifiedLoginPage = () => {
   ========================= */
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
 
   const [showForgot, setShowForgot] = useState(false);
@@ -49,6 +51,21 @@ const UnifiedLoginPage = () => {
       navigate('/headadmin', { replace: true });
     }
   }, [navigate]);
+
+  /* =========================
+    DISABLE SCROLLING ON LOGIN
+  ========================= */
+  useEffect(() => {
+    // Disable scrolling when component mounts
+    document.body.style.overflow = 'hidden';
+    document.body.style.height = '100vh';
+
+    // Re-enable scrolling when component unmounts
+    return () => {
+      document.body.style.overflow = 'auto';
+      document.body.style.height = 'auto';
+    };
+  }, []);
 
   /* =========================
     LOGIN HANDLER
@@ -253,12 +270,27 @@ const UnifiedLoginPage = () => {
     UI
   ========================= */
   return (
-    <div className="login-container">
-      <div className="login-wrapper">
-        <div className="login-card">
+    <div
+      className="login-container"
+      style={{
+        backgroundImage: `url(${process.env.PUBLIC_URL}/background_image.png)`,
+      }}
+    >
+      <div className="title-bar">
+        <h1 className="title-bar-text">Domestic RO Controller</h1>
+      </div>
+      <div className="login-layout">
+        {/* <div className="purifier-section">
+          <img
+            src={`${process.env.PUBLIC_URL}/purifier.png`}
+            alt="Water Purifier Product"
+            className="purifier-image"
+          />
+        </div> */}
+        <div className="login-wrapper">
+          <div className="login-card">
           <div className="login-header">
-            <div className="login-logo">D</div>
-            <h1 className="login-title">Domesticro</h1>
+            <h1 className="login-title">Welcome User</h1>
             <p className="login-subtitle">Sign in to your account</p>
           </div>
 
@@ -273,6 +305,7 @@ const UnifiedLoginPage = () => {
                   <input
                     className="form-input"
                     type="email"
+                    placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -282,14 +315,25 @@ const UnifiedLoginPage = () => {
 
                 <div className="form-group">
                   <label className="form-label">Password</label>
-                  <input
-                    className="form-input"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
+                  <div className="password-input-wrapper">
+                    <input
+                      className="form-input password-input"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={loading}
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
                 </div>
 
                 <button
@@ -348,6 +392,7 @@ const UnifiedLoginPage = () => {
             © 2025 Domesticro. All rights reserved.
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

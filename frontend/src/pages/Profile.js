@@ -8,6 +8,8 @@ import {
   FaCheck,
   FaTimes,
   FaShieldAlt,
+  FaEye,
+  FaEyeSlash,
 } from 'react-icons/fa';
 import './Profile.css';
 
@@ -31,6 +33,8 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState('account');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
@@ -153,14 +157,19 @@ const Profile = () => {
           {/* ACCOUNT TAB */}
           {activeTab === 'account' && (
             <section className="content-section">
-              <h1 className="section-title">Account Information</h1>
+              <header className="section-header">
+                <h1 className="section-title">Account Information</h1>
+                <p className="section-subtitle">Manage your personal profile details.</p>
+              </header>
 
-              <div className="info-field">
-                <label className="field-label">
-                  <FaEnvelope /> Email
-                </label>
-                <div className="field-value-box">
-                  <span>{email || 'Not available'}</span>
+              <div className="info-fields">
+                <div className="info-field">
+                  <label className="field-label">
+                    <FaEnvelope className="field-icon" /> Email
+                  </label>
+                  <div className="field-value-box">
+                    <span className="field-value">{email || 'Not available'}</span>
+                  </div>
                 </div>
               </div>
             </section>
@@ -169,37 +178,67 @@ const Profile = () => {
           {/* SECURITY TAB */}
           {activeTab === 'security' && (
             <section className="content-section">
-              <h1 className="section-title">Change Password</h1>
+              <header className="section-header">
+                <h1 className="section-title">Change Password</h1>
+                <p className="section-subtitle">Update your password to keep your account secure.</p>
+              </header>
 
-              <form onSubmit={handleUpdatePassword}>
+              <form onSubmit={handleUpdatePassword} className="security-form">
                 <div className="form-group">
-                  <label>
-                    <FaLock /> New Password
+                  <label className="form-label">
+                    <FaLock className="label-icon" /> New Password
                   </label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
+                  <div className="password-input-wrapper">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      className="form-input"
+                      placeholder="Enter new password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
                   {errors.password && (
-                    <p className="error-message">{errors.password}</p>
+                    <p className="error-message">
+                      <FaTimes className="error-icon" /> {errors.password}
+                    </p>
                   )}
+                  <p className="password-hint">
+                    Use at least 6 characters with a mix of letters and numbers.
+                  </p>
                 </div>
 
                 <div className="form-group">
-                  <label>
-                    <FaLock /> Confirm Password
+                  <label className="form-label">
+                    <FaLock className="label-icon" /> Confirm Password
                   </label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) =>
-                      setConfirmPassword(e.target.value)
-                    }
-                  />
+                  <div className="password-input-wrapper">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      className="form-input"
+                      placeholder="Confirm new password"
+                      value={confirmPassword}
+                      onChange={(e) =>
+                        setConfirmPassword(e.target.value)
+                      }
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
                   {errors.confirmPassword && (
                     <p className="error-message">
-                      {errors.confirmPassword}
+                      <FaTimes className="error-icon" /> {errors.confirmPassword}
                     </p>
                   )}
                 </div>
@@ -209,7 +248,13 @@ const Profile = () => {
                   className="submit-button"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Updating...' : 'Update Password'}
+                  {isSubmitting ? (
+                    <>
+                      <span className="loading-spinner"></span> Updating...
+                    </>
+                  ) : (
+                    'Update Password'
+                  )}
                 </button>
               </form>
             </section>

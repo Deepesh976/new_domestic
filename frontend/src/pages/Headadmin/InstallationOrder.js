@@ -179,6 +179,11 @@ const Td = styled.td`
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
   color: #334155;
+  text-align: center;
+`;
+
+const TdLeft = styled(Td)`
+  text-align: left;
 `;
 
 const TableRow = styled.tr`
@@ -261,10 +266,36 @@ const StatusBadge = styled.span`
   border-radius: 20px;
   font-size: 12px;
   font-weight: 700;
-  background: ${(p) =>
-    p.type === 'completed' ? '#d1fae5' : '#fef3c7'};
-  color: ${(p) =>
-    p.type === 'completed' ? '#047857' : '#b45309'};
+
+  background: ${(p) => {
+    switch (p.type) {
+      case 'CLOSED':
+        return '#d1fae5';
+      // case 'EXPIRED':
+      //   return '#fee2e2';
+      case 'CANCELLED':
+        return '#f3f4f6';
+      case 'PENDING':
+        return '#fef3c7';
+      default:
+        return '#e0f2fe'; // OPEN
+    }
+  }};
+
+  color: ${(p) => {
+    switch (p.type) {
+      case 'CLOSED':
+        return '#047857';
+      // case 'EXPIRED':
+      //   return '#b91c1c';
+      case 'CANCELLED':
+        return '#374151';
+      case 'PENDING':
+        return '#b45309';
+      default:
+        return '#0369a1'; // OPEN
+    }
+  }};
 `;
 
 const StatusDot = styled.span`
@@ -296,6 +327,8 @@ const Select = styled.select`
   background: white;
   cursor: pointer;
   transition: all 0.3s ease;
+  width: 100%;
+  max-width: 160px;
 
   &:focus {
     outline: none;
@@ -308,6 +341,35 @@ const Select = styled.select`
     cursor: not-allowed;
     color: #94a3b8;
   }
+`;
+
+const TechnicianCell = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+`;
+
+const TechnicianInfo = styled.div`
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const TechnicianName = styled.strong`
+  font-weight: 700;
+  font-size: 14px;
+  color: #0f172a;
+`;
+
+const TechnicianStatus = styled(Muted)`
+  font-size: 12px;
+  color: ${(p) => p.statusColor || '#94a3b8'};
+  font-weight: ${(p) => (p.highlight ? 600 : 400)};
 `;
 
 const ActionGroup = styled.div`
@@ -406,11 +468,9 @@ const availableTechs = (techRes.data || []).filter(
           .toLowerCase()
           .includes(searchLower);
 
-      const isCompleted = o.stages?.installation_completed;
-      const matchesStatus =
-        statusFilter === 'all' ||
-        (statusFilter === 'pending' && !isCompleted) ||
-        (statusFilter === 'completed' && isCompleted);
+const matchesStatus =
+  statusFilter === 'all' ||
+  o.status === statusFilter;
 
       return matchesSearch && matchesStatus;
     });
@@ -484,12 +544,14 @@ const updateKycStatus = async (status) => {
 };
 
   // Calculate stats
-  const stats = {
-    total: orders.length,
-    pending: orders.filter((o) => !o.stages?.installation_completed).length,
-    completed: orders.filter((o) => o.stages?.installation_completed).length,
-    assigned: orders.filter((o) => o.stages?.technician_assigned).length,
-  };
+const stats = {
+  total: orders.length,
+  open: orders.filter((o) => o.status === 'OPEN').length,
+  pending: orders.filter((o) => o.status === 'PENDING').length,
+  closed: orders.filter((o) => o.status === 'CLOSED').length,
+  // expired: orders.filter((o) => o.status === 'EXPIRED').length,
+  cancelled: orders.filter((o) => o.status === 'CANCELLED').length,
+};
 
   return (
     <HeadAdminNavbar>
@@ -503,31 +565,43 @@ const updateKycStatus = async (status) => {
           </HeaderSection>
 
           {/* Stats Cards */}
-          <StatsGrid>
-            <StatCard>
-              <StatIcon bgColor="#dbeafe">📦</StatIcon>
-              <StatLabel>Total Orders</StatLabel>
-              <StatValue color="#2563eb">{stats.total}</StatValue>
-            </StatCard>
+ <StatsGrid>
+  <StatCard>
+    <StatIcon bgColor="#dbeafe">📦</StatIcon>
+    <StatLabel>Total Orders</StatLabel>
+    <StatValue color="#2563eb">{stats.total}</StatValue>
+  </StatCard>
 
-            <StatCard>
-              <StatIcon bgColor="#fef3c7">⏳</StatIcon>
-              <StatLabel>Pending</StatLabel>
-              <StatValue color="#d97706">{stats.pending}</StatValue>
-            </StatCard>
+  <StatCard>
+    <StatIcon bgColor="#e0f2fe">🟦</StatIcon>
+    <StatLabel>Open</StatLabel>
+    <StatValue color="#0369a1">{stats.open}</StatValue>
+  </StatCard>
 
-            <StatCard>
-              <StatIcon bgColor="#d1fae5">✓</StatIcon>
-              <StatLabel>Completed</StatLabel>
-              <StatValue color="#059669">{stats.completed}</StatValue>
-            </StatCard>
+  <StatCard>
+    <StatIcon bgColor="#fef3c7">⏳</StatIcon>
+    <StatLabel>Pending</StatLabel>
+    <StatValue color="#b45309">{stats.pending}</StatValue>
+  </StatCard>
 
-            <StatCard>
-              <StatIcon bgColor="#c7d2fe">👤</StatIcon>
-              <StatLabel>Assigned</StatLabel>
-              <StatValue color="#4f46e5">{stats.assigned}</StatValue>
-            </StatCard>
-          </StatsGrid>
+  <StatCard>
+    <StatIcon bgColor="#d1fae5">✓</StatIcon>
+    <StatLabel>Closed</StatLabel>
+    <StatValue color="#047857">{stats.closed}</StatValue>
+  </StatCard>
+{/* 
+  <StatCard>
+    <StatIcon bgColor="#fee2e2">⚠</StatIcon>
+    <StatLabel>Expired</StatLabel>
+    <StatValue color="#b91c1c">{stats.expired}</StatValue>
+  </StatCard> */}
+
+  <StatCard>
+    <StatIcon bgColor="#f3f4f6">✖</StatIcon>
+    <StatLabel>Cancelled</StatLabel>
+    <StatValue color="#374151">{stats.cancelled}</StatValue>
+  </StatCard>
+</StatsGrid>
 
           {/* Search & Filters */}
           <ControlsSection>
@@ -542,9 +616,12 @@ const updateKycStatus = async (status) => {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="completed">Completed</option>
+<option value="all">All Status</option>
+<option value="OPEN">OPEN</option>
+<option value="PENDING">PENDING</option>
+<option value="CLOSED">CLOSED</option>
+<option value="EXPIRED">EXPIRED</option>
+<option value="CANCELLED">CANCELLED</option>
             </FilterSelect>
           </ControlsSection>
 
@@ -582,7 +659,8 @@ const updateKycStatus = async (status) => {
 
       <tbody>
         {filteredOrders.map((o) => {
-          const isCompleted = o.status === 'CLOSED';
+          const status = o.status || 'OPEN';
+          const isCompleted = status === 'CLOSED';
           const isAccepted =
             o.technician_approval_status === 'ACCEPTED';
           const isPending =
@@ -596,7 +674,7 @@ const updateKycStatus = async (status) => {
           return (
             <TableRow key={o._id}>
               {/* Customer */}
-              <Td>
+              <TdLeft>
                 <CustomerWrapper>
                   <CustomerName>
                     {o.customer_name}
@@ -605,7 +683,7 @@ const updateKycStatus = async (status) => {
                     Order: {o.order_id}
                   </OrderId>
                 </CustomerWrapper>
-              </Td>
+              </TdLeft>
 
               {/* Plan */}
               <Td>
@@ -613,32 +691,73 @@ const updateKycStatus = async (status) => {
               </Td>
 
               {/* KYC */}
-              <Td>
-                <div
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: '20px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'inline-block',
-                    background:
-                      kycStatus === 'APPROVED'
-                        ? '#d1fae5'
-                        : kycStatus === 'REJECTED'
-                        ? '#fee2e2'
-                        : '#fef3c7',
-                    color:
-                      kycStatus === 'APPROVED'
-                        ? '#047857'
-                        : kycStatus === 'REJECTED'
-                        ? '#b91c1c'
-                        : '#b45309',
-                  }}
-                  onClick={() => openKycModal(o)}
-                >
-                  {kycStatus}
-                </div>
-              </Td>
+<Td style={{ textAlign: 'center' }}>
+  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+    <button
+      onClick={() => openKycModal(o)}
+      style={{
+        padding: '8px 16px',
+        borderRadius: '20px',
+        fontWeight: 600,
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: '13px',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        transition: 'all 0.3s ease',
+        background:
+          kycStatus === 'APPROVED'
+            ? '#d1fae5'
+            : kycStatus === 'REJECTED'
+            ? '#fee2e2'
+            : '#fef3c7',
+        color:
+          kycStatus === 'APPROVED'
+            ? '#047857'
+            : kycStatus === 'REJECTED'
+            ? '#b91c1c'
+            : '#b45309',
+      }}
+      onMouseEnter={(e) => {
+        e.target.style.transform = 'scale(1.05)';
+        e.target.style.boxShadow =
+          kycStatus === 'APPROVED'
+            ? '0 4px 12px rgba(4, 120, 87, 0.3)'
+            : kycStatus === 'REJECTED'
+            ? '0 4px 12px rgba(185, 28, 28, 0.3)'
+            : '0 4px 12px rgba(180, 83, 9, 0.3)';
+      }}
+      onMouseLeave={(e) => {
+        e.target.style.transform = 'scale(1)';
+        e.target.style.boxShadow = 'none';
+      }}
+    >
+      <span
+        style={{
+          width: '8px',
+          height: '8px',
+          borderRadius: '50%',
+          background: 'currentColor',
+          display: 'inline-block',
+        }}
+      />
+      {kycStatus}
+    </button>
+    <span
+      onClick={() => openKycModal(o)}
+      style={{
+        fontSize: '11px',
+        color: '#2563eb',
+        cursor: 'pointer',
+        fontWeight: '500',
+        textDecoration: 'underline',
+      }}
+    >
+      click me
+    </span>
+  </div>
+</Td>
 
               {/* Stages */}
               <Td>
@@ -670,7 +789,7 @@ const updateKycStatus = async (status) => {
               </Td>
 
               {/* Address */}
-              <Td>
+              <TdLeft>
                 <AddressText>
                   {o.delivery_address?.house_flat_no}
                   <br />
@@ -680,87 +799,84 @@ const updateKycStatus = async (status) => {
                   {o.delivery_address?.state}{' '}
                   {o.delivery_address?.postal_code}
                 </AddressText>
-              </Td>
+              </TdLeft>
 
               {/* Status */}
-              <Td>
-                <StatusBadge
-                  type={isCompleted ? 'completed' : 'pending'}
-                >
-                  <StatusDot pulse={!isCompleted} />
-                  {isCompleted ? 'CLOSED' : 'OPEN'}
-                </StatusBadge>
-              </Td>
+<Td>
+  <StatusBadge
+    type={status}
+  >
+    <StatusDot
+      pulse={status === 'OPEN' || status === 'PENDING'}
+    />
+    {status}
+  </StatusBadge>
+</Td>
 
               {/* Technician */}
               <Td>
-                {o.assigned_to ? (
-                  <div>
-                    <strong>
-                      {o.technician_name ||
-                        'Technician'}
-                    </strong>
-                    <br />
+                <TechnicianCell>
+                  {o.assigned_to ? (
+                    <TechnicianInfo>
+                      <TechnicianName>
+                        {o.technician_name || 'Technician'}
+                      </TechnicianName>
 
-                    {isPending && (
-                      <Muted>
-                        Awaiting Approval...
-                      </Muted>
-                    )}
+                      {isPending && (
+                        <TechnicianStatus>
+                          Awaiting Approval...
+                        </TechnicianStatus>
+                      )}
 
-                    {isAccepted && (
-                      <Muted
-                        style={{
-                          color: '#059669',
-                          fontWeight: 600,
-                        }}
-                      >
-                        Accepted ✓
-                      </Muted>
-                    )}
+                      {isAccepted && (
+                        <TechnicianStatus
+                          statusColor="#059669"
+                          highlight
+                        >
+                          Accepted ✓
+                        </TechnicianStatus>
+                      )}
 
-                    {isRejected && (
-                      <Muted
-                        style={{
-                          color: '#dc2626',
-                          fontWeight: 600,
-                        }}
-                      >
-                        Rejected ❌
-                      </Muted>
-                    )}
-                  </div>
-                ) : (
-                  <Select
-                    onChange={(e) =>
-                      setAssignments({
-                        ...assignments,
-                        [o._id]:
-                          e.target.value,
-                      })
-                    }
-                  >
-                    <option value="">
-                      Select Technician
-                    </option>
-                    {technicians.map((t) => (
-                      <option
-                        key={t._id}
-                        value={t._id}
-                      >
-                        {t.user_name.first_name}{' '}
-                        {t.user_name.last_name}
+                      {isRejected && (
+                        <TechnicianStatus
+                          statusColor="#dc2626"
+                          highlight
+                        >
+                          Rejected ❌
+                        </TechnicianStatus>
+                      )}
+                    </TechnicianInfo>
+                  ) : (
+                    <Select
+                      onChange={(e) =>
+                        setAssignments({
+                          ...assignments,
+                          [o._id]: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="">
+                        Select Technician
                       </option>
-                    ))}
-                  </Select>
-                )}
+                      {technicians.map((t) => (
+                        <option
+                          key={t._id}
+                          value={t._id}
+                        >
+                          {t.user_name.first_name}{' '}
+                          {t.user_name.last_name}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </TechnicianCell>
               </Td>
 
               {/* Actions */}
               <Td>
                 <ActionGroup>
                   {/* Assign */}
-                  {!o.assigned_to && (
+                  {!o.assigned_to && status === 'OPEN' && (
                     <ActionButton
                       disabled={
                         kycStatus !==
@@ -800,8 +916,7 @@ const updateKycStatus = async (status) => {
                   )}
 
                   {/* Complete only if accepted */}
-                  {isAccepted &&
-                    !isCompleted && (
+{isAccepted && status === 'OPEN' && (
                       <ActionButton
                         danger
                         onClick={() =>
@@ -824,62 +939,256 @@ const updateKycStatus = async (status) => {
     </Table>
   )}
 </TableWrapper>
+
+
 {/* 🔥 KYC MODAL */}
 {kycModal && (
   <div
     style={{
       position: 'fixed',
       inset: 0,
-      background: 'rgba(0,0,0,0.6)',
+      background: 'rgba(0,0,0,0.7)',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      zIndex: 1000,
+      zIndex: 2000,
+      padding: '20px',
+      backdropFilter: 'blur(4px)',
     }}
+    onClick={closeKycModal}
   >
     <div
       style={{
         background: 'white',
-        padding: 24,
-        borderRadius: 12,
-        width: '600px',
+        padding: '40px 32px',
+        borderRadius: '16px',
+        width: '800px',
         maxWidth: '95%',
+        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+        animation: 'slideIn 0.3s ease',
       }}
+      onClick={(e) => e.stopPropagation()}
     >
-      <h3 style={{ marginBottom: 16 }}>
-        {kycModal.kyc_details?.type || 'KYC Document'}
-      </h3>
+      {/* Title - Top Center */}
+      <h2 style={{
+        margin: '0 0 32px 0',
+        fontSize: '24px',
+        fontWeight: '700',
+        color: '#0f172a',
+        textAlign: 'center',
+        paddingBottom: '16px',
+        borderBottom: '2px solid #e2e8f0'
+      }}>
+        KYC Verification
+      </h2>
 
-      {kycModal.kyc_details?.document && (
-        <img
-          src={`http://localhost:5000/uploads/${kycModal.kyc_details.document}`}
-          alt="KYC"
-          style={{
-            width: '100%',
-            maxHeight: 400,
-            objectFit: 'contain',
-            borderRadius: 8,
-            border: '1px solid #e2e8f0',
-          }}
-        />
-      )}
+      {/* Main Content: Left side (info) and Right side (image) */}
+      <div className="kyc-modal-grid" style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '32px',
+        marginBottom: '32px'
+      }}>
 
-      <div style={{ marginTop: 20, display: 'flex', gap: 10 }}>
-        <ActionButton onClick={() => updateKycStatus('approved')}>
-          Approve
-        </ActionButton>
+        {/* LEFT SIDE: Customer Info */}
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
 
-        <ActionButton danger onClick={() => updateKycStatus('rejected')}>
-          Reject
-        </ActionButton>
+          {/* Customer Name */}
+          <div style={{ marginBottom: '24px' }}>
+            <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Customer Name
+            </p>
+            <h3 style={{
+              fontSize: '20px',
+              fontWeight: '700',
+              color: '#0f172a',
+              margin: 0,
+              wordBreak: 'break-word'
+            }}>
+              {kycModal.customer_name}
+            </h3>
+          </div>
 
-        <ActionButton
-          style={{ background: '#64748b' }}
-          onClick={closeKycModal}
-        >
-          Close
-        </ActionButton>
+          {/* Order ID */}
+          <div style={{ marginBottom: '24px' }}>
+            <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Order ID
+            </p>
+            <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>
+              {kycModal.order_id}
+            </p>
+          </div>
+
+          {/* Current Status */}
+          <div>
+            <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', margin: '0 0 8px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Current Status
+            </p>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              borderRadius: '20px',
+              fontSize: '13px',
+              fontWeight: '600',
+              background:
+                kycModal.kyc_approval_status === 'APPROVED'
+                  ? '#d1fae5'
+                  : kycModal.kyc_approval_status === 'REJECTED'
+                  ? '#fee2e2'
+                  : '#fef3c7',
+              color:
+                kycModal.kyc_approval_status === 'APPROVED'
+                  ? '#047857'
+                  : kycModal.kyc_approval_status === 'REJECTED'
+                  ? '#b91c1c'
+                  : '#b45309',
+            }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'currentColor' }} />
+              {kycModal.kyc_approval_status || 'PENDING'}
+            </span>
+          </div>
+        </div>
+
+        {/* RIGHT SIDE: KYC Document Image */}
+        <div>
+          <p style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            {kycModal.kyc_details?.type || 'KYC Document'}
+          </p>
+          <div style={{
+            borderRadius: '12px',
+            overflow: 'hidden',
+            border: '2px solid #e2e8f0',
+            minHeight: '250px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: '#f8fafc',
+          }}>
+            {kycModal?.kyc_details?.document ? (
+              <img
+                src={`data:image/jpeg;base64,${kycModal.kyc_details.document
+                  .replace(/_/g, '/')
+                  .replace(/-/g, '+')}`}
+                alt="KYC Document"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                }}
+              />
+            ) : (
+              <span style={{ color: '#94a3b8', fontSize: '14px' }}>No document available</span>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Action Buttons - Bottom (3 buttons grid) */}
+      <div className="kyc-modal-buttons" style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr 1fr',
+        gap: '12px',
+      }}>
+        <button
+          onClick={() => updateKycStatus('APPROVED')}
+          style={{
+            padding: '12px 20px',
+            background: '#10b981',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.background = '#059669';
+            e.target.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = '#10b981';
+            e.target.style.boxShadow = 'none';
+          }}
+        >
+          ✓ Approve
+        </button>
+
+        <button
+          onClick={() => updateKycStatus('REJECTED')}
+          style={{
+            padding: '12px 20px',
+            background: '#ef4444',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.background = '#dc2626';
+            e.target.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = '#ef4444';
+            e.target.style.boxShadow = 'none';
+          }}
+        >
+          ✕ Reject
+        </button>
+
+        <button
+          onClick={closeKycModal}
+          style={{
+            padding: '12px 20px',
+            background: '#f1f5f9',
+            color: '#475569',
+            border: '1px solid #cbd5e1',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.background = '#e2e8f0';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = '#f1f5f9';
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+
+      {/* CSS Animation & Responsive Styles */}
+      <style>{`
+        @keyframes slideIn {
+          from {
+            transform: scale(0.95) translateY(-20px);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .kyc-modal-grid {
+            grid-template-columns: 1fr !important;
+            gap: 24px !important;
+          }
+
+          .kyc-modal-buttons {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   </div>
 )}

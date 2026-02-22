@@ -106,7 +106,10 @@ const ServiceRequestSchema = new mongoose.Schema(
       default: [],
     },
 
-    observations: String,
+    observations: {
+      severity: { type: String },
+      notes: { type: String },
+    },
 
     /* =========================
        LOCATION

@@ -8,29 +8,47 @@ import { ulid } from 'ulid'; // ✅ ULID PACKAGE
 ========================= */
 export const createPlan = async (req, res) => {
   try {
-    const {
-      name,
-      price,
-      limit,
-      validity,
-      type,
-    } = req.body;
+    const { name, price, limit, validity, type } = req.body;
 
-    // 🔒 Basic validation
-    if (!name || price == null || limit == null) {
+    // 🔒 Required fields validation
+    if (!name || price == null || limit == null || !type) {
       return res.status(400).json({
-        message: 'Name, price and limit are required',
+        message: 'Name, price, limit and type are required',
       });
     }
 
+    // 🔥 Validity validation
+    let finalValidity = null;
+
+    if (validity) {
+      // If frontend sends "30 Days"
+      const daysMatch = validity.match(/^(\d+)\s*Days$/i);
+
+      if (daysMatch) {
+        const days = Number(daysMatch[1]);
+
+        if (days <= 0) {
+          return res.status(400).json({
+            message: 'Validity days must be greater than 0',
+          });
+        }
+
+        finalValidity = `${days} Days`;
+      } else {
+        return res.status(400).json({
+          message: 'Invalid validity format',
+        });
+      }
+    }
+
     const plan = await Plan.create({
-      plan_id: ulid(), // 🔥 ULID GENERATED HERE
+      plan_id: ulid(),
       org_id: req.user.organization,
       name: name.trim(),
       price: Number(price),
       limit: Number(limit),
-      validity: validity || null,
-      type: type || 'Standard',
+      validity: finalValidity, // null = Unlimited
+      type,
       created_by: req.user.id,
       created_at: new Date(),
     });
@@ -41,7 +59,6 @@ export const createPlan = async (req, res) => {
     return res.status(500).json({ message: err.message });
   }
 };
-
 /* =========================
    GET ACTIVE PLANS
    HeadAdmin + Admin
@@ -90,7 +107,56 @@ export const updatePlan = async (req, res) => {
       return res.status(404).json({ message: 'Plan not found' });
     }
 
-    // 1️⃣ ARCHIVE OLD PLAN
+    const {
+      name,
+      price,
+      limit,
+      validity,
+      type,
+    } = req.body;
+
+    /* =========================
+       🔒 VALIDATION
+    ========================= */
+
+    if (name !== undefined && !name.trim()) {
+      return res.status(400).json({
+        message: 'Plan name cannot be empty',
+      });
+    }
+
+    if (price !== undefined && (isNaN(price) || Number(price) < 0)) {
+      return res.status(400).json({
+        message: 'Price must be a valid number',
+      });
+    }
+
+    if (limit !== undefined && (isNaN(limit) || Number(limit) < 0)) {
+      return res.status(400).json({
+        message: 'Limit must be a valid number',
+      });
+    }
+
+    let updatedValidity = oldPlan.validity;
+
+    if (validity !== undefined) {
+      if (!validity) {
+        updatedValidity = null; // Unlimited
+      } else {
+        const days = parseInt(validity);
+        if (isNaN(days) || days <= 0) {
+          return res.status(400).json({
+            message: 'Validity must be a positive number',
+          });
+        }
+        updatedValidity = `${days} Days`;
+      }
+    }
+
+    /* =========================
+       1️⃣ ARCHIVE OLD VERSION
+    ========================= */
+
     await ArchivedPlan.create({
       plan_id: oldPlan.plan_id,
       org_id: oldPlan.org_id,
@@ -104,22 +170,26 @@ export const updatePlan = async (req, res) => {
       modified_at: new Date(),
     });
 
-    // 2️⃣ UPDATE ACTIVE PLAN
-    oldPlan.name = req.body.name ?? oldPlan.name;
-    oldPlan.price = req.body.price ?? oldPlan.price;
-    oldPlan.limit = req.body.limit ?? oldPlan.limit;
-    oldPlan.validity = req.body.validity ?? oldPlan.validity;
-    oldPlan.type = req.body.type ?? oldPlan.type;
+    /* =========================
+       2️⃣ UPDATE ACTIVE PLAN
+    ========================= */
+
+    if (name !== undefined) oldPlan.name = name.trim();
+    if (price !== undefined) oldPlan.price = Number(price);
+    if (limit !== undefined) oldPlan.limit = Number(limit);
+    if (type !== undefined) oldPlan.type = type;
+
+    oldPlan.validity = updatedValidity;
 
     await oldPlan.save();
 
     return res.status(200).json(oldPlan);
+
   } catch (err) {
     console.error('❌ UPDATE PLAN ERROR:', err);
     return res.status(500).json({ message: err.message });
   }
 };
-
 /* =========================
    DELETE PLAN
    → Archive

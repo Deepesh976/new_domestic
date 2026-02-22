@@ -26,7 +26,7 @@ body {
   grid-template-columns: 64px 1fr 220px;
   align-items: center;
   padding: 0 16px;
-  background: linear-gradient(90deg, #0f766e, #10b981);
+  background: linear-gradient(90deg, #0369a1, #0ea5e9);
   color: white;
   position: fixed;
   inset: 0 0 auto 0; /* top fixed, no guessing */
@@ -158,7 +158,7 @@ body {
   left: -260px;
   width: 260px;
   height: calc(100vh - 64px);
-  background: linear-gradient(180deg, #064e3b, #065f46);
+  background: linear-gradient(180deg, #003d82, #0047a3);
   padding: 16px 12px;
   transition: left 0.3s ease;
   z-index: 999;
@@ -182,7 +182,7 @@ body {
   gap: 12px;
   padding: 10px 14px;
   border-radius: 10px;
-  color: #e5fdf5;
+  color: #e0f2fe;
   text-decoration: none;
   font-size: 14px;
   transition: background 0.2s ease;

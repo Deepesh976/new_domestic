@@ -98,12 +98,18 @@ const finalData = requests.map((r) => {
 
   return {
     ...r,
+
     request_type: serviceType,
+
+    // ✅ Ensure these are returned
+    assigned_to: r.assigned_to || null,
+    technician_approval_status: r.technician_approval_status || null,
+
     user_name: userMap[r.user_id] || 'Unknown',
 
     assigned_technician_name:
       r.assigned_to
-        ? technicianMap[r.assigned_to?.toString()] || null
+        ? technicianMap[r.assigned_to] || null
         : null,
 
     fixed_by_name:
@@ -112,7 +118,6 @@ const finalData = requests.map((r) => {
         : '—',
   };
 });
-
     return res.status(200).json(finalData);
   } catch (error) {
     console.error('🔥 getServiceRequests:', error);
@@ -296,6 +301,81 @@ return res.status(200).json({
     console.error('🔥 updateServiceStatus:', error);
     return res.status(500).json({
       message: 'Failed to update service status',
+    });
+  }
+};
+
+/* =====================================================
+   GET SINGLE SERVICE REQUEST BY ID
+===================================================== */
+export const getServiceRequestById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const org_id = req.user.organization;
+
+    const request = await ServiceRequest.findOne({
+      _id: id,
+      org_id,
+    }).lean();
+
+    if (!request) {
+      return res.status(404).json({
+        message: 'Service request not found',
+      });
+    }
+
+    return res.status(200).json(request);
+  } catch (error) {
+    console.error('🔥 getServiceRequestById:', error);
+    return res.status(500).json({
+      message: 'Failed to fetch service request',
+    });
+  }
+};
+
+/* =====================================================
+   REMOVE TECHNICIAN (ADMIN)
+   - Allowed only if approval status is PENDING
+===================================================== */
+export const removeTechnicianFromRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const org_id = req.user.organization;
+
+    const request = await ServiceRequest.findOne({ _id: id, org_id });
+
+    if (!request) {
+      return res.status(404).json({
+        message: 'Service request not found',
+      });
+    }
+
+    if (!request.assigned_to) {
+      return res.status(400).json({
+        message: 'No technician assigned',
+      });
+    }
+
+    if (request.technician_approval_status !== 'pending') {
+      return res.status(400).json({
+        message: 'Technician can only be removed while approval is pending',
+      });
+    }
+
+    request.assigned_to = null;
+    request.technician_approval_status = null;
+
+    await request.save();
+
+    return res.status(200).json({
+      message: 'Technician removed successfully',
+      request,
+    });
+
+  } catch (error) {
+    console.error('🔥 removeTechnicianFromRequest:', error);
+    return res.status(500).json({
+      message: 'Failed to remove technician',
     });
   }
 };

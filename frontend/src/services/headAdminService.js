@@ -107,3 +107,14 @@ export const updateServiceRequestStatus = (
     }
   );
 };
+
+/* Get single service request by ID */
+export const getServiceRequestById = (id) => {
+  return axios.get(
+    `/api/headadmin/service-requests/${id}`
+  );
+};
+
+export const removeServiceTechnician = (id) => {
+  return axios.patch(`/api/headadmin/service-requests/${id}/remove-technician`);
+};

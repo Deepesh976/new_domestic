@@ -651,7 +651,6 @@ export default function Customers() {
                     <Th>Email</Th>
                     <Th>Phone</Th>
                     <Th>Address</Th>
-                    <Th>KYC Image</Th>
                     <Th>KYC Status</Th>
                     <Th>Device Status</Th>
                     <Th>Action</Th>
@@ -682,19 +681,6 @@ export default function Customers() {
                         {formatAddress(c.address)}
                       </Td>
 
-                      <Td>
-                        {c.kyc_details?.doc_image ? (
-                          <KycLink
-                            onClick={() =>
-                              navigate(`/headadmin/customers/${c._id}/kyc`)
-                            }
-                          >
-                            View
-                          </KycLink>
-                        ) : (
-                          '—'
-                        )}
-                      </Td>
 
                       <Td>
                         <Select

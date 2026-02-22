@@ -100,21 +100,15 @@
   color: #3b82f6;
 }
 
-.stat-customers .stat-icon {
-  color: #8b5cf6;
-}
+.stat-customers::before { background: linear-gradient(90deg, #8b5cf6, transparent); }
+.stat-technicians::before { background: linear-gradient(90deg, #06b6d4, transparent); }
+.stat-growth::before { background: linear-gradient(90deg, #3b82f6, transparent); }
+.stat-plans::before { background: linear-gradient(90deg, #10b981, transparent); }
 
-.stat-technicians .stat-icon {
-  color: #06b6d4;
-}
-
-.stat-plans .stat-icon {
-  color: #10b981;
-}
-
-.stat-growth .stat-icon {
-  color: #f59e0b;
-}
+.stat-customers .stat-icon { background: rgba(139, 92, 246, 0.1); padding: 10px; border-radius: 12px; color: #8b5cf6; }
+.stat-technicians .stat-icon { background: rgba(6, 182, 212, 0.1); padding: 10px; border-radius: 12px; color: #06b6d4; }
+.stat-growth .stat-icon { background: rgba(59, 130, 246, 0.1); padding: 10px; border-radius: 12px; color: #3b82f6; }
+.stat-plans .stat-icon { background: rgba(16, 185, 129, 0.1); padding: 10px; border-radius: 12px; color: #10b981; }
 
 .stat-badge {
   font-size: 11px;
@@ -141,8 +135,8 @@
 }
 
 .stat-growth .stat-badge {
-  background: rgba(245, 158, 11, 0.1);
-  color: #d97706;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
 }
 
 .head-admin-stat-value {
@@ -194,10 +188,6 @@
 .head-admin-chart-card:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   border-color: #d1d5db;
-}
-
-.chart-card-large {
-  grid-column: span 1;
 }
 
 .chart-header {

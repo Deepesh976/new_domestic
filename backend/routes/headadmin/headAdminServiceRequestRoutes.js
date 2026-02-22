@@ -8,6 +8,8 @@ import {
   getAvailableTechnicians,
   assignTechnicianToRequest,
   updateServiceStatus,
+  getServiceRequestById,
+  removeTechnicianFromRequest,
 } from '../../controllers/headadmin/headAdminServiceRequestController.js';
 
 const router = express.Router();
@@ -41,6 +43,16 @@ router.get(
 );
 
 /* =========================
+   GET SINGLE SERVICE REQUEST
+========================= */
+router.get(
+  '/:id',
+  auth,
+  roleMiddleware('headadmin', 'admin'),
+  getServiceRequestById
+);
+
+/* =========================
    ASSIGN TECHNICIAN
    🔥 FIXED: ADMIN ALLOWED
 ========================= */
@@ -62,6 +74,13 @@ router.patch(
   roleMiddleware('headadmin', 'admin'),
   serviceImageUpload.array('completion_images', 5),
   updateServiceStatus
+);
+
+router.patch(
+  '/:id/remove-technician',
+  auth,
+  roleMiddleware('headadmin', 'admin'),
+  removeTechnicianFromRequest
 );
 
 export default router;

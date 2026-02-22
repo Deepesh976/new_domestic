@@ -1,23 +1,25 @@
 import OrgUser from '../../models/OrgUser.js';
 import OrgPurifier from '../../models/OrgPurifier.js';
 import OrgTechnician from '../../models/OrgTechnician.js';
-import RechargedPlan from '../../models/RechargedPlan.js';
+import InstallationOrder from '../../models/InstallationOrder.js';
 
 /* =====================================================
-   HEAD ADMIN DASHBOARD — GUARANTEED PIE FIX
+   HEAD ADMIN DASHBOARD — INSTALLATION ORDER BASED
 ===================================================== */
 export const getDashboard = async (req, res) => {
   try {
     const org_id = req.user.organization;
-    const purifierYear = Number(req.query.purifierYear);
-    const planYear = Number(req.query.planYear);
 
-    if (!org_id || !purifierYear || !planYear) {
-      return res.status(400).json({ message: 'Missing year params' });
+    const purifierYear = Number(req.query.purifierYear);
+    const planYear = req.query.planYear ? Number(req.query.planYear) : null;
+    const planMonth = req.query.planMonth ? Number(req.query.planMonth) : null;
+
+    if (!org_id || !purifierYear) {
+      return res.status(400).json({ message: 'Missing required params' });
     }
 
     /* =========================
-       STATS
+       BASIC STATS
     ========================= */
     const totalCustomers = await OrgUser.countDocuments({ org_id });
     const totalTechnicians = await OrgTechnician.countDocuments({ org_id });
@@ -56,90 +58,81 @@ export const getDashboard = async (req, res) => {
     });
 
     /* =========================
-       🔥 TRENDING PLANS — TRY YEAR FIRST
+       TRENDING PLANS
+       - If year + month selected → filter by month
+       - If nothing selected → show ALL TIME
     ========================= */
-    const yearStart = new Date(Date.UTC(planYear, 0, 1));
-    const yearEnd = new Date(Date.UTC(planYear, 11, 31, 23, 59, 59));
 
-    const buildPipeline = (match) => [
-      { $match: match },
+    let dateFilter = {};
 
-      {
-        $lookup: {
-          from: 'active_plans',
-          let: { pid: '$plan_id', oid: '$org_id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ['$plan_id', '$$pid'] },
-                    { $eq: ['$org_id', '$$oid'] },
-                  ],
-                },
-              },
-            },
-            { $project: { name: 1 } },
-          ],
-          as: 'plan_info',
-        },
-      },
+    if (planYear && planMonth) {
+      const monthStart = new Date(planYear, planMonth - 1, 1);
+      const monthEnd = new Date(planYear, planMonth, 1);
 
-      {
-        $addFields: {
-          plan: {
-            $ifNull: [
-              { $arrayElemAt: ['$plan_info.name', 0] },
-              'Unknown Plan',
-            ],
-          },
-        },
-      },
-
-      {
-        $group: {
-          _id: '$plan',
-          count: { $sum: 1 },
-          firstUsedOn: { $min: '$createdAt' },
-          lastUsedOn: { $max: '$createdAt' },
-        },
-      },
-
-      {
-        $project: {
-          _id: 0,
-          plan: '$_id',
-          count: 1,
-          firstUsedOn: 1,
-          lastUsedOn: 1,
-        },
-      },
-
-      { $sort: { count: -1 } },
-    ];
-
-    // 1️⃣ Try year filter
-    let trendingPlans = await RechargedPlan.aggregate(
-      buildPipeline({
-        org_id,
-        createdAt: { $gte: yearStart, $lte: yearEnd },
-      })
-    );
-
-    // 2️⃣ Fallback → ALL TIME
-    if (trendingPlans.length === 0) {
-      trendingPlans = await RechargedPlan.aggregate(
-        buildPipeline({ org_id })
-      );
+      dateFilter = {
+        createdAt: { $gte: monthStart, $lt: monthEnd },
+      };
     }
 
-    console.log('🥧 FINAL PIE DATA:', trendingPlans);
+const trendingPlans = await InstallationOrder.aggregate([
+  {
+    $match: {
+      org_id,
+      ...dateFilter,
+    },
+  },
+
+  // 🔥 Lookup plan name
+  {
+    $lookup: {
+      from: 'active_plans',   // ⚠️ Make sure this matches your actual collection name
+      localField: 'plan_id',
+      foreignField: 'plan_id',
+      as: 'plan_info',
+    },
+  },
+
+  {
+    $addFields: {
+      plan_name: {
+        $ifNull: [
+          { $arrayElemAt: ['$plan_info.name', 0] },
+          '$plan_id', // fallback if not found
+        ],
+      },
+    },
+  },
+
+  {
+    $group: {
+      _id: '$plan_name',
+      count: { $sum: 1 },
+      firstUsedOn: { $min: '$createdAt' },
+      lastUsedOn: { $max: '$createdAt' },
+    },
+  },
+
+  {
+    $project: {
+      _id: 0,
+      plan: '$_id',
+      count: 1,
+      firstUsedOn: 1,
+      lastUsedOn: 1,
+    },
+  },
+
+  { $sort: { count: -1 } },
+]);
+
+    console.log('📊 INSTALLATION ORDER PIE DATA:', trendingPlans);
 
     return res.json({
       stats: { totalCustomers, totalTechnicians },
       purifierGrowth,
       trendingPlans,
     });
+
   } catch (error) {
     console.error('❌ DASHBOARD ERROR:', error);
     return res.status(500).json({ message: 'Dashboard failed' });

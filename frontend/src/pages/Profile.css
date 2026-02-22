@@ -373,10 +373,14 @@
     display: flex;
     align-items: center;
     background: white;
-    border: 2px solid #e2e8f0;
+    border: 1px solid #e2e8f0;
     border-radius: 8px;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     overflow: hidden;
+}
+
+.password-input-wrapper:hover {
+    border-color: #cbd5e1;
 }
 
 .password-input-wrapper:focus-within {

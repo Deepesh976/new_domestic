@@ -6,9 +6,8 @@ import {
   getAvailableServiceTechnicians,
   assignServiceTechnician,
   updateServiceRequestStatus,
+  removeServiceTechnician,
 } from '../../services/headAdminService';
-import ServiceRequestDetail from './ServiceRequestDetail';
-import { useNavigate } from 'react-router-dom';
 
 /* =========================
    PAGE LAYOUT
@@ -342,65 +341,255 @@ const EmptyText = styled.p`
 const ModalOverlay = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  animation: fadeIn 0.2s ease-in-out;
+  animation: fadeIn 0.3s ease-in-out;
+  padding: 16px;
 
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
   }
+
+  @media (max-width: 768px) {
+    padding: 12px;
+  }
 `;
 
 const ModalBox = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 28px;
-  width: 480px;
-  max-width: 95%;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-  animation: scaleUp 0.2s ease-in-out;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 20px;
+  padding: 0;
+  width: 100%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  animation: scaleUp 0.3s ease-in-out;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 250px;
+    height: 250px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+  }
 
   @keyframes scaleUp {
-    from { transform: scale(0.95); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from {
+      transform: scale(0.92);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
   }
+
+  @media (max-width: 768px) {
+    max-width: 95%;
+  }
+`;
+
+const ModalHeader = styled.div`
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  padding: 32px;
+  position: relative;
+  z-index: 1;
+  color: white;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 `;
 
 const ModalTitle = styled.h3`
-  font-size: 20px;
-  font-weight: 800;
-  margin-bottom: 18px;
-  color: #0f172a;
+  font-size: 28px;
+  font-weight: 900;
+  color: white;
+  margin: 0 0 8px 0;
 `;
 
-const DetailRow = styled.div`
-  font-size: 14px;
-  margin-bottom: 8px;
-  color: #334155;
+const ModalSubtitle = styled.p`
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+  font-weight: 500;
+`;
 
-  span {
-    font-weight: 600;
-    color: #0f172a;
+const SectionHeading = styled.h4`
+  font-size: 14px;
+  font-weight: 800;
+  color: #2563eb;
+  margin: 0 0 14px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &::before {
+    content: '';
+    width: 4px;
+    height: 16px;
+    background: linear-gradient(180deg, #2563eb, #60a5fa);
+    border-radius: 2px;
   }
 `;
 
+const DetailsSection = styled.div`
+  position: relative;
+  z-index: 1;
+  overflow-y: auto;
+  padding: 32px;
+  flex: 1;
+`;
+
+const DetailGroup = styled.div`
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e2e8f0;
+
+  &:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+`;
+
+const DetailRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  font-size: 14px;
+  margin-bottom: 14px;
+  color: #334155;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    gap: 6px;
+  }
+`;
+
+const DetailLabel = styled.span`
+  font-weight: 700;
+  color: #64748b;
+  min-width: 150px;
+  flex-shrink: 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+`;
+
+const DetailValue = styled.span`
+  color: #0f172a;
+  font-weight: 600;
+  text-align: right;
+  flex: 1;
+  word-break: break-word;
+
+  @media (max-width: 600px) {
+    text-align: left;
+  }
+`;
+
+const DetailDate = styled.div`
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 500;
+`;
+
+const ModalActions = styled.div`
+  display: flex;
+  gap: 12px;
+  padding: 24px 32px;
+  position: relative;
+  z-index: 1;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  flex-shrink: 0;
+`;
+
 const CloseButton = styled.button`
-  margin-top: 18px;
-  padding: 8px 16px;
+  flex: 1;
+  padding: 11px 24px;
   border-radius: 8px;
-  border: none;
-  background: #2563eb;
-  color: white;
+  border: 1px solid #cbd5e1;
+  background: white;
+  color: #475569;
   font-weight: 600;
   cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
 
   &:hover {
-    background: #1d4ed8;
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+`;
+
+const PrimaryButton = styled.button`
+  flex: 1;
+  padding: 11px 24px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 8px 16px rgba(37, 99, 235, 0.4);
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+`;
+
+const ViewMoreButton = styled.button`
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  border: none;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  color: white;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: scale(0.98);
   }
 `;
 
@@ -427,14 +616,13 @@ const formatLocation = (loc) =>
 ========================= */
 
 export default function ServiceRequest() {
-  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [technicians, setTechnicians] = useState([]);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
   const [allRequests, setAllRequests] = useState([]);
-  // const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedRequest, setSelectedRequest] = useState(null);
 
   /* =========================
      LOAD DATA
@@ -494,11 +682,32 @@ export default function ServiceRequest() {
   };
 
   // Calculate stats
-  const stats = {
-    total: allRequests.length,
-    open: allRequests.filter((r) => r.status === 'open').length,
-    closed: allRequests.filter((r) => r.status === 'closed').length,
-  };
+const stats = {
+  total: allRequests.length,
+  open: allRequests.filter(
+    (r) => r.status?.toLowerCase() === 'open'
+  ).length,
+  closed: allRequests.filter(
+    (r) => r.status?.toLowerCase() === 'closed'
+  ).length,
+};
+
+const handleRemove = async (id) => {
+  if (!window.confirm('Remove this technician?')) return;
+
+  try {
+    await removeServiceTechnician(id);
+
+    // refresh data
+    loadRequests();
+    loadAllRequests();
+    loadTechnicians();
+
+  } catch (error) {
+    console.error('Failed to remove technician', error);
+    alert('Failed to remove technician');
+  }
+};
 
   /* =========================
      RENDER
@@ -603,14 +812,14 @@ export default function ServiceRequest() {
                       <Td>
                         <ActionGroup>
 <SelectControl
-  value={r.status}
+  value={r.status?.toUpperCase()}
   onChange={(e) =>
-    handleStatusChange(r._id, e.target.value)
+    handleStatusChange(r._id, e.target.value.toLowerCase())
   }
 >
-  <option value="open">OPEN</option>
+  <option value="OPEN">OPEN</option>
   <option
-    value="closed"
+    value="CLOSED"
     disabled={r.technician_approval_status !== 'accepted'}
   >
     CLOSED
@@ -619,49 +828,60 @@ export default function ServiceRequest() {
                         </ActionGroup>
                       </Td>
 
-                      <Td>
-{r.assigned_technician_name &&
- r.technician_approval_status === 'accepted' ? (
-  <div>
-    <TechnicianBadge>
-      {r.assigned_technician_name}
-    </TechnicianBadge>
+<Td>
+  {!r.assigned_to ? (
+    <SelectControl
+      onChange={(e) => handleAssign(r._id, e.target.value)}
+    >
+      <option value="">Assign Technician</option>
+      {technicians.map((t) => (
+        <option key={t.user_id} value={t.user_id}>
+          {t.user_name?.first_name} {t.user_name?.last_name}
+        </option>
+      ))}
+    </SelectControl>
+  ) : (
+    <div>
+      <TechnicianBadge>
+        {r.assigned_technician_name || 'Technician'}
+      </TechnicianBadge>
 
-    <Muted>
-      {r.technician_approval_status?.toUpperCase() || 'PENDING'}
-    </Muted>
-  </div>
-) : (
-  <SelectControl
-    onChange={(e) =>
-      handleAssign(r._id, e.target.value)
-    }
-  >
-    <option value="">
-      {r.technician_approval_status === 'rejected'
-        ? 'Reassign Technician'
-        : 'Assign Technician'}
-    </option>
-    {technicians.map((t) => (
-      <option key={t.user_id} value={t.user_id}>
-        {t.user_name?.first_name} {t.user_name?.last_name}
-      </option>
-    ))}
-  </SelectControl>
-)}
-                      </Td>
+      <Muted>
+        {r.technician_approval_status === 'pending' && 'Awaiting Approval...'}
+        {r.technician_approval_status === 'accepted' && 'Approved ✓'}
+        {r.technician_approval_status === 'rejected' && 'Rejected ✕'}
+      </Muted>
+
+      {/* REMOVE BUTTON ONLY IF PENDING */}
+      {r.technician_approval_status === 'pending' && (
+        <div style={{ marginTop: '8px' }}>
+          <button
+            style={{
+              background: '#ef4444',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: '600'
+            }}
+            onClick={() => handleRemove(r._id)}
+          >
+            Remove
+          </button>
+        </div>
+      )}
+    </div>
+  )}
+</Td>
                       <Td>
-  <button
-    onClick={() => navigate(`/headadmin/service-requests/${r._id}`)}
-    style={{
-      background: 'none',
-      border: 'none',
-      cursor: 'pointer',
-      fontSize: '18px'
-    }}
+  <ViewMoreButton
+    onClick={() => setSelectedRequest(r)}
+    title="View details"
   >
-    👁
-  </button>
+    View More
+  </ViewMoreButton>
 </Td>
                     </TableRow>
                   ))}
@@ -670,6 +890,139 @@ export default function ServiceRequest() {
             )}
           </TableWrapper>
         </Container>
+
+        {/* Detail Modal */}
+        {selectedRequest && (
+          <ModalOverlay onClick={() => setSelectedRequest(null)}>
+            <ModalBox onClick={(e) => e.stopPropagation()}>
+              <ModalHeader>
+                <ModalTitle>Service Request Details</ModalTitle>
+                <ModalSubtitle>
+                  Request ID: {selectedRequest._id?.substring(0, 8)}...
+                </ModalSubtitle>
+              </ModalHeader>
+
+              <DetailsSection>
+                {/* Request Information Section */}
+                <DetailGroup>
+                  <SectionHeading>Request Information</SectionHeading>
+                  <DetailRow>
+                    <DetailLabel>User Name</DetailLabel>
+                    <DetailValue>{selectedRequest.user_name || '—'}</DetailValue>
+                  </DetailRow>
+                  <DetailRow>
+                    <DetailLabel>Device ID</DetailLabel>
+                    <DetailValue>{selectedRequest.device_id || '—'}</DetailValue>
+                  </DetailRow>
+                </DetailGroup>
+
+                {/* Service Details Section */}
+                <DetailGroup>
+                  <SectionHeading>Service Details</SectionHeading>
+                  <DetailRow>
+                    <DetailLabel>Service Type</DetailLabel>
+                    <DetailValue>
+                      {selectedRequest.service_type || selectedRequest.request_type || '—'}
+                    </DetailValue>
+                  </DetailRow>
+                  <DetailRow>
+                    <DetailLabel>Current Status</DetailLabel>
+                    <DetailValue>
+                      <StatusBadge status={selectedRequest.status?.toLowerCase()}>
+                        <StatusDot pulse={selectedRequest.status?.toLowerCase() === 'open'} />
+                        {selectedRequest.status?.toUpperCase() || '—'}
+                      </StatusBadge>
+                    </DetailValue>
+                  </DetailRow>
+                </DetailGroup>
+
+                {/* Timeline Section */}
+                <DetailGroup>
+                  <SectionHeading>Timeline</SectionHeading>
+                  <DetailRow>
+                    <DetailLabel>Scheduled At</DetailLabel>
+                    <DetailValue>
+                      {selectedRequest.scheduled_at
+                        ? new Date(selectedRequest.scheduled_at).toLocaleString()
+                        : '—'}
+                    </DetailValue>
+                  </DetailRow>
+                  <DetailRow>
+                    <DetailLabel>Arrived At</DetailLabel>
+                    <DetailValue>
+                      {selectedRequest.arrived_at
+                        ? new Date(selectedRequest.arrived_at).toLocaleString()
+                        : '—'}
+                    </DetailValue>
+                  </DetailRow>
+                  <DetailRow>
+                    <DetailLabel>Completed At</DetailLabel>
+                    <DetailValue>
+                      {selectedRequest.completed_at
+                        ? new Date(selectedRequest.completed_at).toLocaleString()
+                        : '—'}
+                    </DetailValue>
+                  </DetailRow>
+                </DetailGroup>
+
+                {/* Additional Information Section */}
+                {selectedRequest.replaced_parts && selectedRequest.replaced_parts.length > 0 && (
+                  <DetailGroup>
+                    <SectionHeading>Replaced Parts</SectionHeading>
+                    <DetailRow>
+                      <DetailValue style={{ width: '100%' }}>
+                        {selectedRequest.replaced_parts.join(', ')}
+                      </DetailValue>
+                    </DetailRow>
+                  </DetailGroup>
+                )}
+
+                {/* Observations Section */}
+                {selectedRequest.observations && (
+                  <DetailGroup>
+                    <SectionHeading>Observations</SectionHeading>
+                    <DetailRow>
+                      <DetailLabel>Severity</DetailLabel>
+                      <DetailValue>
+                        {selectedRequest.observations.severity || '—'}
+                      </DetailValue>
+                    </DetailRow>
+                    <DetailRow>
+                      <DetailLabel>Notes</DetailLabel>
+                      <DetailValue>
+                        {selectedRequest.observations.notes || '—'}
+                      </DetailValue>
+                    </DetailRow>
+                  </DetailGroup>
+                )}
+
+                {/* Metadata Section */}
+                <DetailGroup>
+                  <SectionHeading>Metadata</SectionHeading>
+<DetailRow>
+  <DetailLabel>Created At</DetailLabel>
+  <DetailValue>
+    {selectedRequest.createdAt || selectedRequest.created_at
+      ? new Date(
+          selectedRequest.createdAt || selectedRequest.created_at
+        ).toLocaleString()
+      : '—'}
+  </DetailValue>
+</DetailRow>
+                </DetailGroup>
+              </DetailsSection>
+
+              <ModalActions>
+                <CloseButton onClick={() => setSelectedRequest(null)}>
+                  Close
+                </CloseButton>
+                <PrimaryButton onClick={() => setSelectedRequest(null)}>
+                  Done
+                </PrimaryButton>
+              </ModalActions>
+            </ModalBox>
+          </ModalOverlay>
+        )}
       </Page>
     </HeadAdminNavbar>
   );
